@@ -1,0 +1,394 @@
+.menu-wrap { position: relative; }
+.menu-dd { position: absolute; top: calc(100% + 6px); left: 0; min-width: min(13rem, calc(100vw - 24px)); max-width: min(20rem, calc(100vw - 24px)); box-sizing: border-box; background: var(--surface-container); border: 1px solid var(--outline-variant); border-radius: var(--r-tile); box-shadow: var(--elev-float); padding: 6px; z-index: 2100; } /* 11.44.1 (price-level-note item 7): its least width yields to the screen too - at 320 wide and "ענק" 13rem passed the column */
+.menu-dd[hidden] { display: none; }
+.menu-item { display: flex; align-items: center; gap: 12px; width: 100%; text-align: right; padding: 10px 12px; border: none; background: none; color: var(--on-surface); font-family: 'Rubik', system-ui, sans-serif; font-size: var(--fs-title-small); border-radius: var(--r-chip); cursor: pointer; white-space: nowrap; min-width: 0; }
+.menu-item > .msi { flex: none; color: var(--on-surface-variant); } /* 10.3.0 (design-3): line icons */
+.menu-item.menu-undo, .menu-item.menu-undo > .msi { color: var(--primary); } .menu-undo .t-wrap { min-width: 0; } /* value-tie-source: the undo label wraps (it may hold a count), never "…" */
+.menu-item.menu-install { color: var(--primary); font-weight: 500; } .menu-item.menu-install > .msi { color: var(--primary); }
+.mi-t { display: flex; flex-direction: column; min-width: 0; } .mi-t > small { font-size: var(--fs-label); color: var(--primary); font-weight: 400; } /* 10.7.1 (feedback-look): a row's supporting line - reports waiting for the network */
+.set-ver { color: var(--on-surface-variant); font-size: var(--fs-body-small); }
+.set-ver.set-copy { margin-top: 2px; } /* 10.6.1: © beside the version */
+.set-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--sp-3); align-items: center; padding: var(--sp-3) var(--sp-4); border-radius: var(--r-card); background: var(--hero-top); margin: var(--sp-1) 0 var(--sp-2); } /* 10.13.0 (Q12, Q14): the top card of settings - the name and version beside the stamp, the copyright line across the card */
+.set-head-t { display: contents; } .set-head-t b { grid-column: 1; display: block; font-size: var(--fs-title-medium); font-weight: 500; } .set-head-t .set-ver { grid-column: 1; margin: 0; } .set-head-t .set-copy { grid-column: 1 / -1; margin-top: 2px; }
+.set-head .logo { grid-column: 2; grid-row: 1 / span 2; width: 56px; } .set-head .set-copy bdi { white-space: nowrap; } /* the years stay whole */
+.set-head-t .set-links { grid-column: 1 / -1; column-gap: var(--sp-4); row-gap: 0; margin: 0; } .set-links .link-btn { display: inline-flex; align-items: center; min-height: 40px; } /* 11.39.0 (legal-page): the terms page and "מקורות ורישיונות" under the copyright line */
+.src-list { list-style: none; margin: 0 0 var(--sp-3); padding: 0; } .src-row { display: flex; flex-direction: column; gap: 2px; padding: var(--sp-2) 0; border-bottom: 1px solid var(--outline-variant); overflow-wrap: anywhere; } .src-row:last-child { border-bottom: none; } .src-row span { color: var(--on-surface-variant); font-size: var(--fs-body-small); } /* 11.39.0 (legal-page): "מקורות ורישיונות" */
+.rep-terms { margin: var(--sp-2) 0 0; } /* 11.39.0 (legal-page): the notice at the report form, with the link to the terms page */
+.acc-grp-h { margin: var(--sp-4) var(--sp-1) var(--sp-2); color: var(--primary); font-size: var(--fs-label-small); font-weight: 500; } /* 10.13.0 (Q14): a menu screen's group header */
+.screen-main .accordion.acc-grp { background: var(--surface-container); border-radius: var(--r-card); padding: 0 var(--sp-3); margin-bottom: var(--sp-2); }
+.screen-main .acc-grp > .acc-row:last-child { border-bottom: none; } .acc-grp .acc-row .acc-ic { color: var(--primary); }
+.menu-item:hover { background: var(--surface); }
+.menu-sep { height: 1px; background: var(--outline-variant); margin: 4px 6px; }
+/* menus and short choices: Material list rows - an icon, the action, a supporting line; destructive rows last, in red, after a separator.
+   They must beat the plan's own choice rows (screens-plan.css) of the same weight, so they carry one element of weight more, the html prefix
+   (look/index.md "The order of the style files"): they win by their selector, never by their place in the style files */
+html .ta-list { gap: 0; margin: 0 -16px; }
+html .ta-item { display: flex; align-items: center; gap: 14px; min-height: 52px; padding: 8px 20px; border: none; border-radius: 0; background: none; font: 400 var(--fs-title-small) 'Rubik', system-ui, sans-serif; }
+html .ta-item:active { background: var(--surface-container-high); }
+html .ta-item > .ta-ic { flex: none; width: 24px; color: var(--on-surface-variant); }
+html .ta-item > .ta-t { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; } html .ta-item > .ta-t > small { color: var(--on-surface-variant); font-size: var(--fs-body-small); }
+html .ta-item.ta-del { color: var(--error); border-top: 1px solid var(--outline-variant); } html .ta-item.ta-del > .ta-ic { color: var(--error); } html .ta-item.ta-del + .ta-item.ta-del { border-top: none; }
+html .ta-item.ta-main { margin: 4px 16px 8px; min-height: 44px; border-radius: var(--r-pill); justify-content: center; background: var(--primary); color: var(--on-primary); }
+html .ta-item.ta-main > .ta-ic:empty { display: none; } html .ta-item.ta-main > .ta-t { flex: 0 1 auto; align-items: center; } html .ta-item.ta-main > .ta-t > small { color: inherit; } /* phone-round-1-fixes P19 (11.14.0): the main row's supporting line takes the row's ink (on-primary) - the list rows' grey (the rule above, heavier by its html prefix) outranked the main row's "color: inherit" (screens-plan.css), grey on blue */
+/* 5.12.0: the destination's country - a field-like picker button, and its list */
+
+  
+.pe-search input, #peLink, .sheet textarea, #peStNote { flex: 1; padding: 9px 10px; border-radius: var(--r-chip); border: 1px solid var(--outline); background: var(--surface); color: var(--on-surface); font-family: 'Rubik', system-ui, sans-serif; font-size: var(--fs-title-small); width: 100%; box-sizing: border-box; }
+#peLinkBox { display: flex; flex-direction: column; gap: 6px; }
+#peLinkBox[hidden] { display: none; }
+.pe-res { display: flex; flex-direction: column; align-items: flex-start; width: 100%; text-align: right; padding: 8px 10px; border: 1px solid var(--outline); border-radius: var(--r-tile); background: var(--surface); color: var(--on-surface); margin-top: 4px; cursor: pointer; font-family: 'Rubik', system-ui, sans-serif; }
+.pe-res small { color: var(--on-surface-variant); font-weight: 400; }
+.pe-map { height: 200px; border-radius: var(--r-tile); overflow: hidden; border: 1px solid var(--outline-variant); }
+.pe-coord { font-weight: 400; font-size: var(--fs-body-small); }
+.pe-dup { font-size: var(--fs-body-small); background: var(--today-container); color: var(--on-today); border-radius: var(--r-chip); padding: 6px 10px; }
+.pe-dup[hidden] { display: none; }
+.pe-more summary { cursor: pointer; font-size: var(--fs-body); color: var(--on-surface-variant); padding: 4px 0; }
+
+
+.fm-sel { display: inline-flex; align-items: center; gap: var(--icon-gap); min-height: 40px; min-width: 0; padding: 0 8px 0 2px; border: 1px solid var(--outline); border-radius: var(--r-xs); background: transparent; color: var(--on-surface); font: inherit; text-align: start; cursor: pointer; }
+.fm-sel-v { flex: 1 1 auto; min-width: 0; } .fm-sel-ar { flex: none; color: var(--on-surface-variant); }
+.chip-sep { flex: 0 0 1px; background: var(--outline-variant); margin: 4px 2px; }
+
+ 
+/* 5.4.0: one stack of layers - a covered window stays under the top one, seen behind it */
+.sheet-backdrop.layer-under { pointer-events: none; }
+.sheet-backdrop.layer-under ~ .sheet-backdrop.layer-under { background: transparent; }
+.sheet-backdrop.stacked { background: rgba(0,0,0,.28); }
+/* windows-inner-steps (11.15.0): the layer under the top one never moves (it was scaled down a little); an inner step's earlier step is not seen at all */
+.sheet-backdrop.layer-under.step-under { visibility: hidden; background: transparent; }
+.sheet.stepping { overflow-x: hidden; } /* the new step slides in from the side */
+.sheet-head > .sheet-back { flex: none; margin-inline-start: -8px; }
+.sheet-head-bare { justify-content: flex-start; }
+body.layers-aside .sheet-backdrop { display: none !important; }
+/* 5.7.0: the details window as a candidate - the pick button takes the scheduling line's place */
+.iw-status.iw-pick { justify-content: center; font-weight: 700; border-color: var(--primary); background: color-mix(in srgb, var(--primary) 14%, var(--surface)); min-height: 44px; }
+.iw-status.iw-pick[data-active="true"] { background: var(--surface); border-color: var(--outline); color: var(--on-surface-variant); }
+.iw-status.iw-pick:disabled { opacity: 1; background: var(--surface); border-color: var(--outline); color: var(--on-surface); font-weight: 600; } /* 5.9.0: read only - the status of a past visit */
+.iw-acts > .note-btn { flex: 1 1 0; height: 40px; font-size: var(--fs-title-medium); align-self: center; } /* phone-round-1-fixes P2 (11.14.0): the row's tiles are 52 px (an icon over its word); the note pill, an icon alone, is 40 px - centered on the row's line, not at its top */
+.iw .disc-big { width: 100%; max-height: 220px; object-fit: cover; border-radius: var(--r-tile); margin: 4px 0; }
+.iw .iw-desc.open { -webkit-line-clamp: unset; max-height: none; display: block; }
+/* 5.6.0: menu screens as a full screen over the app (covers the top and bottom bars) */
+.screen-layer { position: fixed; inset: 0; z-index: 2900; background: var(--surface); overflow-y: auto; padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
+.screen-layer > .screen-head { position: sticky; top: 0; z-index: 6; max-width: 780px; margin: 0 auto; padding: calc(10px + var(--safe-top)) 16px 10px; background: var(--surface); border-bottom: 1px solid var(--outline-variant); display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: var(--fs-title-medium); }
+.screen-layer > .screen-head > b { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.screen-layer > .screen-main { max-width: 780px; margin: 0 auto; padding: 8px 14px 0; display: block; }
+.screen-h-dup { display: none; }
+.screen-layer > .scroll-top-btn { bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
+.screen-layer { --header-h: calc(49px + var(--safe-top)); } /* sticky bars inside a screen (draft, closing steps) sit under its head */
+body.screen-on .map-fs { z-index: 2950; }
+@media (min-width: 1024px) { .screen-layer > .screen-head, .screen-layer > .screen-main { max-width: 1000px; } }
+/* 5.5.0: one frame for every window (imvwfw0d4 decision 7) - a handle on bottom sheets, full-screen windows, the unsaved question */
+.sheet-head { position: sticky; }
+.sheet-handle { position: absolute; top: 4px; left: 50%; transform: translateX(-50%); width: 40px; height: 4px; border-radius: var(--r-pill); background: var(--outline-variant); pointer-events: none; }
+.sheet > .sheet-handle { position: relative; top: 0; left: auto; transform: none; margin: -8px auto 0; }
+.sheet-backdrop.full { align-items: stretch; background: var(--surface); }
+.sheet.full { max-width: 780px; height: 100%; max-height: none; border-radius: 0; padding-top: 16px; }
+.sheet-backdrop.full.stacked { background: rgba(0,0,0,.28); }
+/* 10.1.0 (design-1): the one dialog - in the middle over a scrim (unsaved changes) */
+.dlg-scrim { position: fixed; inset: 0; z-index: 20; background: var(--scrim); display: flex; align-items: center; justify-content: center; padding: var(--sp-4); }
+.dlg { width: 100%; max-width: 20rem; background: var(--surface-container); color: var(--on-surface); border-radius: var(--r-sheet); padding: var(--sp-5) var(--sp-5) var(--sp-3); box-shadow: var(--elev-float); text-align: center; }
+.dlg .dlg-ic { display: block; margin: 0 auto var(--sp-2); color: var(--on-surface-variant); }
+.dlg-t { margin: 0 0 var(--sp-2); font: 500 var(--fs-title-large) 'Rubik', system-ui, sans-serif; }
+.dlg-p { margin: 0 0 var(--sp-4); font-size: var(--fs-title-small); line-height: 1.5; color: var(--on-surface-variant); }
+.dlg-acts { display: flex; flex-direction: column; gap: 6px; }
+.dlg-b { min-height: var(--h-btn); border-radius: var(--r-pill); padding: 0 var(--sp-4); font: 500 var(--fs-title-small) 'Rubik', system-ui, sans-serif; cursor: pointer; white-space: nowrap; border: 1px solid transparent; background: none; color: var(--primary); }
+.dlg-fill { background: var(--primary); color: var(--on-primary); }
+.dlg-danger { border-color: var(--error); color: var(--error); }
+body > .sure-q { z-index: 3200; } /* 10.13.0 (gap 47): a confirmation sits over every layer (windows 3000, the tour above them) */
+@media (min-width: 1024px) { .sheet-backdrop.full { align-items: center; background: rgba(0,0,0,.45); } .sheet.full { max-width: 760px; height: 92vh; border-radius: var(--r-sheet); } }
+/* final-review 7: the text of a window starts at the body size - a bare paragraph or a row with no size of its own no longer falls to the
+   page's 16 px; titles, fields and the details window's description (the card at a larger size) name their own size */
+.sheet { font-size: var(--fs-body); }
+.sheet { background: var(--surface-container); color: var(--on-surface); width: 100%; max-width: 460px; border-radius: var(--r-sheet) var(--r-sheet) 0 0; padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 10px; max-height: 88vh; overflow-y: auto; }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: var(--fs-title-medium); }
+.sheet-x { border: none; background: none; font-size: var(--fs-title-medium); color: var(--on-surface-variant); cursor: pointer; width: 36px; height: 36px; }
+
+.sh-days { }
+.sh-days button { min-height: var(--h-chip); padding: 4px 12px; border-radius: var(--r-pill); border: 1px solid var(--outline); background: transparent; color: var(--on-surface); font-family: 'Rubik', system-ui, sans-serif; cursor: pointer; }
+.sh-days button[aria-pressed="true"] { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+.sh-times { display: flex; gap: 10px; }
+.sh-field { display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-body-small); color: var(--on-surface-variant); font-weight: 600; flex: 1; }
+.sh-field input { padding: 9px 10px; border-radius: var(--r-chip); border: 1px solid var(--outline); background: var(--surface); color: var(--on-surface); font-family: 'Rubik', system-ui, sans-serif; font-size: var(--fs-title-medium); }
+.sh-hint { font-size: var(--fs-label); color: var(--on-surface-variant); }
+.sh-error { font-size: var(--fs-body-small); color: var(--error); font-weight: 700; }
+.sheet-actions { }
+.sh-secondary { border: 1px solid var(--outline); background: transparent; color: var(--error); border-radius: var(--r-pill); padding: 8px 12px; font-family: 'Rubik', system-ui, sans-serif; font-weight: 600; cursor: pointer; }
+.itin-grip { font-size: var(--fs-title-medium); flex: none; width: 30px; height: 36px; margin-inline-start: -6px; display: grid; place-items: center; color: var(--on-surface-variant);
+  }
+.hotel-marker { position: relative; width: 34px; height: 34px; border-radius: var(--r-chip); background: var(--hotel-pin); border: 2px solid var(--hotel-ring); color: var(--hotel-ring);
+  box-shadow: var(--elev-1); display: flex; align-items: center; justify-content: center; } /* 10.10.0 (design-maps, gap 61): the bed as a line icon, colors from tokens */
+.hotel-marker > .msi { font-size: var(--pin-ic-m); }
+.hotel-marker b { position: absolute; top: 100%; margin-top: 3px; left: 50%; transform: translateX(-50%); background: var(--hotel-ring); color: var(--on-hotel-ring);
+  font-family: 'Rubik', system-ui, sans-serif; font-size: var(--pin-num-s); font-weight: 700; padding: 0 6px; border-radius: var(--r-pill); white-space: nowrap; }
+.self-loc-dot { /* 4.12.2: round, blue, with a halo - unlike the teardrop place pins; no label */
+  width: 20px; height: 20px; border-radius: 50%; background: #1E88E5; border: 3px solid #fff;
+  box-shadow: 0 0 0 7px color-mix(in srgb, var(--self-loc) 22%, transparent), var(--elev-1); position: relative;
+}
+.self-loc-pulse {
+  position: absolute; inset: -10px; border-radius: 50%; background: color-mix(in srgb, var(--self-loc) 35%, transparent);
+  animation: selfPulse 1.8s ease-out infinite;
+}
+@keyframes selfPulse { 0% { transform: scale(0.4); opacity: 1; } 100% { transform: scale(1.6); opacity: 0; } }
+.locate-me-btn {
+  position: absolute; bottom: 24px; right: 10px; z-index: 500; width: 40px; height: 40px; border-radius: var(--r-tile); /* 4.13.0: right side - the ＋ is on the left */
+  border: none; background: var(--surface-container); color: var(--on-surface); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;
+  box-shadow: var(--elev-2);
+}
+
+
+/* 4.40.3: a checkbox row keeps its box beside the first line of the text, however long the text is (flex-wrap pushed long text under the box) */
+.bk-part:has(> input:first-child) { display: block; position: relative; padding-inline-start: 26px; line-height: 1.45; }
+.bk-part:has(> input:first-child) > input:first-child { position: absolute; inset-inline-start: 0; top: .15em; margin: 0; }
+.bk-part:has(> input:first-child) > small { margin-inline-start: 4px; }
+
+.menu-undo { font-weight: 600; border-bottom: 1px solid var(--outline-variant); border-radius: var(--r-chip) var(--r-chip) 0 0; overflow-wrap: anywhere; }
+.log-time { font-variant-numeric: tabular-nums; color: var(--on-surface-variant); direction: ltr; }
+@media (max-width: 340px) { .add-to-day-row button { font-size: var(--fs-micro); } }
+.add-to-day-row button[data-in="true"] { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+
+.export-box textarea { width: 100%; min-height: 80px; border: 1px solid var(--outline); border-radius: var(--r-chip); padding: 8px; font-family: monospace; font-size: var(--fs-label-small); background: var(--surface-container); color: var(--on-surface); resize: vertical; }
+.export-actions { margin-top: 8px; }
+/* 3.1.0: dialogs - sticky title row, background locked */
+.sheet-head { position: sticky; top: -16px; z-index: 6; margin: -16px -16px 0; padding: 12px 16px 10px; background: var(--surface-container); border-bottom: 1px solid var(--outline-variant); }
+.sheet-head > b { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sc-again { border-style: dashed !important; }
+
+/* 5.2.0: the expanded window - one look for every item */
+.iw-status { display: flex; align-items: center; gap: var(--icon-gap); width: 100%; text-align: start; padding: 8px 12px; margin: 6px 0 4px; border: none; border-radius: var(--r-tile); background: var(--secondary-container); color: var(--on-secondary-container); font: 500 var(--fs-body) 'Rubik', system-ui, sans-serif; box-sizing: border-box; }
+.iw-status > span:not(.msi) { flex: 1; min-width: 0; } .iw-status .iw-go { flex: none; }
+button.iw-status { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.iw-status.today { background: var(--today-container); color: var(--on-today); }
+.iw-small { margin: 0 0 4px; } /* 10.2.0 (design-2): the expanded card's tags row (.cd-tags) */
+.iw-acts { display: flex; gap: 4px; margin: 4px -8px 6px; padding-bottom: 6px; border-bottom: 1px solid var(--outline-variant); }
+.iw-act { flex: 1 1 0; min-width: 0; height: 52px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 0; border: none; border-radius: var(--r-tile); background: none; color: var(--on-surface-variant); font: 400 var(--fs-label-small) 'Rubik', system-ui, sans-serif; text-decoration: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.iw-act > span:not(.msi) { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .iw-act:active { background: var(--surface-container-high); }
+.iw-act:disabled { opacity: .4; }
+.iw .rate-row { margin: 0 0 8px; }
+.iw-sec { border-top: 1px solid var(--outline-variant); padding: 10px 0 8px; } .iw-acts + .iw-sec, .iw-acts + .rate-row + .iw-sec { border-top: none; }
+.iw-sec h4 { margin: 0 0 6px; font-size: var(--fs-label); font-weight: 500; color: var(--on-surface-variant); }
+.iw-wrap { overflow-wrap: anywhere; } /* 11.42.0: a booking or price note in the window - whole, wrapped (a long word too) */
+.iw-row { display: flex; align-items: center; gap: 10px; margin: 0; padding: 5px 0; font-size: var(--fs-body); } .iw-row > .msi { flex: none; color: var(--on-surface-variant); } .iw-row > span:not(.msi) { flex: 1; min-width: 0; }
+.iw-tbtn { flex: none; border: none; background: none; padding: 4px; color: var(--primary); font: 500 var(--fs-body) 'Rubik', system-ui, sans-serif; cursor: pointer; }
+.iw-head { gap: 8px; justify-content: flex-start; border-bottom: none; } .iw-foreign { margin: 0 0 6px; padding-inline-start: 42px; color: var(--on-surface-variant); font-size: var(--fs-body-small); overflow-wrap: anywhere; } /* kit-fixes (item 4): the local name under the name, as far in as the name */ .iw-head > b { font-weight: 500; } .iw-head > .cd-lead { width: 34px; height: 34px; } .iw-head > .cd-lead .msi { font-size: var(--icon-20); } .iw-head > .tl-vis { margin: -4px 0 -6px; }
+.iw-desc { font-size: var(--fs-title-medium); display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; margin: 0 0 4px; }
+.iw-desc.open { display: block; -webkit-line-clamp: unset; }
+.iw-more { border: 0; background: none; padding: 0; color: var(--primary); font: inherit; font-size: var(--fs-body); cursor: pointer; }
+.iw-sec .chip { margin-top: 4px; }
+.iw-map { z-index: 3500; }
+.iw-map .iw-map-title { inset-inline-start: 58px; }
+.iw-map-nav { position: absolute; top: calc(var(--safe-top) + 102px); right: 10px; z-index: 1060; width: 38px; height: 38px; border-radius: var(--r-tile); background: var(--surface-container); color: var(--primary); display: inline-flex; align-items: center; justify-content: center; box-shadow: var(--elev-float); text-decoration: none; }
+.iw-map-title { position: absolute; top: calc(var(--safe-top) + 10px); inset-inline-start: 12px; z-index: 1000; max-width: 68%; padding: 6px 10px; border-radius: var(--r-chip); background: var(--surface-container); color: var(--on-surface); font-weight: 600; box-shadow: var(--elev-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.sheet-save-bar { position: sticky; bottom: 0; z-index: 6; border-right: none; border-bottom: none; border-left: none; box-shadow: none; align-items: center; } /* 4.12.1: floating buttons, not a bar; 11.4.0: the declarations the 10.4.0 footer (window-parts.css) sets again were dropped here - one part sets each */
+.sheet-save-bar > * { pointer-events: auto; }
+.sheet-save-bar .sh-error { flex: 1 1 100%; margin: 0; background: var(--surface-container); border-radius: var(--r-chip); padding: 4px 8px; }
+.pe-map { position: relative; }
+.map-gesture { position: absolute; inset: auto 6px 6px auto; z-index: 1000; background: rgba(28,43,51,.82); color: #fff; font: 600 var(--fs-micro) 'Rubik', system-ui, sans-serif; padding: 3px 8px; border-radius: var(--r-pill); pointer-events: none; }
+.map-gesture.big { inset: 0; display: flex; align-items: center; justify-content: center; border-radius: var(--r-tile); font-size: var(--fs-title-small); background: rgba(28,43,51,.6); }
+.fbar { display: flex; gap: 6px; margin-top: 8px; flex-wrap: nowrap; } /* 4.46.4: the pickers give way (…), ⭐ and 📅 stay in the row */
+.fpick { flex: 1 1 0; min-width: 0; display: flex; justify-content: space-between; align-items: center; gap: var(--icon-gap); padding: 0 6px 0 10px; height: var(--h-chip); box-sizing: border-box; border-radius: var(--r-chip); border: 1px solid var(--outline-variant); background: var(--surface-container); color: var(--on-surface); font-family: 'Rubik', system-ui, sans-serif; font-size: var(--fs-body-small); cursor: pointer; }
+.fpick span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fpick[data-active="true"] { background: var(--secondary-container); border-color: transparent; color: var(--on-secondary-container); }
+.fp-caret { color: var(--on-surface-variant); flex: none; }
+
+.day-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(4rem, 1fr)); gap: 6px; }
+.day-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; border-radius: var(--r-chip); border: 1px solid var(--outline); background: var(--surface); color: var(--on-surface); font-family: inherit; cursor: pointer; }
+.day-cell small { font-size: var(--fs-micro); color: var(--on-surface-variant); }
+.day-cell[data-active="true"] { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+.day-cell[data-active="true"] small { color: var(--on-primary); } /* final review 28b */
+.day-cell[data-anchor="true"] { box-shadow: 0 0 0 2px var(--primary); }
+.map-legend .leg-dash { background: none !important; border-top: 2px dashed var(--muted); border-radius: 0 !important; height: 0 !important; }
+
+
+ /* 4.46.4: one row also at 360px - the 🗓️ button gives way (…), פרטים › stays */
+
+
+
+
+
+ /* 4.50.0: an icon in the map card, the days in its title */
+
+.sc-row { display: flex; gap: 8px; } /* 11.4.0: its look is set once, in window-parts.css */
+
+
+
+
+
+
+
+
+
+
+
+
+
+.tour-box { position: fixed; left: var(--sp-side); right: var(--sp-side); bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 3500; max-width: 460px; margin: 0 auto; background: var(--surface-container); color: var(--on-surface); border: none; border-radius: var(--r-sheet); padding: var(--sp-4); box-shadow: var(--elev-float); } /* 10.1.0 (design-1): the tour card */
+.tour-box[data-pos="top"] { bottom: auto; top: calc(12px + var(--safe-top)); }
+.tour-box p { margin: 6px 0; font-size: var(--fs-title-small); line-height: 1.5; color: var(--on-surface-variant); }
+.tour-head { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-title-medium); } .tour-head b { font-weight: 500; } .tour-ic { color: var(--primary); }
+.tour-acts { display: flex; align-items: center; gap: var(--sp-1); margin-top: 10px; }
+/* final-review-fixes (family B, 9e): when the dots and the buttons do not fit one line (8 steps, large text) the dots take a line of their own above
+   and the buttons stay whole inside the card - the row is laid from its end (row-reverse) and wraps upward, the visual order kept by order */
+.tour-acts { flex-direction: row-reverse; flex-wrap: wrap-reverse; row-gap: var(--sp-2); } .tour-acts > .tour-next { order: 1; } .tour-acts > #tourBack { order: 2; } .tour-acts > #tourSkip { order: 3; } .tour-acts > .tour-dots { order: 4; }
+.tour-dots { display: flex; gap: 5px; margin-inline-end: auto; } .tour-dots i { display: block; width: 7px; height: 7px; border-radius: var(--r-pill); background: var(--outline); } .tour-dots i.on { width: 18px; background: var(--primary); }
+.tour-b { min-height: var(--h-btn); padding: 0 var(--sp-3); border: none; border-radius: var(--r-pill); background: none; color: var(--primary); font: 500 var(--fs-title-small) 'Rubik', system-ui, sans-serif; cursor: pointer; white-space: nowrap; }
+.tour-next { background: var(--primary); color: var(--on-primary); padding: 0 var(--sp-4); }
+.tour-hl { outline: 3px solid var(--primary) !important; outline-offset: 3px; border-radius: var(--r-tile); }
+/* 11.37.0 (phone-round-4-fixes P6): a target at a screen edge - the same ring drawn inside, on top of its children, so it is always whole */
+.tour-hl.tour-hl-in { outline: none !important; }
+.tour-hl-in::after { content: ''; position: absolute; inset: 0; border: 3px solid var(--primary); border-radius: var(--r-tile); pointer-events: none; z-index: 1; }
+.tour-hl-rel { position: relative; }
+
+
+
+
+.sheet > * { flex-shrink: 0; } /* 4.46.2: the dialog scrolls; nothing inside it is squeezed (a map box shrank to its credits line) */
+.plan-side { display: none; }
+/* 4.47.5: required fields */
+.req-mark { color: var(--error); font-weight: 700; }
+/* 8.0.0: the files - the doors, the frame of a file window, the Claude part, the backup screen */
+
+
+ 
+  /* 9.6.0 (12ו): the ⓘ beside the ✳ button */
+.imp-door { }
+.pw-link:has(> .lk-tx), .link-btn:has(> .lk-tx) { text-decoration: none; } .lk-tx { text-decoration: underline; } /* phone-round-2b-fixes P6 (G56): a text link that starts with an icon underlines its words' span only - the buttons are flex boxes, and an underline on a flex box reaches every child, the icon too */
+.pw-link, .link-btn { border: none; background: none; padding: 2px 0; color: var(--primary); text-decoration: underline; font: inherit; font-size: var(--fs-body-small); cursor: pointer; align-self: center; }
+.pw-intro { margin-bottom: 6px; } .pw-body { display: flex; flex-direction: column; gap: 10px; } .pw-conf { margin: 0; }
+.cl-part { border-top: 1px solid var(--outline-variant); margin-top: 10px; padding-top: 8px; font-size: var(--fs-body); } .cl-part[hidden] { display: none; } .cl-part p { margin: 2px 0; } .cl-part .claude-steps { margin: 4px 0; padding-inline-start: 20px; }
+.bk-status .bk-now { width: 100%; justify-content: center; }
+
+/* 10.7.0 (task feedback): the report window - the photo row, "מה מצורף", the honeypot field off screen */
+.rep-ph { display: flex; align-items: center; gap: var(--sp-2); min-height: 38px; margin-top: 4px; }
+.ph-img.rep-thumb { width: 72px; flex: 0 0 72px; }
+.rep-what { margin: 6px 0 0; display: grid; gap: 4px; font-size: var(--fs-body-small); }
+.rep-what > div { display: flex; gap: var(--sp-2); min-width: 0; }
+.rep-what dt { flex: 0 0 6.5rem; color: var(--on-surface-variant); }
+.rep-what dd { margin: 0; flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; } .rep-what bdi { max-width: 100%; }
+.toast > span.toast-t { flex: none; } .toast-ic { margin-inline-end: auto; flex: none; } /* 10.7.1: the text, its icon after it, the action at the end */
+.sheet .fm-sec.has-ic > summary { grid-template-columns: auto 1fr; column-gap: 10px; } .fm-secic { grid-row: span 2; color: var(--on-surface-variant); } .fm-sec.has-ic .fm-sum { grid-column: 2; }
+.rep-phl { color: var(--on-surface-variant); font-size: var(--fs-label); }
+.ph-btn.ph-word { display: inline-flex; gap: var(--icon-gap); padding: 0 12px; font-size: var(--fs-body-small); color: var(--primary); background: transparent; border-radius: var(--r-chip); white-space: nowrap; }
+.rep-what dt { font-weight: 600; } .rep-what dd > small { color: var(--on-surface-variant); }
+.fm-trap { position: absolute !important; inset-inline-start: -9999px; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none; }
+.hc-ph { border: 1px dashed var(--outline-variant); border-radius: var(--r-tile); padding: 10px 8px; justify-content: center; align-items: center; margin-bottom: 8px; }
+.hc-ph a { font: 600 var(--fs-body-small) 'Rubik', system-ui, sans-serif; color: var(--primary); cursor: pointer; text-decoration: none; }
+
+.ap-tabs { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; }
+.ap-tabs button { display: inline-flex; align-items: center; gap: var(--icon-gap-sm); border: 1px solid var(--outline); background: var(--surface); color: var(--on-surface); border-radius: var(--r-chip); padding: 5px 12px 5px 10px; font: 500 var(--fs-body-small) 'Rubik', system-ui, sans-serif; cursor: pointer; white-space: nowrap; }
+.ap-tabs button[aria-pressed="true"] { background: var(--secondary-container); border-color: transparent; color: var(--on-secondary-container); }
+.ap-count { font-size: var(--fs-body-small); color: var(--on-surface-variant); }
+
+
+
+
+.ap-add { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border: none; background: var(--primary); color: var(--on-primary); border-radius: 50%; padding: 0; cursor: pointer; } /* 10.5.0 (design-4 part 2): one round button - ＋, or the copy icon for "once more" */
+.ap-in { flex: none; display: inline-flex; align-items: center; gap: var(--icon-gap-sm); padding: 3px 10px 3px 8px; border-radius: var(--r-chip); background: var(--secondary-container); color: var(--on-secondary-container); font-size: var(--fs-label); font-weight: 500; }
+
+/* 4.22.0: the drop question */
+
+.dt-text { margin: 4px 0 12px; line-height: 1.5; font-size: var(--fs-body-small); color: var(--on-surface-variant); }
+.upd-rows { display: grid; gap: 6px; margin: 8px 0 12px; }
+
+/* 4.37.1: the ✕ sits on the label's line, so the date field keeps its full width (a phone's date field can't shrink) */
+.sh-times > .sh-field { min-width: 0; }
+/* final-review-fixes (family B, 9b): a date or time field is never narrower than its digits (10 digits and signs or "07:30 AM", the picker's icon, the clear ✕ when
+   it shows, the padding - in rem, so it follows the text size and holds either format); when a pair does not fit side by side each takes a full row */
+.sh-times { flex-wrap: wrap; } .sh-times > .sh-field:has(input[type=date]) { min-width: calc(7.4rem + 26px); } .sh-times > .sh-field:has(input[type=time]) { min-width: calc(6rem + 30px); }
+.sh-times > .sh-field:has(input[type=date] ~ .date-clr:not([hidden])) { min-width: calc(7.4rem + 56px); } .sh-times > .sh-field:has(input[type=time] ~ .date-clr:not([hidden])) { min-width: calc(6rem + 60px); } .sh-three > .sh-field:first-child { flex: 1.4 1 0; } .sh-three > .sh-field:last-child { flex: .8 1 0; }
+.sheet-save-bar [hidden] { display: none !important; }
+.date-clr { flex: 0 0 auto; padding: 2px 8px; border-radius: var(--r-chip); border: 1px solid var(--outline); background: var(--surface); color: var(--on-surface-variant); font-size: var(--fs-label-small); font-weight: 500; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.date-clr[hidden] { display: none; }
+
+.sheet-save-bar #teShift { width: 100%; margin: 0 0 6px; text-align: start; }
+.sheet-save-bar #teShift.te-bal { font-size: var(--fs-label); padding: 10px 12px; } /* 11.19.0 (trip-travel-days, Q4): the one-line balance stays within two lines at 320 with +30% text */
+.leg-way.off { opacity: .55; cursor: default; }
+/* 10.5.0 (design-4 part 2): the leg mode's choice cards - icon, name and details, minutes and distance at the end
+   (final-review-fixes Q9: one rule per selector, here - an older rule for the same cards in screens.css won by its later place from 10.15.1 and undid this look) */
+.leg-ways { display: flex; flex-direction: column; gap: 6px; margin: 6px 0 10px; }
+.leg-way { display: flex; flex-direction: row; align-items: center; gap: 12px; text-align: start; border: 1px solid var(--outline-variant); border-radius: var(--r-card); background: var(--surface); color: var(--on-surface); padding: 10px 12px; font: 400 var(--fs-body) 'Rubik', system-ui, sans-serif; cursor: pointer; }
+.leg-way small { color: var(--on-surface-variant); font-size: var(--fs-label-small); line-height: 1.4; }
+.leg-way .lw-ic { font-size: var(--icon-24); color: var(--on-surface-variant); flex: none; }
+.leg-way .lw-t { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.leg-way .lw-t b { font-weight: 500; font-size: var(--fs-title-small); }
+.leg-way .lw-v { flex: none; font-weight: 500; white-space: nowrap; }
+.leg-way.on { border: 1px solid transparent; background: var(--secondary-container); color: var(--on-secondary-container); }
+.leg-way.on .lw-ic, .leg-way.on small { color: var(--on-secondary-container); }
+.sheet-save-bar a.sh-secondary { text-decoration: none; } .lw-auto { margin: 0 0 8px; } .lw-auto .seg { display: inline-flex; }
+
+
+/* 9.3.0 (ס12-2): the destination keeps its whole name; without room ＋/−, the dates and ✕ go to the next row (never squeezed) */
+.te-lrow > .te-dest { flex: 1 0 auto; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.te-end { display: inline-flex; align-items: center; gap: 6px; margin-inline-start: auto; } /* the dates and ✕ move together */
+.te-step { display: inline-flex; align-items: center; border: 1px solid var(--outline); border-radius: var(--r-chip); flex: 0 0 auto; }
+.te-step button { width: 32px; height: 32px; border: none; background: transparent; font-size: var(--fs-title-medium); color: var(--on-surface); cursor: pointer; border-radius: var(--r-chip); }
+.te-step button:disabled { opacity: .35; }
+.te-step b { min-width: 1.4rem; text-align: center; }
+.te-span { font-size: var(--fs-label-small); color: var(--on-surface-variant); white-space: nowrap; font-weight: 400; }
+.te-pass { font-size: var(--fs-label-small); color: var(--on-surface-variant); border-top: 1px dashed var(--outline-variant); padding: 3px 4px 0; font-weight: 400; }
+/* 10.5.0 (design-4 part 2, look.md "Editors"): each segment an outlined row - the destination ▾, the stepper (＋ on the right), its dates, ✕;
+   the transfer between them a small line with the mode icon; the check line green; "＋ יעד נוסף" outlined */
+.te-lrow { display: flex; flex-wrap: wrap; align-items: center; border: 1px solid var(--outline-variant); border-radius: var(--r-tile); padding: 4px 6px; gap: 4px; margin: 4px 0; }
+.te-lrow > .te-dest { border: none; background: none; padding-inline: 2px; font-weight: 500; }
+.te-step { border-color: var(--outline-variant); border-radius: var(--r-pill); }
+.te-step button { width: 30px; color: var(--primary); }
+.te-x { width: 28px; height: 28px; min-width: 28px; border: none; border-radius: 50%; background: var(--surface-container-high); color: var(--on-surface-variant); display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+.te-pass { display: flex; align-items: center; gap: var(--icon-gap); justify-content: flex-end; border-top: none; padding: 0 4px; }
+.te-len-h { display: flex; align-items: center; gap: var(--icon-gap); margin-top: 6px; } .te-len-h.ok { color: var(--visited); }
+.te-add { width: auto; min-height: 32px; /* text-size: its touch size kept at a small text */ display: inline-flex; align-items: center; gap: var(--icon-gap); margin-inline-start: auto; border: 1px solid var(--outline); border-radius: var(--r-pill); color: var(--primary); padding: 6px 14px; }
+#teRows { display: flex; flex-direction: column; } #teRows > .te-add { align-self: flex-end; }
+/* 7.2.0: the form building blocks */
+.fm-lbl { display: inline; } .fm-note { font-weight: 400; }
+.fm-err { color: var(--error); font-weight: 400; font-size: var(--fs-label); display: flex; align-items: center; gap: var(--icon-gap); } .fm-err[hidden] { display: none; }
+.fm-bad input, .fm-bad textarea, .fm-bad .fm-pickbtn { border-color: var(--error) !important; box-shadow: inset 0 0 0 1px var(--error); } /* 10.1.0 (design-1): the field outlined in error red */
+.fm-bad .chips-row { outline: 2px solid var(--error); outline-offset: 1px; border-radius: var(--r-chip); } .fm-bad > .fm-lbl { color: var(--error); }
+.fm-errline { flex: 1 1 100%; } .fm-errline[hidden], .fm-f[hidden], .fm-togrow[hidden] { display: none; }
+.fm-toerr { border: none; background: none; color: inherit; font: inherit; padding: 0; cursor: pointer; text-align: start; }
+.fm-chips { flex-wrap: wrap; overflow: visible; margin-top: 2px; } .fm-chips.fm-measure { flex-wrap: nowrap; overflow: hidden; } .fm-chips[hidden], .fm-pickbtn[hidden] { display: none; }
+.fm-pickbtn { align-self: stretch; display: flex; align-items: center; gap: var(--icon-gap); min-height: 40px; padding: 6px 12px; border-radius: var(--r-chip); border: 1px solid var(--outline); background: var(--surface); color: var(--on-surface); font: 500 var(--fs-title-small) 'Rubik', system-ui, sans-serif; text-align: start; cursor: pointer; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.fm-pickbtn .dd-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.fm-togrow { display: flex; flex-direction: column; margin: 4px 0; }
+.fm-tog { display: flex; align-items: center; gap: 10px; border: none; background: none; padding: 4px 0; font: 500 var(--fs-title-small) 'Rubik', system-ui, sans-serif; color: var(--on-surface); cursor: pointer; text-align: start; -webkit-tap-highlight-color: transparent; }
+/* 11.34.0 (phone-round-3-fixes P8, G77): a tap on the ⓘ inside a switch row shows only the ⓘ's press - the row (the switch's button) never
+   flashes; the switch shows its own press on the rest of the row */
+.fm-tog:active:not(:has(.tip-i:active)) .fm-sw { opacity: .8; } .fm-tog .tip-i:active { background: var(--surface-container-high); border-radius: var(--r-pill); }
+.fm-sw { flex: none; position: relative; transition: background var(--motion-fast) var(--ease); }
+.fm-sw::after { content: ''; position: absolute; border-radius: 50%; }
+.fm-tog[aria-checked="true"] .fm-sw { background: var(--primary); }
+.fm-sec > summary { display: flex; align-items: baseline; gap: 2px; min-width: 0; white-space: nowrap; overflow: hidden; }
+.fm-sect { flex: none; font-weight: 600; } .fm-sum { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 400; }
+.fm-sec-in { display: flex; flex-direction: column; gap: 10px; padding: 4px 0 6px; }
+.fm-choice-list { display: flex; flex-direction: column; gap: 6px; }
+.fm-ch { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 42px; padding: 8px 12px; border: 1px solid var(--outline); border-radius: var(--r-chip); background: var(--surface); color: var(--on-surface); font: 500 var(--fs-title-small) 'Rubik', system-ui, sans-serif; text-align: start; cursor: pointer; }
+.fm-ch.on { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary); } .fm-ch small { margin-inline-start: auto; color: var(--on-surface-variant); font-weight: 400; }
+.fm-ch .dd-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.fm-ch-group { font-size: var(--fs-label); color: var(--on-surface-variant); font-weight: 600; margin: 8px 2px 0; }
+.fm-cnt b { min-width: 1.4rem; text-align: center; }
+.fm-chks { display: flex; flex-direction: column; gap: 2px; }
+.fm-chk { display: flex; align-items: flex-start; gap: 10px; border: none; background: none; padding: 6px 0; font: 500 var(--fs-title-small) 'Rubik', system-ui, sans-serif; color: var(--on-surface); cursor: pointer; text-align: start; line-height: 1.4; }
+.fm-chk[aria-disabled="true"] { cursor: default; } .fm-chk small { color: var(--on-surface-variant); font-weight: 400; } .fm-chkl { min-width: 0; }
+.fm-box { flex: none; width: 20px; height: 20px; margin-top: 1px; border-radius: var(--r-xs); border: 2px solid var(--on-surface-variant); position: relative; }
+.fm-chk[aria-checked="true"] .fm-box { background: var(--primary); border-color: var(--primary); } .fm-chk[aria-checked="true"] .fm-box::after { content: ''; position: absolute; inset-inline-start: 5px; top: 1px; width: 5px; height: 10px; border: solid var(--surface); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.sheet .sh-field textarea { flex: none; }
+.cl-part .cl-off { font-weight: 600; margin-top: 4px; }
+/* 10.5.0 (design-4 part 2, look.md "Files and Claude"): "what Claude will do" - a soft card, Claude's icon, the explanation, the steps as a small icon line */
+.cl-part { border-top: none; margin-top: 12px; padding: 12px 14px 6px; border-radius: var(--r-card); background: var(--surface-container); }
+.cl-will > b { display: flex; align-items: center; gap: var(--icon-gap); margin-bottom: 4px; }
+.cl-how > summary.cl-steps { display: flex; flex-wrap: wrap; align-items: center; gap: var(--icon-gap); color: var(--on-surface-variant); font-size: var(--fs-label); list-style: none; }
+.cl-how > summary.cl-steps::-webkit-details-marker { display: none; }
+.cl-lock { display: flex; align-items: center; gap: 8px; margin: 8px 0; padding: 8px 12px; border-radius: var(--r-tile); background: var(--secondary-container); color: var(--on-secondary-container); font-size: var(--fs-body); }
+.cl-lock .msi { flex: none; }
+.fm-chk.fm-dim .fm-chkl { opacity: var(--fade); } .fm-chk.fm-dim .fm-box { opacity: var(--fade-strong); }
+.fm-warnline { color: var(--on-key); }
+.tc-field { margin: 8px 0 12px; } .tc-l { display: block; font-size: var(--fs-label); color: var(--on-surface-variant); font-weight: 500; margin-bottom: 4px; }
+.two-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; } .two-cards.tc-3 { grid-template-columns: repeat(3, 1fr); } /* 10.12.0: the drop-time window's three cards */
+.tc-card { display: flex; flex-direction: column; gap: 2px; text-align: start; padding: 8px 12px; border: 1px solid var(--outline-variant); border-radius: var(--r-tile); background: var(--surface-container); color: var(--on-surface); font: 400 var(--fs-body) 'Rubik', system-ui, sans-serif; min-width: 0; overflow-wrap: anywhere; }
+button.tc-card { cursor: pointer; }
+.tc-card small { display: flex; align-items: center; gap: var(--icon-gap); color: var(--on-surface-variant); font-size: var(--fs-label-small); }
+.tc-card.on { border: 2px solid var(--primary); background: color-mix(in srgb, var(--primary) 6%, var(--surface-container)); padding: 7px 11px; }
+.rr-card { border: 1px solid var(--outline-variant); border-radius: var(--r-card); padding: 10px 12px; margin: 6px 0; background: var(--surface-container); display: flex; flex-direction: column; gap: 2px; }
+.rr-card small { color: var(--on-surface-variant); } .rr-ans { display: flex; gap: var(--icon-gap); align-items: flex-start; }
+.svc-diag-link { font-weight: 600; } /* 9.6.0 (12ו, batch 14.5) */
+.cl-how summary { cursor: pointer; padding: 6px 0; min-height: 32px; } /* 9.6.0 (12ו): "איך" folds after the first file from Claude */
+.screen-over-sheet .sheet-backdrop { visibility: hidden; } /* 10 (ה14): a screen opened over a window - the window waits below */
+

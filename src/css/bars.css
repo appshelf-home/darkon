@@ -1,0 +1,100 @@
+header.top {
+  position: sticky; top: 0; z-index: 2000;
+  background: var(--surface);
+  padding: var(--safe-top) 0 0 0;
+}
+.top-inner { max-width: 780px; margin: 0 auto; padding: 8px 18px 8px; }
+.title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+h1.display { font-size: var(--fs-title-large); font-weight: 700; margin: 0; letter-spacing: -0.01em; white-space: nowrap; }
+.title-h { flex: 1 1 auto; min-width: 0; }
+.title-h { display: flex; }
+/* 4.42.0: the title is a chip that looks like a button - a new user sees at once that it opens the trips */
+.title-btn { display: inline-flex; align-items: center; gap: var(--icon-gap); max-width: 100%; min-width: 0; height: 36px; padding: 0 10px 0 12px; margin: 0;
+  border: none; border-radius: var(--r-pill); background: var(--surface-container-high); color: inherit; font: inherit; letter-spacing: inherit; cursor: pointer; text-align: start;
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+.title-btn:active { opacity: .65; }
+.title-ic { flex: 0 0 auto; line-height: 1; color: var(--on-surface-variant); display: inline-flex; }
+.title-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; font-size: var(--fs-title-medium); }
+.title-caret { font-family: 'Rubik', system-ui, sans-serif; font-size: var(--fs-label-small); color: var(--on-surface-variant); flex: 0 0 auto; }
+.title-btn .dates { flex: 0 0 auto; margin-inline-start: 0; }
+.title-btn .dates:empty, .title-btn[data-tight="1"] .dates { display: none; }
+.title-row, .bottom-nav, .lchips { -webkit-user-select: none; user-select: none; }
+.dates { font-size: var(--fs-label-small); color: var(--on-surface-variant); font-variant-numeric: tabular-nums; font-weight: 400; font-family: 'Rubik', system-ui, sans-serif; margin-inline-start: 4px; }
+
+.search-wrap { margin-top: 8px; position: relative; }
+.search-clear { position: absolute; left: 6px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border: none; border-radius: 50%;
+  background: transparent; color: var(--on-surface-variant); font-size: var(--fs-title-small); cursor: pointer; }
+.search-clear[hidden] { display: none; }
+#search {
+  width: 100%; padding: 9px 44px 9px 44px; border-radius: var(--r-tile);
+  border: 1px solid var(--outline); background: var(--surface-container); color: var(--on-surface);
+  font-family: inherit; font-size: var(--fs-title-small); outline: none;
+}
+#search:focus { border-color: var(--primary); }
+.search-wrap svg { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); opacity: 0.45; }
+
+/* 10.1.0 (design-1): banners under the top bar - tinted rows (icon, short text, one filled action); the new version always first (it lives in the top bar), then the draft */
+.banner { display: flex; align-items: center; gap: var(--sp-3); margin: var(--sp-2) 0 0; padding: 10px var(--sp-3); border-radius: var(--r-card); font-size: var(--fs-body); line-height: 1.4; }
+.banner > .msi { flex: 0 0 auto; }
+.banner .bn-t { flex: 1 1 auto; min-width: 0; } .banner .bn-t b { font-weight: 500; }
+.banner .bn-btn { flex: 0 0 auto; border: none; border-radius: var(--r-pill); padding: 0 var(--sp-4); min-height: var(--h-btn); font: 500 var(--fs-body) 'Rubik', system-ui, sans-serif; cursor: pointer; white-space: nowrap; }
+.bn-new { background: var(--secondary-container); color: var(--on-secondary-container); } .bn-new .bn-btn { background: var(--primary); color: var(--on-primary); }
+.bn-urgent { background: var(--error-container); color: var(--on-error-container); } .bn-urgent .bn-btn { background: var(--error); color: var(--on-error); }
+.bn-draft { background: var(--discover-container); color: var(--on-discover); } .bn-draft .bn-btn { background: var(--on-discover); color: var(--discover-container); }
+.upd-wrap { padding-top: 0; } .upd-wrap .banner { margin: 0; }
+body.screen-on .upd-wrap { position: fixed; top: 0; left: 0; right: 0; z-index: 3000; padding-top: calc(var(--sp-2) + var(--safe-top)); } /* over a menu screen, as before */
+.pe-loc-actions { }
+.pe-search { display: flex; gap: 6px; }
+/* 4.13.0: ＋ add a place, same corner on the points and the map */
+.add-fab { position: fixed; left: 16px; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); z-index: 2040; width: 56px; height: 56px; border-radius: var(--r-card); border: none; padding: 0; background: var(--secondary-container); color: var(--on-secondary-container); line-height: 1; box-shadow: var(--elev-float); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: bottom var(--motion) var(--ease); }
+.add-fab[hidden], body.map-card-open .add-fab, html.sheet-open .add-fab { display: none; }
+body.nav-hidden .add-fab { bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
+body.nav-hidden.has-add .scroll-top-btn { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
+.map-container [id$="-leaflet"] { position: relative; z-index: 0; } /* the map's own layers stay under the floating card */
+.map-float { position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 1100; background: var(--surface-container); color: var(--on-surface); border: 1px solid var(--outline-variant);
+  border-radius: var(--r-card); box-shadow: var(--elev-float); padding: 12px 12px 10px; overflow: hidden; }
+.map-float { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; } /* a swipe never turns into text selection or a text drag */
+.mf-grip { position: absolute; top: 4px; left: 50%; transform: translateX(-50%); width: 34px; height: 4px; border-radius: var(--r-pill); background: var(--outline-variant); }
+.mf-body { cursor: pointer; }
+
+
+
+
+
+
+
+
+/* 10.3.0 (design-3): the screens' head - navigation at the start; the draft as an entrance with a pinned bottom bar */
+.screen-layer > .screen-head { justify-content: flex-start !important; border-bottom: none !important; padding-inline: 8px 12px !important; }
+.screen-head > .screen-x { margin-inline-end: 2px; } .screen-tools { display: inline-flex; align-items: center; margin-inline-start: auto; } .screen-tools:empty { display: none; }
+.screen-head[data-tab="draft"] { background: var(--hero-top) !important; } .screen-layer:not(.scrolled) .screen-head[data-tab="draft"] > .screen-title, .screen-layer:not(.scrolled) .screen-head[data-tab="draft"] .dr-cl { visibility: hidden; }
+.dr-head { display: none; }
+.screen-layer #draftFilter { position: sticky; top: var(--sh-h, 60px); z-index: 5; margin: 0 -14px; padding: var(--sp-1) 14px 0; background: var(--surface); } /* 10.13.0 (design-screens, gap 48): the chips, the filter row and the selection stay under the collapsed bar */
+.screen-layer.scrolled #draftFilter { box-shadow: var(--elev-1); }
+.dr-hero { margin: -8px -14px 0; padding: 4px 18px 18px; background: linear-gradient(180deg, var(--hero-top), var(--surface)); }
+.dr-hero h2 { font-size: var(--fs-display); margin: 2px 0 4px; } .dr-hero p { margin: 0; color: var(--on-surface-variant); font-size: var(--fs-body-small); }
+.dr-src { display: flex; align-items: center; gap: var(--icon-gap); }
+/* 11.0.0 (Q21): the draft's "נסיעות" tile is a button - outlined. 11.5.0 (review of 11.3.0, Q3; picture draft-travels-tile): its number and
+   word sit exactly as in the other tiles (from the top, not centered by the button), and a downward chevron in the label's color is centered
+   under the word - it needs no width, so it never hides */
+.dr-tile.dr-tile-btn { border: 1px solid var(--outline); padding: 7px 3px; color: inherit; font: inherit; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
+.dr-tile-btn > .msi { color: var(--on-surface-variant); }
+.dr-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(54px, 1fr)); gap: 6px; margin-bottom: 8px; }
+.dr-tile { background: var(--surface); border-radius: var(--r-tile); padding: 8px 4px; text-align: center; min-width: 0; } .dr-tile b { display: block; font-size: var(--fs-display-small); } .dr-tile small { display: block; color: var(--on-surface-variant); font-size: var(--fs-label-small); line-height: 1.25; }
+.dr-line { margin: 6px 0; font-size: var(--fs-body-small); display: flex; align-items: center; gap: var(--icon-gap); flex-wrap: wrap; }
+.round-acts .claude-btn { background: transparent !important; border: 1px solid var(--on-claude) !important; color: var(--on-claude) !important; }
+.dr-dock { position: sticky; bottom: 0; z-index: 5; display: flex; align-items: center; gap: var(--sp-2); margin: 12px -14px 0; padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px)); background: var(--surface-nav); }
+.dr-dock .view-toggle { margin: 0; flex: 0 0 auto; } .dr-dock .view-toggle button { flex: 0 0 auto; }
+.dr-dock { container-type: inline-size; } @container (max-width: 20em) { .dr-dock .vt-l { display: none; } .dr-dock .draft-ok { padding-inline: 12px; } .dr-dock .draft-ok > .msi { display: none; } } /* 10.15.0 (design-review F8): a narrow or enlarged bar - the view's words go (icons with names), "אישור הכל · N" stays whole */
+.dr-dock .draft-ok { flex: 1 1 auto; min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: var(--icon-gap); white-space: nowrap; height: 40px; border-radius: var(--r-pill); margin: 0 !important; } /* 11.44.1 (price-level-note item 7): in the narrow bar (below) "אישור הכל · N" also drops its check icon and some padding, so it stays one whole line at 320 wide ("ענק") */
+.screen-layer:has(.dr-dock) { padding-bottom: 0; } .screen-layer:has(.dr-dock) > .scroll-top-btn { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+
+/* test-address (decisions 2026-11-16 · A test address through the repository, Q3): on the test address only (html.test-site, set by
+   startup.js from the host), a thin fixed band at the very top, "גרסת בדיקה <version>". Every layer's top is var(--safe-top), so the band
+   moves the top bar, the screens, the sheets and the full-screen maps down by its height and never covers their actions. Its height is in
+   rem: the text and the band grow together at a larger text size. */
+html.test-site { --safe-top: calc(env(safe-area-inset-top, 0px) + var(--test-band-h)); }
+.test-band { position: fixed; top: 0; left: 0; right: 0; z-index: 5000; box-sizing: border-box; height: var(--safe-top); padding-top: env(safe-area-inset-top, 0px);
+  display: flex; align-items: center; justify-content: center; background: #E65100; color: #FFFFFF; font-size: var(--fs-label-small); font-weight: 600; line-height: 1;
+  white-space: nowrap; overflow: hidden; pointer-events: none; user-select: none; -webkit-user-select: none; }
+html.test-site .sheet.full { padding-top: calc(16px + var(--test-band-h)); } /* a full-height window starts at the very top: its head goes under the band */

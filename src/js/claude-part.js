@@ -1,0 +1,10 @@
+// ---- one skeleton for every Claude window (ק17, ה11-ה17): what Claude will do (two lines), the window's own options, how
+// (three steps in one wording, with where the file lands), then send + 📋. The texts are in TX.claude by the goal.
+function claudePartHTML(goal, kind, offN) { const g0 = TX.claude[goal]; if (!g0) return ''; const g = { ...g0, ...(g0[kind] || g0.trip || {}) };
+  return `<div class="cl-part" data-goal="${goal}"><div class="cl-will"><b>${claudeMark()} מה ה-${AI} יעשה</b><p>${g.will[0]}</p><p>${g.will[1]}</p>${offN ? `<p class="cl-off">${TX.claude.offMap(offN)}</p>` : ''}<p class="sh-hint cl-wrong">${tipText('wrong.claude')}</p><p class="sh-hint cl-any">${TX.aiTested}</p></div>
+    <details class="cl-how"${hintSeen('claude.back') ? '' : ' open'}><summary class="cl-steps">${msi('chat', { size: 16 })} שיחה חדשה <span aria-hidden="true">›</span> ${msi('attach_file', { size: 16 })} מצרפים <span aria-hidden="true">›</span> ${msi('download', { size: 16 })} מחזירים</summary><ol class="claude-steps"><li>פותחים שיחה חדשה עם ה-${AI} (באפליקציה או באתר).</li>
+      <li>${g.write} בלי הסקיל: קודם מדביקים את ההוראות (${msi('content_copy', { cls: 'msi-in' })} למטה). <button type="button" class="pw-link" data-act="kit.install">${msi('extension', { cls: 'msi-in' })} <span class="lk-tx">התקנת הסקיל</span></button></li>
+      <li>את הקובץ שחוזר: שיתוף ל"${APP.appShort}" או "ייבוא קובץ" - ${g.lands}.</li></ol></details></div>`; } // 9.6.0 (12ו, batch 13.2): open until the first file comes back from Claude
+// 📋 copies the instructions of the window's goal: its part and the core (the memento - its part only)
+act('kit.copyGoal', c => copyKit(c.v, 'ההוראות הועתקו. מדביקים בשיחה חדשה עם ה-' + AI + ', ואז מצרפים את הקובץ'));
+act('kit.install', () => { openScreen('claude', true); return 'quiet'; }); // ה14: the one place to install, over the window

@@ -1,0 +1,41 @@
+/* 11.5.0 (task schedule-proposal; look/targets.md "Schedule proposal", pictures schedule-proposal-1..4): everything of the proposal is in
+   Claude's colors (claude-container / on-claude). */
+/* the arrival row at the top of the plan: Claude's mark, the title over its line, "לעיון" at the end; no ✕ */
+.prop-row { display: flex; align-items: center; gap: var(--sp-3); width: 100%; margin: 4px 0 10px; padding: 10px 14px; border: none; border-radius: var(--r-card); background: var(--claude-container); color: var(--on-claude); font: inherit; text-align: start; cursor: pointer; }
+.prop-row-t { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; } .prop-row-t b { font: 500 var(--fs-title-small) 'Rubik', system-ui, sans-serif; color: var(--on-surface); } .prop-row-t small { font-size: var(--fs-body-small); color: var(--on-claude); }
+.prop-row-go { flex: none; font: 500 var(--fs-body) 'Rubik', system-ui, sans-serif; white-space: nowrap; }
+/* the doors: an outlined Claude button - in the plan's top row beside "סידור ימים" (the same height; the row is in screens-plan.css), and in the empty plan's empty state */
+.chip.prop-ask { background: transparent; border-color: var(--on-claude); color: var(--on-claude); display: inline-flex; align-items: center; gap: var(--icon-gap); }
+.plan-empty { text-align: center; padding: 6px 12px 18px; margin: 4px 0 10px; } .plan-empty .empty { padding: 22px 8px 12px; } .plan-empty .empty-l { font-size: var(--fs-body-small); }
+.plan-empty .chip.prop-ask { min-height: var(--h-btn); padding: 0 18px; }
+/* the request window: the chosen days in Claude's container, the send button filled in Claude's color; 11.7.0: the muted line of a waiting proposal first */
+.prop-wait { margin: 0 0 var(--sp-3); }
+.prop-ask-win .fm-seg .chip[data-active="true"] { background: var(--claude-container); color: var(--on-claude); border-color: var(--on-claude); }
+.prop-ask-win .sheet-save-bar .btn-nav { background: var(--on-claude); border-color: var(--on-claude); color: var(--surface); }
+/* the preview: the screen's head in Claude's container - ✕, the mark, the title over its line, "לוותר על ההצעה" outlined at the end */
+.screen-head[data-tab="proposal"] { background: var(--claude-container) !important; color: var(--on-claude); } .screen-head[data-tab="proposal"] > .screen-title { display: none; }
+.screen-head[data-tab="proposal"] > .screen-x { color: var(--on-claude); }
+.screen-head[data-tab="proposal"] > .screen-tools { flex: 1 1 auto; min-width: 0; gap: var(--sp-2); margin-inline-start: 0; }
+.screen-head[data-tab="proposal"] > .screen-tools { flex-wrap: wrap; row-gap: 0; }
+.pv-tt { flex: 1 1 0; min-width: 0; font: 500 var(--fs-title-medium) 'Rubik', system-ui, sans-serif; color: var(--on-surface); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pv-sub { flex: 1 1 100%; min-width: 0; font-size: var(--fs-body-small); color: var(--on-claude); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pv-drop { flex: none; min-height: var(--h-chip); padding: 4px 12px; border: 1px solid var(--on-claude); border-radius: var(--r-pill); background: transparent; color: var(--on-claude); font: 500 var(--fs-body-small) 'Rubik', system-ui, sans-serif; white-space: nowrap; cursor: pointer; }
+/* one line from Claude (and a day's note), the legend */
+.pv-say { display: flex; align-items: flex-start; gap: var(--sp-2); margin: 4px 0 8px; padding: 10px 12px; border-radius: var(--r-card); background: var(--surface); font-size: var(--fs-body-small); line-height: 1.4; } .pv-say > .msi { flex: none; color: var(--on-claude); } .pv-say > span { min-width: 0; overflow-wrap: anywhere; }
+.pv-daysay { background: var(--surface-container); margin: 0 0 8px; }
+.pv-legend { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 2px 8px; }
+.tl-tag.pv-new { background: var(--claude-container); color: var(--on-claude); } .tl-tag.pv-mv { background: var(--key-container); color: var(--on-key); } .tl-tag.pv-must { background: var(--must-container); color: var(--on-must); }
+.tl-tag.pv-fix { background: var(--surface-container-high); color: var(--on-surface-variant); } .tl-tag.pv-clash { background: var(--error-container); color: var(--on-error-container); }
+.pv-after { font-size: var(--fs-label-small); color: var(--on-surface-variant); white-space: nowrap; }
+/* days as in the plan, with "רק את היום" in each day's head; cards read-only */
+.pv-dh { display: flex; align-items: center; } .pv-dh > .day-head { flex: 1 1 auto; min-width: 0; width: auto; }
+.pv-arrow { flex: none; border: none; background: none; color: inherit; padding: 8px 14px; cursor: pointer; } .pv-day[data-open="true"] .pv-arrow .msi { transform: rotate(180deg); }
+.pv-only { flex: none; display: inline-flex; align-items: center; gap: var(--icon-gap); min-height: var(--h-chip); margin-inline-start: 4px; padding: 4px 8px; border: none; border-radius: var(--r-pill); background: transparent; color: var(--on-claude); font: 500 var(--fs-body-small) 'Rubik', system-ui, sans-serif; white-space: nowrap; cursor: pointer; }
+.pv-tl { pointer-events: none; } .pv-tl .cd-when.settime, .pv-tl .tl-div-add, .pv-tl .tl-night > .msi:last-child { display: none; }
+.pv-line { display: flex; align-items: center; gap: var(--sp-2); margin: 0 0 8px; padding: 8px 12px; border-radius: var(--r-tile); background: var(--key-container); color: var(--on-key); font-size: var(--fs-body-small); } .pv-line > .msi { flex: none; } .pv-line > span { min-width: 0; }
+/* the pinned bottom bar: outlined "לא עכשיו", filled Claude "להחיל את ההצעה" */
+.pv-dock > button { height: 40px; border-radius: var(--r-pill); display: inline-flex; align-items: center; justify-content: center; gap: var(--icon-gap); white-space: nowrap; font: 500 var(--fs-body) 'Rubik', system-ui, sans-serif; cursor: pointer; margin: 0; }
+.pv-later { flex: 0 1 auto; padding: 0 18px; border: 1px solid var(--outline); background: transparent; color: var(--on-claude); }
+.pv-dock > .pv-apply { flex: 1 1 auto; min-width: 0; padding: 0 16px; border: none; background: var(--on-claude); color: var(--surface); }
+/* the draft: a full-width Claude row under the stat tiles, with its ⓘ; not tappable otherwise */
+.dr-prop { display: flex; align-items: center; gap: var(--sp-2); margin: 0 0 8px; padding: 10px 12px; border-radius: var(--r-tile); background: var(--claude-container); color: var(--on-claude); } .dr-prop b { font: 500 var(--fs-title-small) 'Rubik', system-ui, sans-serif; color: var(--on-surface); min-width: 0; }

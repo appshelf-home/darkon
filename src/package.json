@@ -1,0 +1,8 @@
+{
+  "name": "darkon-site",
+  "private": true,
+  "description": "Darkon's site: the server functions' one dependency (11.23.0, place-gid-2) - Netlify installs it when it deploys; the app itself needs no package",
+  "dependencies": {
+    "@netlify/blobs": "11.1.7"
+  }
+}

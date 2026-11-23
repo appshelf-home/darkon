@@ -1,0 +1,198 @@
+.card {
+  background: var(--surface-container); border: 1px solid var(--outline-variant); border-radius: var(--r-card);
+  padding: 14px 16px; margin-bottom: 10px; position: relative;
+}
+.card-actions { margin-top: 10px; }
+.card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.card h3 { font-size: var(--fs-title-medium); margin: 0 0 4px; font-weight: 700; font-family: 'Rubik', system-ui, sans-serif; }
+.card .sub { font-size: var(--fs-label); color: var(--on-surface-variant); margin-bottom: 8px; display: flex; align-items: center; gap: var(--icon-gap); flex-wrap: wrap; }
+.card .desc { font-size: var(--fs-body); line-height: 1.55; color: var(--on-surface); margin: 0 0 10px; }
+.meta-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.badge { font-size: var(--fs-label-small); padding: 3px 9px; border-radius: var(--r-pill); background: var(--outline-variant); color: var(--on-surface-variant); }
+.badge.resv-must { background: color-mix(in srgb, var(--error) 14%, var(--surface-container)); color: var(--error); }
+.badge.resv-rec { background: var(--key-container); color: var(--on-key); }
+.badge.resv-no { background: var(--visited-container); color: var(--visited); }
+.btn-nav {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--icon-gap); padding: 8px 14px; border-radius: var(--r-pill);
+  background: var(--primary); color: var(--on-primary); text-decoration: none; font-size: var(--fs-body-small); font-weight: 600;
+  border: none; cursor: pointer; font-family: 'Rubik', system-ui, sans-serif;
+}
+.btn-nav:active { opacity: 0.8; }
+
+.layer-tag { display: inline-block; font-size: var(--fs-micro); padding: 1px 7px; border-radius: var(--r-pill); background: color-mix(in srgb, var(--lc) var(--tint-mix), var(--surface-container)); color: color-mix(in srgb, var(--lc) var(--tone-mix), var(--tone-ink)); margin-inline-end: 4px; } /* final review 28c: the layer's soft tint with its dark tone, as on the cards and chips */
+.empty { text-align: center; padding: 40px 20px; color: var(--on-surface-variant); font-size: var(--fs-title-small); line-height: 1.5; }
+.empty > .msi { display: block; margin: 0 auto var(--sp-2); font-size: var(--icon-xl); color: var(--muted); } /* 10.1.0 (design-1) */
+
+.flight-card { border: 1px solid var(--outline-variant); border-radius: var(--r-tile); padding: 10px 14px; margin-bottom: 8px; background: var(--surface); }
+.flight-route { font-weight: 700; font-size: var(--fs-title-small); margin-bottom: 2px; }
+.flight-meta { font-size: var(--fs-label); color: var(--on-surface-variant); margin-bottom: 6px; }
+/* 11.0.0 (travels-1-model, Q21): the one list of travels (the trip's details, the draft's tile) - the ends on the first line with the pencil at its end, the group's tag and the proposal chip */
+.flight-route { display: flex; align-items: center; gap: var(--icon-gap); }
+.flight-route > .fr-ends { flex: 1; min-width: 0; }
+.flight-route > .icon-btn { flex: none; }
+.flight-card > .cd-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.flight-times { display: flex; align-items: center; gap: 10px; font-size: var(--fs-body); }
+.flight-arrow { color: var(--primary); font-size: var(--fs-title-medium); }
+.converter-row { display: flex; gap: 8px; margin: 8px 0; }
+.converter-row input {
+  flex: 1 1 auto; min-width: 0; /* text-size: a field's own width (its size attribute) never pushes the button out of the row at a large text */ padding: 9px 12px; border-radius: var(--r-chip); border: 1px solid var(--outline);
+  background: var(--surface); color: var(--on-surface); font-family: 'Rubik', system-ui, sans-serif; font-size: var(--fs-title-small);
+}
+.converter-result { font-size: var(--fs-title-small); font-weight: 700; color: var(--primary); min-height: 1.3em; }
+.countdown-badge { margin-top: 8px; font-size: var(--fs-body-small); font-weight: 700; color: var(--primary); }
+
+
+
+
+.draft-row { display: flex; gap: 8px; align-items: flex-start; padding: 7px 4px; border-bottom: 1px solid var(--outline-variant); }
+.draft-row[data-off="true"] .draft-txt { opacity: var(--fade); text-decoration: line-through; }
+.draft-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.draft-txt b { font-weight: 600; font-size: var(--fs-title-small); }
+.draft-txt small { color: var(--on-surface-variant); font-size: var(--fs-label-small); }
+
+/* 4.33.0: one height for everything in a row of card buttons (🧭, ⭐ ✓, 🗓️, 📏, ＋, 📖) */
+.card-actions > a,.card-actions > button { min-height: 34px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; line-height: 1; vertical-align: middle; }
+.card-actions > .btn-nav { padding: 0 12px; border: 1px solid var(--primary); }
+.card-actions > .icon-btn { width: 34px; padding: 0; }
+
+
+
+
+ /* the name is the dialog's title */
+
+
+
+
+
+
+.card-links { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--outline-variant); }
+.lk-btn { display: inline-flex; align-items: center; gap: var(--icon-gap); height: 34px; box-sizing: border-box; padding: 0 12px; border-radius: var(--r-pill); border: 1px solid var(--outline); background: none; color: var(--on-surface); font: 400 var(--fs-body-small) 'Rubik', system-ui, sans-serif; text-decoration: none; cursor: pointer; white-space: nowrap; } .lk-btn .msi { color: var(--on-surface-variant); }
+.disc-big { width: 100%; max-height: 220px; object-fit: cover; border-radius: var(--r-tile); }
+
+
+
+/* 4.32.0: real legs in planning, ≈ estimates, the leg sheet */
+.est { opacity: var(--fade); font-style: normal; }
+.est-v { white-space: nowrap; } /* value-tie-source: an estimate ("≈ 🚶 8 דק׳") is one value - never parted inside */
+.tl-clock { color: var(--on-surface-variant); }
+.tl-leg.warn b { color: var(--error); font-weight: 600; }
+/* 4.18.0: hotel cards, 🔖 booked */
+
+
+
+
+
+
+
+.ph-img.hc-photo { aspect-ratio: auto; height: 190px; margin-bottom: 8px; }
+.hc-chips { display: flex; flex-wrap: wrap; gap: 5px; margin: 6px 0; }
+.hc-chips span { font-size: var(--fs-label-small); border: 1px solid var(--outline); border-radius: var(--r-pill); padding: 2px 8px; background: var(--surface); }
+
+
+
+
+
+
+/* 4.20.1 */
+button.badge[data-resvinfo] { border: none; font: inherit; cursor: pointer; }
+
+.trip-card .tc-open { font-size: var(--fs-micro); padding: 1px 7px; vertical-align: middle; font-weight: 600; }
+.card-actions.tc-row { margin-top: 8px !important; }
+.tc-row > .tc-main { flex: 0 0 auto; white-space: nowrap; padding: 0 10px !important; }
+.tc-sm { height: 34px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; padding: 0 7px; border-radius: var(--r-chip); border: 1px solid var(--outline); background: transparent; color: var(--on-surface-variant); font: 500 var(--fs-label) 'Rubik', system-ui, sans-serif; white-space: nowrap; cursor: pointer; min-width: 0; flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; }
+.tc-row > .tc-more { margin-inline-start: auto; width: 34px; padding: 0; flex: 0 0 auto; font-size: var(--fs-title-small); }
+.dh-more { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-width: 36px; min-height: 24px; padding: 2px 8px; /* text-size: its touch size kept at a small text */ font-size: var(--fs-title-medium); line-height: 1; color: var(--on-surface-variant); border-radius: var(--r-chip); cursor: pointer; }
+.dh-more:active { background: var(--outline-variant); }
+.te-len-h { font-weight: 600; margin-bottom: 4px; }
+/* 10.2.0 (design-2, look.md "Cards"): THE CARD - one language for the places list, the plan, hotels, the map's floating cards, pick rows and
+   read-only cards. Row 1: the leading circle (the layer's tint and its type icon; travel violet; note / group item grey) with the day map's order
+   badge on its corner · the name · "היינו" at the top left; row 2: the tags; row 3: the description; row 4: the actions as icons, remove alone at the end */
+.tl-card { display: grid; grid-template-columns: minmax(0, 1fr) 44px; grid-template-areas: "body vis" "acts acts"; column-gap: var(--sp-1); align-items: start; position: relative;
+  margin: var(--sp-card-gap) 0; padding: 7px 0 0; padding-inline: var(--sp-card-pad) 2px; border: none; border-radius: var(--r-card); background: var(--surface-container); color: var(--on-surface); box-shadow: none;
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.tl-card:not(:has(> .tl-acts)) { padding-bottom: var(--sp-2); }
+/* 10.15.0 (design-review Q9): the travel card - the travel tone, no border, no lift; the pencil at the bottom corner on the time chip's row,
+   the same gap from the text with or without a chip (the title and the tag line truncate before it; the row keeps the chip's height) */
+.tl-card.tl-travel, .tl .tl-card.tl-travel, .sheet .tl-card.tl-travel { background: var(--travel-container); border: none; box-shadow: none; }
+.tl-card.tl-travel:has(> .tl-tredit) > .tl-body { padding-inline-end: 44px; } /* travels-2-plan: a travel card's pencil is in its actions row; the landing row keeps the corner pencil */
+.tl-card.tl-travel > .tl-body > .cd-tags { min-height: var(--h-chip); display: flex; align-items: center; }
+/* final-review 5: the pencil is bare on the travel tone - no box (no border, no fill); the button itself is a full touch target (44) around the icon */
+.tl-card.tl-travel > .tl-tredit { position: absolute; inset-inline-end: 0; bottom: 0; width: 44px; height: 44px; padding: 0; border: none; border-radius: var(--r-pill); background: none; color: var(--on-surface-variant);
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.tl-card.tl-travel > .tl-tredit:active { background: color-mix(in srgb, var(--on-surface) 10%, transparent); }
+.tl .tl-card, .sheet .tl-card, .sched-block .tl-card { border: 1px solid var(--outline-variant); }
+.tl-card > .tl-body { grid-area: body; min-width: 0; display: flex; flex-direction: column; gap: 3px; cursor: pointer; }
+.tl-card:not(:has(> .tl-vis, > .mc-pickbtn, > .tl-keep)) > .tl-body { grid-column: 1 / -1; }
+.tl-card.mc-pick { grid-template-columns: minmax(0, 1fr) auto; padding-inline-end: var(--sp-2); }
+.cd-name { display: flex; align-items: center; gap: 7px; min-width: 0; min-height: 26px; }
+.cd-name > b { flex: 1; min-width: 0; font-size: var(--fs-title-small); font-weight: 500; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; } /* dir=auto: a Latin name is cut at its end */
+.cd-lead { position: relative; flex: none; width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--lead-bg); color: var(--lead-fg); }
+.cd-lead.place { --lead-bg: color-mix(in srgb, var(--lc) var(--tint-mix), var(--surface-container)); --lead-fg: color-mix(in srgb, var(--lc) var(--tone-mix), var(--tone-ink)); }
+.cd-lead.travel { --lead-bg: var(--travel-container); --lead-fg: var(--on-travel); }
+.cd-lead.grey { --lead-bg: var(--surface-container-high); --lead-fg: var(--on-surface-variant); }
+.cd-num, .pin-num { position: absolute; top: -5px; left: -6px; min-width: 15px; height: 15px; padding: 0 2px; box-sizing: border-box; border-radius: var(--r-pill); border: 1.5px solid var(--surface-container); background: var(--lead-fg); color: var(--num-ink-l, var(--on-badge));
+  font: 500 var(--fs-micro) / 1 'Rubik', system-ui, sans-serif; display: inline-flex; align-items: center; justify-content: center; }
+/* phone-round-1-followups (11.16.0, Q6): the number's ink by contrast with its badge - card.js numInkStyle sets --num-ink-l / --num-ink-d only where the theme's --on-badge falls under 4.5:1 (a very light layer colour) */
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) :is(.cd-num, .pin-num) { color: var(--num-ink-d, var(--on-badge)); } }
+:root[data-theme="dark"] :is(.cd-num, .pin-num) { color: var(--num-ink-d, var(--on-badge)); }
+.cd-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; min-width: 0; font-size: var(--fs-label-small); color: var(--on-surface-variant); }
+.cd-mt { font-size: var(--fs-label-small); color: var(--on-surface-variant); min-width: 0; }
+.cd-bpn { flex: 1 1 100%; min-width: 0; max-width: 100%; } /* 11.42.0 (booking-price): the price's note - its own line in the tags row, one line with "…" */
+.cd-mt .msi { font-size: var(--icon-14); } .cd-dist { color: var(--on-secondary-container); font-weight: 500; }
+.tl-tag, .mc-when { display: inline-flex; align-items: center; gap: var(--icon-gap-sm); min-height: 22px; max-width: 100%; padding: 1px 7px; box-sizing: border-box; border: none; border-radius: var(--r-chip);
+  background: var(--surface-container-high); color: var(--on-surface-variant); font: 400 var(--fs-label-small) 'Rubik', system-ui, sans-serif; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; text-decoration: none; }
+:is(.tl-tag, .mc-when) .msi { font-size: var(--icon-14); flex: none; }
+button:is(.tl-tag, .mc-when) { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.tl-tag.grp { background: var(--secondary-container); color: var(--on-secondary-container); }
+.tl-tag.key { background: var(--key-container); color: var(--on-key); font-weight: 500; }
+.tl-tag.must { background: var(--error-container); color: var(--on-error-container); }
+.tl-tag.rec { background: var(--key-container); color: var(--on-key); }
+:is(.tl-tag.ok, .tl-tag.vis-on, .cd-when.bkd) { background: var(--visited-container); color: var(--visited); }
+.tl-tag.upd { background: var(--secondary-container); color: var(--on-secondary-container); }
+.tl-tag.night { color: var(--on-surface); }
+.cd-when, .mc-when { font-weight: 500; }
+.cd-when.time, .mc-when { background: var(--secondary-container); color: var(--on-secondary-container); }
+:is(.cd-when.settime, .mc-when.add) { background: none; border: 1px solid var(--outline); color: var(--primary); }
+.mc-when.today { background: var(--today-container); color: var(--on-today); }
+.mc-when { flex-wrap: wrap; white-space: normal; } .mc-when > span { white-space: nowrap; } /* text-size (Q3): the card's when-line wraps between its parts at a large text ("הלילה · 28.12–29.12 · לילה אחד" at 360 with ענק), never cut */
+.mc-desc { display: block; font-size: var(--fs-body-small); color: var(--on-surface-variant); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tl-card > .tl-vis, .tl-card > .mc-pickbtn { grid-area: vis; }
+.tl-vis { display: flex; flex-direction: column; align-items: center; justify-self: center; width: 44px; min-height: 40px; margin-top: -5px; padding: 2px 0 0; border: none; background: none; color: var(--muted);
+  font: 400 var(--fs-micro) 'Rubik', system-ui, sans-serif; line-height: 1; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.tl-vis .msi { font-size: var(--icon-22); }
+.tl-vis:is([data-active="true"], [data-pv="on"]):not([data-pv="off"]) { color: var(--visited); }
+.tl-vis:is([data-active="true"], [data-pv="on"]):not([data-pv="off"]) .msi { font-variation-settings: 'FILL' 1; }
+body.read-only .tl-vis { pointer-events: none; }
+.mc-pickbtn { display: flex; align-items: center; align-self: center; }
+.tl-card > .tl-acts { grid-area: acts; display: flex; align-items: center; min-height: 34px; margin-inline-start: -8px; }
+.tl-act { width: 38px; height: 34px; padding: 0; border: none; border-radius: var(--r-pill); background: none; color: var(--on-surface-variant); display: inline-flex; align-items: center; justify-content: center; text-decoration: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.tl-act:active { background: var(--surface-container-high); }
+.tl-act.a-rm, .tl-act.a-ed { width: 44px; margin-inline-start: auto; } /* remove from the plan, or a travel's pencil (travels-2-plan): alone at the far end */
+.tl-act:disabled { opacity: .45; }
+[data-act="place.fav"][data-active="true"] { color: var(--favorite); }
+[data-act="place.fav"][data-active="true"] .msi { font-variation-settings: 'FILL' 1; }
+.tl-visited > :not(.tl-vis) { opacity: var(--fade); } .tl-visited > .tl-acts { opacity: var(--fade-strong); } /* a visited card fades (decision R1: every text stays 4.5:1, its icon-only buttons 3:1); the toggle stays strong */
+.tl-sched.free { opacity: .85; }
+.map-float .tl-card { margin: 0; padding: 0; background: none; border: none; }
+.map-float:has(.tl-card) { padding: 10px 6px 0 12px; }
+.map-float:has(> .mf-x) > .tl-card { padding-inline-end: 32px; } .map-float:has(> .mf-x) > .tl-card > .tl-acts { margin-inline-end: -32px; }
+.cd-lead.stop { background: var(--secondary-container); color: var(--on-secondary-container); } .cd-n { font: 500 var(--fs-label) 'Rubik', system-ui, sans-serif; }
+.cd-lead.disc { --lead-bg: var(--discover-container); --lead-fg: var(--on-discover); overflow: hidden; } .cd-lead.disc .disc-th { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.mc-desc2 { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; } .cd-cred { font-size: var(--fs-label-small); color: var(--muted); }
+.elev-cr, .wk-cr, .disc-cred { display: block; font-size: var(--fs-label-small); color: var(--muted); } /* legal-credits (S6): the heights' credit, under the row that shows one */
+.tl-keep { grid-area: vis; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 32px; justify-self: center; width: 44px; margin-top: -5px; color: var(--muted); font: 400 var(--fs-micro) 'Rubik', system-ui, sans-serif; line-height: 1; cursor: pointer; position: relative; } /* 11.44.1 (price-level-note item 7): never under the touch size (32 px) - at "קטן" it followed its word down to 29 */
+.tl-keep input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; } .tl-keep .msi { font-size: var(--icon-22); }
+.tl-keep:has(input:checked) { color: var(--visited); } .tl-keep:has(input:checked) .msi { font-variation-settings: 'FILL' 1; } .tl-keep:has(input:disabled) .msi { opacity: var(--fade-strong); } /* a locked one: its check fades, its word stays 4.5:1 (decision R1) */
+.tl-acts .note-btn { border: none; background: none; min-width: 38px; }
+/* between and around plan cards: slot headers with a round ＋, leg rows, landing lines, tonight's hotel */
+.tl-div { display: flex; align-items: center; gap: 8px; margin: 10px 0 2px; font-size: var(--fs-label); color: var(--on-surface-variant); }
+.tl-div .msi { font-size: var(--icon-18); } .tl-div-ln { flex: 1; border-top: 1px dashed var(--outline); }
+.tl-leg { display: flex; align-items: center; gap: var(--icon-gap); width: 100%; min-height: 24px; padding: 3px 0; padding-inline-start: 12px; border: none; background: none; color: var(--on-surface-variant); font: 400 var(--fs-label) 'Rubik', system-ui, sans-serif; text-align: start; cursor: pointer; } /* size-fixes (3): min-height - its touch size at "קטן" too */
+.tl-leg::before { content: ''; flex: none; width: 2px; height: 14px; margin-inline-end: 4px; background: var(--outline); }
+.tl-leg .msi { font-size: var(--icon-16); flex: none; }
+.tl-leg.warn { color: var(--on-today); } .tl-leg.est > :not(b) { opacity: var(--fade); }
+.tl-night { display: flex; align-items: center; gap: var(--icon-gap); width: 100%; margin: 8px 0 2px; padding: 8px 12px; border: none; border-radius: var(--r-tile); background: var(--surface); color: var(--on-surface); font: 400 var(--fs-body) 'Rubik', system-ui, sans-serif; cursor: pointer; text-align: start; }
+.tl-night .msi { color: var(--on-surface-variant); } .tl-night > span:not(.msi) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 10.1.0 (design-1, look.md "Cards"): press feedback - a Material state layer on every tappable card (an overlay, so children are never clipped) */
+:is(.tl-card, .card)::after { content: ''; position: absolute; inset: 0; border-radius: inherit; background: currentColor; opacity: 0; pointer-events: none; transition: opacity var(--motion-fast) var(--ease); }
+.tl-card:not(.g-moving):not(.g-lift):has(.tl-body:is([data-act], button):active):not(:has(.tl-body button:active))::after, .tl-card.g-arm::after, .card[data-act]:active::after { opacity: .1; } /* g-arm: a plan card's press (TOUCH) */

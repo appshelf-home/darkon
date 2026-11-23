@@ -1,0 +1,108 @@
+/* Design tokens (look.md "Tokens"): every color, size, radius, height, shadow and motion comes from these roles; dark mode redefines the same names */
+:root {
+  --primary: #2E4A73; --on-primary: #FFFFFF;
+  --secondary-container: #DCE4F2; --on-secondary-container: #26344A;
+  --surface: #F2F3F7; --surface-container: #FFFFFF; --surface-container-high: #E6E9F0; --surface-nav: #E8EAF0; --hero-top: #DCE6F5; --trip-name-mix: 100%;
+  --on-surface: #1B1C20; --on-surface-variant: #5A5E68; --muted: #6A6E79; /* final review Q7: small muted text is 4.5:1 on a white card and on the page */
+  --fade: .87; --fade-strong: .7; /* decision R1 (10.11.2026): a designed fade - a visited card, a past stop's row, a past day's summary, an empty layer chip's count, the total of a count - is opacity --fade (the lowest at which every faded text is still 4.5:1); --fade-strong for a line icon alone (3:1) */
+  --outline: #C9CFDA; --outline-variant: #E1E4EA;
+  --inverse-surface: #2F3036; --inverse-on-surface: #F1F0F4; --inverse-primary: #A9C7FF;
+  --favorite: #B07A12; --visited: #2C7830; --visited-container: #DDF0DA; /* final review (family E): the green as small text on its own container is 4.5:1 */
+  --today-container: #FBE3D6; --on-today: #7A2E0E; --error: #B3261E;
+  --error-container: #FFDAD6; --on-error-container: #690005; --on-error: #FFFFFF; --scrim: rgba(0,0,0,.35); /* 10.1.0 (design-1): the urgent banner, the dialog's scrim */
+  --key-container: #FBEBC5; --on-key: #7A4E00;
+  --travel-container: #E8E4F6; --on-travel: #5E4BA8;
+  --wx-l: 88%; --wx-dl: 14%; --wx-sat: 70%; --on-wx: #1C2B33; --wx-rain: #85B7EB; --wx-temp: #D85A30; /* 10.15.0 (design-review F23): the climate tiles' temperature scale (hue by temperature) and the hourly chart */
+  --discover-container: #EDE7F6; --on-discover: #3B2A6B; --discover-ring: #6B5BA8; /* 10.10.0 (design-maps): the discovery cluster's ring */
+  --must-container: #FCDDE3; --on-must: #8C1D3A; /* 11.5.0 (schedule-proposal): the proposal's "לא לפספס" tag - a rose container */
+  --claude-container: #FBEDE6; --on-claude: #AA5435; /* final review (family E): Claude's color as small text is 4.5:1 on a card and on its container */
+  --map-pin: #B3261E; /* final review 13: the pin that marks a location over a map - a mark on the map's light tiles, not a text color (--error turns pale in dark) */
+  --cover-sky-top: 45% 82%; --cover-sky-low: 40% 92%; --cover-sun: hsl(45 90% 85%); --cover-hill-far: 22% 62%; --cover-hill-near: 20% 48%; /* final review Q6: the drawn trip cover's tones (saturation and lightness; the hue is the trip's own) */
+  --sched: #2E6B6B; --sched-bg: #E4F1EF; /* the organized (schedule) strip */
+  --l1: #757575; --l2: #6A1B9A; --l3: #00ACC1; --l4: #F57C00;
+  --l5: #D81B60; --l6: #1E88E5; --l7: #43A047;
+  /* test-address: the top of the screen every layer starts below - the phone's safe area, plus the test band on the test address (bars.css) */
+  --safe-top: env(safe-area-inset-top, 0px); --test-band-h: 1.375rem;
+  /* type roles, mapped to today's sizes (no text grows) */
+  --fs-title-large: 1.15rem; --fs-title-medium: 1rem; --fs-title-small: .9rem; --fs-body: .85rem;
+  --fs-body-small: .8rem; --fs-label: .78rem; --fs-label-small: .72rem; --fs-micro: .62rem;
+  /* design-tokens: the large titles above title-large (heroes, the draft's stat tiles), today's sizes */
+  --fs-display-small: 1.25rem; --fs-display: 1.35rem; --fs-display-large: 1.6rem;
+  /* icon sizes (Material Symbols); 14 is the line icon inside a tag or a meta line */
+  /* text-size: in rem, so an icon beside a text grows and shrinks with it (the root's size is set from the chosen text size) */
+  --icon-14: .875rem; --icon-16: 1rem; --icon-18: 1.125rem; --icon-20: 1.25rem; --icon-22: 1.375rem; --icon-24: 1.5rem;
+  /* map marks and their labels (pins, the memory map, the offline map) - their own scale; design-maps redraws the pins (gap 61) */
+  --pin-num-s: 10px; --pin-num: 12px; --pin-ic-s: 13px; --pin-ic: 14px; --pin-ic-m: 17px; --pin-ic-l: 24px;
+  --pin-edit: 1.9rem; --pin-pick: 2.3rem; --pin-pick-ic: 44px; --fs-map-label: .6875rem; --fs-map-label-s: .5625rem; /* text-size: the map's labels follow the text size (rem) */
+  /* spacing */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-card-gap: 6px; --icon-gap: 6px; --icon-gap-sm: 3px; --sp-side: 12px; --sp-card-pad: 12px;
+  /* radius */
+  --r-xs: 4px; --r-chip: 8px; --r-tile: 12px; --r-card: 14px; --r-pill: 999px; --r-sheet: 24px; /* xs: outlined fields in windows (Material), check boxes, small marks */
+  /* heights */
+  /* text-size (Q3): what holds a text grows with it and never shrinks below today's touch size - max(today's px, the same in rem) */
+  --h-chip: max(28px, 1.75rem); --h-btn: max(36px, 2.25rem); --h-field: max(48px, 3rem); --h-icon-btn: max(40px, 2.5rem); --h-top: 56px; --h-nav: 80px;
+  /* elevation: cards none; only the floating card, menus and the + FAB */
+  --elev-float: 0 4px 18px rgba(0,0,0,.18);
+  /* design-tokens: the other steps - marks on a map (1), controls floating over a map or a picture (2), an item lifted by a drag, the half sheet's upward edge */
+  --elev-1: 0 1px 4px rgba(0,0,0,.25); --elev-2: 0 2px 8px rgba(0,0,0,.2); --elev-lift: 0 10px 26px rgba(0,0,0,.28); --elev-sheet: 0 -6px 24px rgba(0,0,0,.25);
+  /* design-tokens: the route's numbers (stops, past stops, the current stop and the key point) and the self-location dot */
+  --route-stop: #534AB7; --route-past: #736EB3; --route-now: #C08A2E; --on-route: #FFFFFF; --on-route-now: #24180A; /* final review (family E): a past stop is a lighter tone, not faded, and the gold stop carries dark digits - 4.5:1 */ --self-loc: #1E88E5;
+  --hotel-pin: #1C2B33; --hotel-ring: #C08A2E; --on-hotel-ring: #24180A; /* 10.10.0 (design-maps): the hotel's pin (the same in dark - it stands out on both maps) */
+  --icon-xl: 40px; /* 10.1.0 (design-1): the empty state's quiet icon */
+  /* 10.2.0 (design-2): a layer's tones from its own color - the soft circle (tone ≈92), the icon and badge (tone ≈30), the badge's digits */
+  --tint-mix: 16%; --tone-mix: 62%; --tone-ink: #000; --on-badge: #FFFFFF;
+  /* motion */
+  --motion-fast: 150ms; --motion: 200ms; --motion-slow: 250ms; --ease: cubic-bezier(.2, 0, 0, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --primary: #A9C7FF; --on-primary: #0E2A52;
+    --secondary-container: #2F3B52; --on-secondary-container: #D6E2FF;
+    --surface: #111318; --surface-container: #1D2026; --surface-container-high: #2A2E36; --surface-nav: #1A1D23; --hero-top: #1B2536; --trip-name-mix: 40%;
+    --on-surface: #E3E4EA; --on-surface-variant: #A9AEB9; --muted: #8A8F99; /* 10.15.0 (design-review F27): 4.5:1 on a card for small text */
+    --fade: .76; --fade-strong: .6; /* decision R1: dark text keeps 4.5:1 at a deeper fade */
+    --outline: #454B57; --outline-variant: #2C3038;
+    --inverse-surface: #E3E4EA; --inverse-on-surface: #2F3036; --inverse-primary: #2E4A73;
+    --favorite: #F2C14E; --visited: #6FCF73; --visited-container: #1F3A22;
+    --today-container: #4A2A1C; --on-today: #FFB59A; --error: #FFB4AB;
+    --error-container: #93000A; --on-error-container: #FFDAD6; --on-error: #690005; --scrim: rgba(0,0,0,.6);
+    --key-container: #43330F; --on-key: #F2C46A;
+    --travel-container: #2E2849; --on-travel: #C3B6FF;
+    --wx-l: 22%; --wx-dl: -4%; --wx-sat: 45%; --on-wx: #E3E5EA; --wx-rain: #6F9FD3; --wx-temp: #F08A62;
+    --discover-container: #2E2849; --on-discover: #D9CCFF; --discover-ring: #B9A8F0;
+    --must-container: #4A1F2B; --on-must: #FFB1C1;
+    --claude-container: #3A2418; --on-claude: #F0A98A;
+    --map-pin: #E53935;
+    --cover-sky-top: 50% 17%; --cover-sky-low: 55% 34%; --cover-sun: hsl(30 75% 60%); --cover-hill-far: 38% 22%; --cover-hill-near: 38% 13%;
+    --sched: #7CCBC6; --sched-bg: #1C3130;
+    --elev-float: 0 4px 18px rgba(0,0,0,.5);
+    --elev-1: 0 1px 4px rgba(0,0,0,.5); --elev-2: 0 2px 8px rgba(0,0,0,.45); --elev-lift: 0 10px 26px rgba(0,0,0,.6); --elev-sheet: 0 -6px 24px rgba(0,0,0,.55);
+    --route-stop: #B9B2F2; --route-past: #8F8BB8; --route-now: #E8B562; --on-route: #1B1C20; --on-route-now: #1B1C20; /* 10.15.0 (F28): the past stop lighter, not faded */ --self-loc: #64B5F6;
+    --tint-mix: 30%; --tone-mix: 45%; --tone-ink: #FFFFFF; --on-badge: #111318;
+  }
+}
+:root[data-theme="dark"] {
+    --primary: #A9C7FF; --on-primary: #0E2A52;
+    --secondary-container: #2F3B52; --on-secondary-container: #D6E2FF;
+    --surface: #111318; --surface-container: #1D2026; --surface-container-high: #2A2E36; --surface-nav: #1A1D23; --hero-top: #1B2536; --trip-name-mix: 40%;
+    --on-surface: #E3E4EA; --on-surface-variant: #A9AEB9; --muted: #8A8F99; /* 10.15.0 (design-review F27): 4.5:1 on a card for small text */
+    --fade: .76; --fade-strong: .6; /* decision R1: dark text keeps 4.5:1 at a deeper fade */
+    --outline: #454B57; --outline-variant: #2C3038;
+    --inverse-surface: #E3E4EA; --inverse-on-surface: #2F3036; --inverse-primary: #2E4A73;
+    --favorite: #F2C14E; --visited: #6FCF73; --visited-container: #1F3A22;
+    --today-container: #4A2A1C; --on-today: #FFB59A; --error: #FFB4AB;
+    --error-container: #93000A; --on-error-container: #FFDAD6; --on-error: #690005; --scrim: rgba(0,0,0,.6);
+    --key-container: #43330F; --on-key: #F2C46A;
+    --travel-container: #2E2849; --on-travel: #C3B6FF;
+    --wx-l: 22%; --wx-dl: -4%; --wx-sat: 45%; --on-wx: #E3E5EA; --wx-rain: #6F9FD3; --wx-temp: #F08A62;
+    --discover-container: #2E2849; --on-discover: #D9CCFF; --discover-ring: #B9A8F0;
+    --must-container: #4A1F2B; --on-must: #FFB1C1;
+    --claude-container: #3A2418; --on-claude: #F0A98A;
+    --map-pin: #E53935;
+    --cover-sky-top: 50% 17%; --cover-sky-low: 55% 34%; --cover-sun: hsl(30 75% 60%); --cover-hill-far: 38% 22%; --cover-hill-near: 38% 13%;
+    --sched: #7CCBC6; --sched-bg: #1C3130;
+    --elev-float: 0 4px 18px rgba(0,0,0,.5);
+    --elev-1: 0 1px 4px rgba(0,0,0,.5); --elev-2: 0 2px 8px rgba(0,0,0,.45); --elev-lift: 0 10px 26px rgba(0,0,0,.6); --elev-sheet: 0 -6px 24px rgba(0,0,0,.55);
+    --route-stop: #B9B2F2; --route-past: #8F8BB8; --route-now: #E8B562; --on-route: #1B1C20; --on-route-now: #1B1C20; /* 10.15.0 (F28): the past stop lighter, not faded */ --self-loc: #64B5F6;
+    --tint-mix: 30%; --tone-mix: 45%; --tone-ink: #FFFFFF; --on-badge: #111318;
+}

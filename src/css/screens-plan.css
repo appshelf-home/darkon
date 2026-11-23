@@ -1,0 +1,143 @@
+/* 4.45.1: arranging days - ✓ סיום also in a thin sticky bar on top; what stays on its date; the moved row flashes */
+.arr-flash { animation: arrFlash 1.2s ease-out; }
+@keyframes arrFlash { 0%, 40% { background: color-mix(in srgb, var(--primary) 28%, transparent); } 100% { background: transparent; } }
+/* 4.23.0: ＋ add a place to a day */
+.tl-div-add { flex: none; width: 28px; height: 28px; padding: 0; border: none; border-radius: 50%; background: var(--surface-container-high); color: var(--primary); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.tl-foot .add-btn + .add-btn { flex: 1; }
+.ap-search { position: relative; margin: 2px 0 8px; }
+.ap-search input { width: 100%; box-sizing: border-box; padding: 9px 34px 9px 10px; border: 1px solid var(--outline); border-radius: var(--r-chip); background: var(--surface); color: var(--on-surface); font: inherit; font-size: var(--fs-title-medium); }
+
+/* 4.21.0: the plan - one timeline a day */
+.day-head { align-items: center; gap: 8px; }
+.day-head .dh-t { flex: 1; min-width: 0; text-align: start; }
+.day-head .dh-t b { display: block; font-size: var(--fs-title-small); }
+.day-head .dh-t small { display: block; font-weight: 400; color: var(--on-surface-variant); font-size: var(--fs-label-small); margin-top: 1px; }
+.day-head .dh-wx { font-size: var(--fs-body); white-space: nowrap; font-weight: 500; }
+/* phone-round-1-fixes P18 (11.14.0): a plan day's head is a grid - the title takes the whole first line beside ⋯ and the arrow; the weather
+   moved to the second line, beside the count. As one flex row (title | weather | ⋯ | arrow) the weather and three gaps were taken from the
+   title on both its lines: at 360 the title had 167 px of the head's 322 and "<city> (בדיקה)" dropped its last word with half the line empty */
+.day-item > .day-head { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; column-gap: 8px; }
+.day-item > .day-head > .dh-t { display: contents; }
+.day-item > .day-head > .dh-t > b { grid-area: 1 / 1 / 2 / 3; }
+.day-item > .day-head > .dh-t > small { grid-area: 2 / 1 / 3 / 2; }
+.day-item > .day-head > .dh-wx { grid-area: 2 / 2 / 3 / 3; font-size: var(--fs-label); }
+.day-item > .day-head > .dh-more { grid-area: 1 / 3 / 3 / 4; }
+.day-item > .day-head > .accordion-arrow { grid-area: 1 / 4 / 3 / 5; }
+.day-item.past > .day-head { opacity: var(--fade); } /* a past day's head fades; an opened day's cards carry their own marks (no fade over a fade) */
+.day-item.today { border-color: var(--primary); }
+.day-item .view-toggle { display: inline-flex; gap: 0; margin: 2px 0 6px; border: 1px solid var(--outline); border-radius: var(--r-pill); overflow: hidden; }
+.day-item .view-toggle button { flex: 0 0 auto; border: none; border-radius: 0; padding: 6px 14px; }
+.tl-zone { min-height: 6px; }
+.ph-box { display: flex; flex-direction: column; gap: 6px; margin: 6px 0; }
+.ph-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; } /* phone-round-2b-fixes P14 (G65): minmax(0, …) - a photo's own width never widens its column (1fr = minmax(auto, 1fr)) */
+.ph-cell { position: relative; min-width: 0; }
+.ph-img { display: block; width: 100%; aspect-ratio: 1; padding: 0; border: 1px solid var(--outline-variant); border-radius: var(--r-tile); overflow: hidden; background: var(--surface); cursor: pointer; position: relative; }
+.ph-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ph-cell.cover .ph-img { border: 2px solid var(--primary); }
+.ph-badge { position: absolute; bottom: 4px; inset-inline-start: 4px; background: var(--primary); color: var(--on-primary); font-size: var(--fs-micro); padding: 1px 6px; border-radius: var(--r-pill); }
+.ph-add { display: flex; gap: 6px; }
+.ph-grid > .ph-add { grid-column: 1 / -1; } /* P14: the add pair in words is wider than a third - its own row under the photos, the columns stay even */
+.ph-cell { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.ph-row { display: flex; align-items: center; gap: 6px; flex: 1 1 100%; overflow-x: auto; padding: 2px 0; } /* 9.8.0: a picker - the same thumbnails, small, with "בלי" */
+.ph-row .ph-img { flex: 0 0 44px; width: 44px; border-radius: var(--r-chip); }
+.ph-none { font: 600 var(--fs-label-small) 'Rubik', system-ui, sans-serif; color: var(--on-surface-variant); }
+.ph-img[aria-pressed="true"] { border: 2px solid var(--primary); color: var(--on-surface); }
+.pe-dupb { border: none; background: none; padding: 0 2px; font: inherit; color: inherit; text-decoration: underline; cursor: pointer; }
+.tl-card, .tl-card * { -webkit-tap-highlight-color: transparent; } /* 4.33.0: no blue flash under a long press */
+.tl-card .tl-body b, .tl-card .tl-body small { -webkit-user-select: none; user-select: none; }
+.tl-card.itin-card { transition: transform var(--motion-slow) var(--ease), box-shadow var(--motion-slow) var(--ease); }
+.sc-rm { border-color: var(--error) !important; color: var(--error) !important; }
+body.read-only .tl-vis { pointer-events: none; }
+.tl-sched.free { opacity: .85; }
+.tl-foot { margin-top: 6px; }
+.tl-foot .add-btn { flex: 1; margin: 0; }
+.plan-end { margin-top: 8px; }
+.parked-box { margin-top: 16px; }
+/* 5.15.0: the plan's summary. 11.7.0 (schedule-proposal-followups, the 11.5.0 review's Q3): the summary text on its own line; under it one row -
+   the legs' status at its start (the one status line, here with no bar of its own), "לו״ז מה-AI" / "סידור ימים" (the button row) at its end.
+   With no room the buttons go down a line under the status; a status longer than its own line (no network, at 320 with enlarged text) wraps - it is never cut. */
+.plan-sum { margin: 6px 0 10px; font-size: var(--fs-body-small); color: var(--on-surface-variant); }
+.plan-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 4px 8px; margin-top: 4px; } .plan-row:empty { display: none; }
+.plan-row .svc-line { flex: 1 1 auto; width: auto; margin: 0; padding: 0; background: none; min-height: 34px; } .plan-row .svc-line .sl-t { white-space: normal; overflow: visible; } /* the longest state at 320 with enlarged text takes a second line - never cut */
+.plan-row { container-type: inline-size; } @container (max-width: 17.5em) { .plan-row .svc-line { font-size: var(--fs-label-small); } .plan-row .svc-line .sl-t > .msi:first-child { display: none; } } /* phone-round-1-followups (11.16.0; the 11.14.0 review, noted): a row narrower than 17.5 of its own em (320 with +30% text) takes the status a size smaller and drops its leading icon (☁ - its words say the same), so "128 מתוך 140 קטעים · ממתין לרשת" keeps one line, wide letters too; a longer state still wraps, never cut (the narrow bar's rule, bars.css .dr-dock) */
+.plan-sum-btns { flex: 0 0 auto; } /* at the row's end: beside the status (which takes the rest), or alone on the line under it */
+.tc-sm:disabled { opacity: .35; }
+/* 10.12.0 (design-plan, gap 58): day arranging and "מחוץ לטיול" - a work mode without the bottom navigation, a card per destination */
+body.arr-mode #bottomNav, body.arr-mode #addFab { display: none !important; }
+.arr-top h2 { margin: 0; display: flex; align-items: center; gap: var(--icon-gap); font-size: var(--fs-title-large); }
+.arr-line { margin: 0 2px 8px; }
+.arr-dest, .pk-gh { display: flex; align-items: center; gap: var(--icon-gap); margin: 14px 4px 6px; color: var(--primary); font-weight: 600; font-size: var(--fs-label); }
+.arr-dest small, .pk-gh small { color: var(--on-surface-variant); font-weight: 400; }
+.arr-seg { background: var(--surface-container); border: 1px solid var(--outline-variant); border-radius: var(--r-card); overflow: hidden; }
+.arr-row { display: flex; align-items: center; gap: 4px; padding: 10px 8px 10px 4px; background: var(--surface-container); }
+.arr-row + .arr-row { border-top: 1px solid var(--outline-variant); }
+.arr-t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.arr-t b { font-size: var(--fs-title-small); }
+.arr-ln { display: flex; align-items: center; gap: var(--icon-gap); min-width: 0; color: var(--on-surface-variant); font-size: var(--fs-label-small); }
+.arr-ln > span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .arr-ln > .head-t { display: flex; text-overflow: clip; }
+.arr-h { padding: 6px 4px; color: var(--on-surface-variant); font-size: var(--fs-title-medium); cursor: grab; }
+.arr-more { flex: 0 0 auto; width: 40px; height: 40px; border: none; background: none; color: var(--on-surface-variant); }
+.arr-pass { display: flex; align-items: center; gap: var(--icon-gap); margin: 12px 4px 0; color: var(--on-travel); font-size: var(--fs-label); }
+.parked-box { margin-top: 20px; }
+.pk-head { display: flex; align-items: center; gap: var(--icon-gap); margin: 0 4px; color: var(--primary); font-size: var(--fs-title-small); }
+.pk-head small { color: var(--on-surface-variant); font-size: var(--fs-label); }
+.parked-box > .sh-hint { margin: 2px 4px 8px; }
+.pk-det { background: var(--surface-container); border: 1px solid var(--outline-variant); border-radius: var(--r-card); margin: 0 0 8px; }
+.pk-sum { display: flex; align-items: center; gap: 8px; padding: 10px 12px; list-style: none; cursor: pointer; }
+.pk-sum::-webkit-details-marker { display: none; }
+.pk-sum .dh-t { flex: 1; min-width: 0; text-align: start; }
+.pk-sum .dh-t b { display: block; font-size: var(--fs-title-small); }
+.pk-sum .dh-t small { display: block; color: var(--on-surface-variant); font-size: var(--fs-label-small); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pk-sum .accordion-arrow { transition: transform var(--motion-fast) var(--ease); }
+.pk-det[open] > .pk-sum .accordion-arrow { transform: rotate(180deg); }
+.pk-body { border-top: 1px solid var(--outline-variant); }
+.pk-items { display: flex; flex-direction: column; }
+.pk-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; }
+.pk-row + .pk-row { border-top: 1px solid var(--outline-variant); }
+.pk-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.pk-tx b { font-size: var(--fs-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pk-tx small { font-size: var(--fs-label-small); color: var(--on-surface-variant); }
+.pk-mv, .pk-in { display: inline-flex; align-items: center; gap: var(--icon-gap); flex: 0 0 auto; height: 32px; padding: 0 12px; border: 1px solid var(--outline); border-radius: var(--r-pill); background: transparent; color: var(--primary); font: 500 var(--fs-label) 'Rubik', system-ui, sans-serif; white-space: nowrap; cursor: pointer; }
+.pk-acts { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px 12px; border-top: 1px solid var(--outline-variant); }
+.pk-del { display: inline-flex; align-items: center; gap: var(--icon-gap); height: 32px; padding: 0 8px; border: none; background: none; color: var(--error); font: 500 var(--fs-label) 'Rubik', system-ui, sans-serif; cursor: pointer; }
+.pk-days { display: grid; grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr)); gap: 6px; }
+.pk-day { border: 1px solid var(--outline); border-radius: var(--r-tile); background: var(--surface-container); padding: 8px; text-align: center; font: inherit; color: var(--on-surface); cursor: pointer; }
+.pk-day b { display: block; font-size: var(--fs-body); }
+.pk-day.on { background: var(--secondary-container); color: var(--on-secondary-container); border-color: var(--secondary-container); }
+.pk-day small { display: block; color: var(--on-surface-variant); font-size: var(--fs-label-small); }
+.ta-item:disabled { opacity: .45; }
+.mc-dest { margin: 6px 0 10px; }
+.mc-dest > b { display: block; font-size: var(--fs-body); margin-bottom: 4px; }
+.mc-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+/* 11.30.0 (wx-one-place): a destination's words from Claude under its months; the other seasons fold (the one fold, sub-accordion) */
+.wx-words { margin-top: var(--sp-2); font-size: var(--fs-body-small); color: var(--on-surface); overflow-wrap: anywhere; }
+.wx-words p { margin: 0 0 6px; }
+.wx-words h3, .wx-words h4 { font-size: var(--fs-body); margin: 8px 0 4px; }
+.mc-cell { border: 1px solid transparent; border-radius: var(--r-chip); background: hsl(var(--mc-h, 215) var(--wx-sat) calc(var(--wx-l) - var(--mc-k, 0) * var(--wx-dl))); color: var(--on-wx); padding: 4px 2px; display: flex; flex-direction: column; align-items: center; font: inherit; cursor: pointer; line-height: 1.15; }
+.mc-cell.on { border-color: var(--on-surface); box-shadow: 0 0 0 1px var(--on-surface); }
+.mc-cell.mc-tap { outline: 2px dashed var(--primary); outline-offset: 1px; } /* 11.43.0 (info-complete item 7): the tapped month, whose season the words show */
+.mc-cell small { font-size: var(--fs-micro); }
+.mc-cell b { font-size: var(--fs-body); }
+.mc-cell span { font-size: var(--fs-micro); }
+.mc-cell i { font-style: normal; font-size: var(--fs-micro); }
+.trash-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 2px 8px; }
+.trash-card .card-actions, .hid-card .card-actions { margin-top: 4px; gap: 6px; }
+.trash-card .sub, .hid-card .sub { margin-bottom: 0; }
+.badge.st-why { background: var(--today-container); color: var(--on-today); }
+.hid-card .sub .badge { margin-inline-end: 4px; }
+.hid-card h3 .dd-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-inline-end: 6px; vertical-align: middle; }
+.hid-all { margin: 0 0 8px; }
+.hr-list { margin: 6px 0 10px; }
+.hr-dirty { color: var(--error); }
+.ta-list { display: flex; flex-direction: column; gap: 6px; }
+.ta-item { text-align: start; padding: 11px 12px; border: 1px solid var(--outline); border-radius: var(--r-tile); background: var(--surface); color: var(--on-surface); font: 500 var(--fs-title-small) 'Rubik', system-ui, sans-serif; cursor: pointer; }
+.ta-del { color: var(--error); }
+.ta-item.ta-main { background: var(--primary); color: var(--on-primary); border-color: var(--primary); } .ta-item.ta-main small { color: inherit; opacity: .85; } /* 10.3.0: the trip's main action first */
+.ro-bar { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-body); position: sticky; top: calc(var(--header-h, 0px) + 4px); z-index: 30; margin: var(--sp-2) 0; padding: 6px var(--sp-1) 6px var(--sp-1); padding-inline-start: var(--sp-3); border-radius: var(--r-card); background: var(--discover-container); color: var(--on-discover); } /* 10.1.0 (design-1) */
+.ro-bar .bn-t { flex: 1 1 12em; min-width: 0; line-height: 1.35; } .ro-bar { flex-wrap: wrap; } /* 11.8.0 (travels-7-followups, Q3: t890 at 320 +15%): the text keeps 12em; with no room beside it the actions go down a line, at the row's end */ .ro-bar .bn-t b { font-weight: 500; }
+.ro-acts { display: flex; align-items: center; flex: 0 0 auto; }
+.ro-reopen, .ro-x { border: none; background: none; color: inherit; font: 500 var(--fs-body) 'Rubik', system-ui, sans-serif; cursor: pointer; white-space: nowrap; min-height: var(--h-icon-btn); padding: 0 var(--sp-2); border-radius: var(--r-pill); }
+.ro-x { width: var(--h-icon-btn); padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+.ro-acts { margin-inline-start: auto; }
+body.read-only [data-fav],body.read-only [data-visited],body.read-only [data-edit],body.read-only [data-book],body.read-only [data-key],body.read-only [data-sched],body.read-only [data-day],body.read-only #addFab,body.read-only [data-addplace],body.read-only .add-btn,body.read-only [data-lock],body.read-only [data-dup],body.read-only [data-plansched],body.read-only [data-schededit],body.read-only [data-schedplan],body.read-only [data-schedrm] { display: none !important; }
+

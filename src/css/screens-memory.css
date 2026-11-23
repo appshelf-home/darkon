@@ -1,0 +1,214 @@
+/* 4.46.5: the memory screen - ⛶ on the picture's corner (like a map), the trip's actions under its title */
+.mem-picwrap { position: relative; }
+.mem-picfs { position: absolute; top: 8px; left: 8px; /* the trip's name sits on the right */ width: 36px; height: 36px; border-radius: var(--r-tile); border: 1px solid var(--outline); background: var(--surface-container); color: var(--on-surface); font-size: var(--fs-title-medium); display: grid; place-items: center; cursor: pointer; box-shadow: var(--elev-1); }
+.mem-artmark { font-weight: 500; color: var(--on-surface-variant); font-size: var(--fs-label); }
+.mem-acts { margin: 10px 0 4px; }
+.mem-picacts { flex-wrap: wrap; }
+.mem-live .ms-btn { top: 102px; }
+.mem-hero { position: relative; overflow: hidden; border-radius: var(--r-card); min-height: 168px; display: flex; align-items: flex-end; color: #fff; background: var(--mh); } /* 10.3.0 (design-3): a cover hero */
+.mem-hero-in { position: relative; width: 100%; padding: 40px 16px 14px; background: linear-gradient(180deg, transparent, rgba(0,0,0,.55)); }
+.mem-hero h2 { margin: 2px 0 2px; font-size: var(--fs-display-large); color: #fff; }
+.mem-kicker { position: absolute; top: 10px; right: 12px; display: inline-flex; align-items: center; gap: var(--icon-gap-sm); padding: 3px 10px; border-radius: var(--r-pill); background: rgba(255,255,255,.88); color: #26344A; font: 600 var(--fs-label-small) 'Rubik', system-ui, sans-serif; }
+.mem-tiles { margin: 10px 0 0; } .mem-tiles .dr-tile { background: var(--surface-container); }
+.mem-acts { display: flex; gap: var(--sp-2); } .mem-acts.brow > * { flex: 1 1 0; min-width: 0; justify-content: center; display: inline-flex; align-items: center; gap: 6px; height: 40px; border-radius: var(--r-pill); white-space: nowrap; }
+.mem-block h3, .mem-fchip { display: flex; align-items: center; gap: var(--icon-gap); } .mem-fchip { flex: 0 0 auto !important; }
+.mem-sub { font-size: var(--fs-body-small); opacity: .92; }
+
+
+
+
+.mem-block { margin: 12px 0; }
+.mem-block h3 { margin: 0 0 6px; font-size: var(--fs-title-medium); }
+.mem-map { width: 100%; height: auto; display: block; }
+.mem-live { height: 300px; border-radius: var(--r-card); overflow: hidden; position: relative; } /* 4.36.0 */
+@media (min-width: 600px) { .mem-live { height: 380px; } }
+.mem-legend { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: var(--fs-label); color: var(--soft); margin: 6px 0 2px; }
+.mem-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-inline-end: 4px; vertical-align: middle; border: 1px solid #fff; }
+
+.mem-tt { font: 700 var(--fs-map-label) Rubik, Arial, sans-serif; background: rgba(255,255,255,.92); color: #1C2B33; border: 0; box-shadow: none; padding: 1px 5px; }
+.mem-mid .mem-tt { font-size: var(--fs-map-label-s); padding: 0 4px; } .mem-far .mem-tt { display: none; } /* 4.38.1 */
+.mem-tt::before { display: none; }
+.mem-hotel { width: 24px; height: 24px; border-radius: 50%; background: var(--hotel-pin); border: 2px solid #fff; color: var(--hotel-ring); display: grid; place-items: center; position: relative; box-shadow: var(--elev-1); } .mem-hotel > .msi { font-size: var(--pin-ic); } /* 10.10.0 (design-maps, gap 61) */
+.mem-hotel b { position: absolute; top: -6px; left: -6px; background: var(--hotel-ring); color: var(--on-hotel-ring); border-radius: 50%; min-width: 1rem; height: 1rem; font: 700 var(--pin-num-s) Rubik, Arial, sans-serif; display: grid; place-items: center; }
+.mem-bgst { display: block; margin-top: 4px; }
+.mm-bg { fill: color-mix(in srgb, var(--primary) 6%, var(--surface-container)); stroke: var(--outline-variant); }
+.mm-route { fill: none; stroke: var(--primary); stroke-width: 2.5; stroke-dasharray: 6 4; stroke-linecap: round; }
+.mm-dot { stroke: var(--surface-container); stroke-width: 1.5; }
+.mm-hotel { font-family: 'MS'; font-size: var(--pin-ic); fill: var(--hotel-pin); } /* 10.10.0 (design-maps, gap 61): the bed as a line icon in the static map */
+.mm-label { font: 600 var(--fs-map-label-s) 'Rubik', system-ui, sans-serif; fill: var(--on-surface); paint-order: stroke; stroke: var(--surface-container); stroke-width: 3px; }
+.mem-plan .mp-day { border-top: 1px solid var(--outline-variant); padding: 6px 0; }
+.mem-plan ul { margin: 2px 0 0; padding-inline-start: 18px; font-size: var(--fs-body); }
+.mem-plan .mp-org { color: var(--on-surface-variant); }
+.mem-plan .mp-vis { font-weight: 600; }
+.mem-acts { margin: 14px 0; }
+/* 4.29.0: closing a trip */
+.cl-head { margin: -8px -14px 8px; padding: 14px 18px 14px !important; background: linear-gradient(180deg, var(--today-container), var(--surface)); } /* 10.3.0 (design-3): closing - a warm header and a vertical stepper */
+.cl-head h2 { color: var(--on-today); } .cl-head p { margin: 2px 0 0; } .cl-sub { color: var(--on-surface-variant); font-size: var(--fs-body-small); }
+.screen-head[data-tab="closing"] { background: var(--today-container) !important; } .screen-head[data-tab="closing"] > .screen-title { display: none; } /* the title is the warm header's, once (with its ⓘ) */
+.cl-head h2 { display: flex !important; align-items: center; gap: var(--icon-gap); }
+.cl-stepper { padding: 8px 12px !important; } .cl-vs { position: relative; padding-bottom: 4px; }
+.cl-vs:not(:last-child)::before { content: ''; position: absolute; top: 40px; bottom: 0; inset-inline-start: 25px; width: 2px; background: var(--outline-variant); }
+.cl-vh { display: flex; align-items: center; gap: var(--sp-3); width: 100%; padding: 8px 6px; border: none; background: none; color: inherit; font: inherit; text-align: start; cursor: pointer; }
+.cl-vt { display: flex; flex-direction: column; min-width: 0; } .cl-vt b { font: 500 var(--fs-title-small) 'Rubik', system-ui, sans-serif; } .cl-vt small { color: var(--on-surface-variant); font-size: var(--fs-body-small); }
+.sb-n { flex: none; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; border: 2px solid var(--outline); background: var(--surface-container); color: var(--on-surface-variant); font: 600 var(--fs-label) 'Rubik', system-ui, sans-serif; box-sizing: border-box; }
+.cl-vs[data-st="done"] .sb-n { background: var(--visited); border-color: var(--visited); color: var(--on-badge); } .cl-vs[data-st="done"] .cl-vt small { color: var(--visited); }
+.cl-vs[data-st="cur"] .sb-n { background: var(--on-today); border-color: var(--on-today); color: var(--on-badge); } /* final review 28a: the digits' ink follows the mode (white / dark), as on a badge */
+.cl-vs > .cl-step { margin-inline-start: 46px; padding: 0 0 10px; }
+.cl-nav { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); margin: 14px 0; }
+.cl-nav .link-btn { text-decoration: none; display: inline-flex; align-items: center; gap: var(--icon-gap); } .cl-nav .btn-nav { display: inline-flex; align-items: center; gap: var(--icon-gap); border-radius: var(--r-pill); padding: 0 18px; white-space: nowrap; }
+.cl-step h3 { margin-top: 0; }
+.cl-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.cl-row { display: flex; align-items: center; gap: 6px; padding: 8px; border: 1px solid var(--outline-variant); border-radius: var(--r-tile); background: var(--surface); flex-wrap: wrap; }
+.cl-row > span:first-child { flex: 1 1 140px; min-width: 0; font-weight: 600; font-size: var(--fs-title-small); }
+.cl-row small { display: block; color: var(--on-surface-variant); font-weight: 400; }
+.cl-word { flex: 1 1 100%; padding: 6px 8px; border: 1px solid var(--outline); border-radius: var(--r-chip); background: var(--surface-container); color: var(--on-surface); font-family: 'Rubik', system-ui, sans-serif; }
+.cl-high .fm-sel, .cl-high input[type="text"] { flex: 1 1 140px; padding: 7px 8px; border: 1px solid var(--outline); border-radius: var(--r-chip); background: var(--surface-container); color: var(--on-surface); font-family: 'Rubik', system-ui, sans-serif; }
+.cl-hn { font-weight: 700; color: var(--on-claude); flex: 0 0 auto !important; }
+.cl-nav { margin: 12px 0 24px; }
+.cl-rate .rate-btn[aria-pressed="true"] { background: color-mix(in srgb, var(--primary) 16%, transparent); border-color: color-mix(in srgb, var(--primary) 45%, transparent); } /* 4.34.2: a quiet mark */
+.cl-rate .rate-btn[aria-pressed="false"] { opacity: .75; }
+.cl-rate textarea.cl-word { flex: 1 1 100%; resize: none; overflow: hidden; min-height: 32px; font: inherit; font-size: var(--fs-body); line-height: 1.35; padding: 6px 8px; border: 1px solid var(--outline); border-radius: var(--r-chip); background: var(--surface); color: var(--on-surface); box-sizing: border-box; }
+.cl-row .bk-part { display: grid; grid-template-columns: auto 1fr; column-gap: 8px; align-items: start; }
+/* 4.46.4: the closing step's checkboxes use the common layout (box in its column, text and small note under each other); a grid broke their text into a narrow column */
+.off-map { height: 240px; border-radius: var(--r-tile); overflow: hidden; margin: 6px 0; border: 1px solid var(--outline-variant); }
+.off-meter { height: 8px; border-radius: var(--r-xs); background: var(--secondary-container); overflow: hidden; margin: 12px 0 2px; } .off-meter > div { height: 100%; background: var(--primary); border-radius: var(--r-xs); }
+/* 4.30.0: memento */
+.claude-btn { border: 1px solid color-mix(in srgb, var(--on-claude) 45%, transparent); background: var(--claude-container); color: var(--on-surface); border-radius: var(--r-pill); padding: 8px 14px; font: 600 var(--fs-title-small) 'Rubik', system-ui, sans-serif; cursor: pointer; }
+
+/* 4.43.0: the trip picture editor (cl-memento-pick) */
+.tp-ed { position: fixed; inset: 0; z-index: 2900; background: var(--surface); color: var(--on-surface); display: flex; flex-direction: column; max-width: 1100px; margin: 0 auto; padding-top: var(--safe-top); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body.tp-on { overflow: hidden; }
+.tp-top { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--outline-variant); background: var(--surface-container); }
+.tp-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tp-x, .tp-ib { width: 36px; height: 36px; flex: 0 0 36px; border-radius: var(--r-pill); border: 1px solid var(--outline); background: var(--surface-container); color: var(--on-surface); font: 600 var(--fs-title-medium) 'Rubik', system-ui, sans-serif; cursor: pointer; display: inline-grid; place-items: center; }
+.tp-chg { height: 36px; border-radius: var(--r-pill); border: 1px solid var(--primary); background: color-mix(in srgb, var(--primary) 10%, var(--surface-container)); color: var(--on-surface); font: 600 var(--fs-body-small) 'Rubik', system-ui, sans-serif; padding: 0 12px; cursor: pointer; white-space: nowrap; }
+.tp-chg[hidden] { display: none; }
+.tp-main { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.tp-picwrap { flex: 0 0 auto; padding: 6px 8px 0; text-align: center; }
+.tp-pic { display: flex; justify-content: center; }
+.tp-pic > svg { display: block; width: auto; height: auto; max-width: 100%; max-height: 42vh; border-radius: var(--r-tile); box-shadow: var(--elev-2); }
+.tp-pic [data-pt] { cursor: pointer; }
+.tp-st { display: block; font-size: var(--fs-label-small); color: var(--on-surface-variant); margin-top: 3px; }
+.tp-st[hidden] { display: none; }
+.tp-side { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.tp-tabs { display: flex; border-bottom: 1px solid var(--outline-variant); }
+.tp-tabs button { flex: 1; padding: 9px 4px; border: none; background: none; color: var(--on-surface-variant); font: 600 var(--fs-body) 'Rubik', system-ui, sans-serif; border-bottom: 3px solid transparent; cursor: pointer; }
+.tp-tabs button[aria-selected="true"] { color: var(--on-surface); border-bottom-color: var(--primary); }
+.tp-body { flex: 1; overflow-y: auto; padding: 8px 12px 24px; }
+.tp-search { display: flex; gap: 6px; align-items: center; margin: 2px 0 6px; }
+.tp-search .clear-wrap { flex: 1; position: relative; display: block; }
+.tp-search input { width: 100%; box-sizing: border-box; padding: 8px 34px 8px 10px; border: 1px solid var(--outline); border-radius: var(--r-chip); background: var(--surface-container); color: var(--on-surface); font: var(--fs-title-small) 'Rubik', system-ui, sans-serif; }
+.tp-gh { display: flex; align-items: center; gap: var(--icon-gap); width: 100%; margin: 10px 0 4px; font-size: var(--fs-body); font-weight: 700; color: var(--on-surface); background: none; border: none; padding: 0; text-align: start; font-family: 'Rubik', system-ui, sans-serif; }
+.tp-gh small { color: var(--on-surface-variant); font-weight: 400; }
+.tp-out { cursor: pointer; padding: 6px 0; border-top: 1px solid var(--outline-variant); }
+.tp-row { display: flex; align-items: center; gap: 6px; padding: 3px 0; border-bottom: 1px solid color-mix(in srgb, var(--outline-variant) 60%, transparent); }
+.tp-th { flex: 0 0 34px; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--outline); background: var(--surface-container); padding: 0; overflow: hidden; display: grid; place-items: center; cursor: pointer; font-size: var(--fs-title-medium); color: var(--on-surface-variant); }
+.tp-th img { width: 100%; height: 100%; object-fit: cover; }
+.tp-name { flex: 1; min-width: 0; text-align: start; background: none; border: none; color: var(--on-surface); font: 500 var(--fs-body) 'Rubik', system-ui, sans-serif; cursor: pointer; padding: 2px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tp-name small { display: block; color: var(--on-surface-variant); font-size: var(--fs-label-small); font-weight: 400; }
+.tp-mine { font-style: normal; font-size: var(--fs-label-small); }
+.tp-lvs { display: inline-flex; gap: 2px; flex: 0 0 auto; }
+.tp-lv { width: 30px; height: 30px; border-radius: var(--r-chip); border: 1px solid var(--outline); background: var(--surface-container); color: var(--on-surface-variant); font: 600 var(--fs-label) 'Rubik', system-ui, sans-serif; cursor: pointer; padding: 0; }
+.tp-lv[aria-pressed="true"] { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+/* 10.5.0 (design-4 part 2, look.md "Editors" - the trip picture editor): Material tabs (icon and word centered), "＋ מיקום" tonal beside the
+   search, per place a size segmented button (ג · ב · ק · hidden), "בחוץ · N" a folded outlined row */
+.tp-x { border: none; background: none; } .tp-ib { border: none; background: none; }
+.tp-tabs button { display: flex; flex-direction: column; align-items: center; gap: 2px; font-weight: 500; }
+.tp-tabs button[aria-selected="true"] { color: var(--primary); }
+.tp-add { flex: none; display: inline-flex; align-items: center; gap: var(--icon-gap); height: 40px; padding: 0 14px 0 12px; border: none; border-radius: var(--r-pill); background: var(--secondary-container); color: var(--on-secondary-container); font: 500 var(--fs-body) 'Rubik', system-ui, sans-serif; cursor: pointer; white-space: nowrap; }
+.tp-lvs { gap: 0; border: 1px solid var(--outline); border-radius: var(--r-pill); overflow: hidden; }
+.tp-lvs .tp-lv { border: none; border-radius: 0; background: none; width: 32px; display: inline-flex; align-items: center; justify-content: center; }
+.tp-lvs .tp-lv + .tp-lv { border-inline-start: 1px solid var(--outline); }
+.tp-lvs .tp-lv[aria-pressed="true"] { background: var(--secondary-container); color: var(--on-secondary-container); }
+.tp-out { border: 1px solid var(--outline-variant); border-radius: var(--r-tile); padding: 10px 12px; margin-top: 12px; justify-content: space-between; }
+.tp-outt { display: flex; flex-direction: column; text-align: start; } .tp-outt small { font-weight: 400; }
+.tp-chips { flex-wrap: wrap; overflow: visible; gap: 6px; margin: 4px 0; }
+.tp-card .bk-part { margin: 6px 0; }
+.tp-imgrow { display: flex; gap: 10px; align-items: flex-start; }
+.tp-imgprev { flex: 0 0 72px; width: 72px; height: 72px; border-radius: 50%; overflow: hidden; border: 2px solid var(--outline-variant); padding: 0; background: var(--surface-container); display: grid; place-items: center; color: var(--on-surface-variant); cursor: pointer; }
+.tp-imgprev img { width: 100%; height: 100%; object-fit: cover; }
+.tp-noimg { cursor: default; }
+.tp-imgsrc { flex: 1; min-width: 0; }
+.tp-imgsrc .ph-btn { height: 32px; }
+.tp-imgcol { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 0 0 auto; }
+.tp-move { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 4px 0; }
+.tp-chlist { display: flex; flex-direction: column; gap: 4px; margin: 6px 0; }
+.tp-ch { display: flex; align-items: center; gap: 8px; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--outline-variant); font-size: var(--fs-body); }
+.tp-res { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.tp-fs { position: fixed; inset: 0; z-index: 3080; background: #111; overflow: hidden; display: grid; place-items: center; }
+.tp-fsin { transform-origin: center center; width: 100%; height: 100%; display: grid; place-items: center; }
+.tp-fsin > svg { display: block; max-width: 100vw; max-height: 100vh; width: auto; height: auto; }
+.tp-fsx { position: absolute; top: calc(10px + var(--safe-top)); right: 10px; z-index: 2; }
+.tp-fsin > .ph-vimg { display: block; max-width: 100vw; max-height: 100vh; width: auto; height: auto; object-fit: contain; -webkit-user-drag: none; }
+.ph-vacts { position: absolute; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); inset-inline: 12px; justify-content: center; z-index: 2; }
+.ph-vtop { position: absolute; top: 0; inset-inline: 0; z-index: 2; display: flex; align-items: center; gap: 12px; padding: calc(8px + var(--safe-top)) 10px 8px; background: linear-gradient(rgba(0,0,0,.55), transparent); color: #fff; }
+.ph-vtop .tp-fsx { position: static; border: none; background: none; color: #fff; } .ph-vcnt { font-weight: 500; }
+.ph-vcap { position: absolute; inset-inline: 16px; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 2; color: #fff; font-size: var(--fs-body); text-shadow: 0 1px 3px rgba(0,0,0,.7); }
+.ph-vacts { display: flex; gap: 28px; padding: 10px 0; background: linear-gradient(transparent, rgba(0,0,0,.55)); inset-inline: 0; bottom: 0; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+.ph-vacts .ph-vbtn { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; min-height: 0; padding: 4px 8px; border: none; background: none; font-size: var(--fs-label); font-weight: 500; }
+.ph-vbtn { min-height: 40px; padding: 0 16px; border-radius: var(--r-pill); border: 1px solid rgba(255,255,255,.35); background: rgba(20,20,20,.72); color: #fff; font: 600 var(--fs-title-small) 'Rubik', system-ui, sans-serif; cursor: pointer; }
+.tp-crop { position: fixed; inset: 0; z-index: 3090; background: #111; color: #fff; display: flex; }
+.tp-cbox { flex: 1; display: flex; flex-direction: column; color: #fff; box-sizing: border-box; }
+.tc-top { display: flex; align-items: center; gap: 12px; padding: calc(8px + var(--safe-top)) 10px 8px; } .tc-top b { flex: 1; font-weight: 500; }
+.tc-x { width: 40px; height: 40px; border: none; background: none; color: #fff; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.tc-save { height: 36px; } .pa-city > span { display: flex; flex-direction: column; } .pa-city small { color: var(--on-surface-variant); font-size: var(--fs-body-small); } .tp-cbox .tp-cview { margin: auto; }
+.tc-foot { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 20px calc(16px + env(safe-area-inset-bottom, 0px)); } .tc-foot small { color: rgba(255,255,255,.7); }
+.tc-auto { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; border: none; background: none; color: #fff; font: 500 var(--fs-label) 'Rubik', system-ui, sans-serif; cursor: pointer; }
+.tp-cview { position: relative; width: 260px; height: 260px; margin: 8px auto; }
+.tp-cview canvas { display: block; width: 260px; height: 260px; border-radius: var(--r-chip); cursor: grab; }
+.tp-cmask { position: absolute; inset: 0; border-radius: var(--r-chip); pointer-events: none; background: radial-gradient(circle at center, transparent 129px, rgba(0,0,0,.5) 130px); }
+.tp-cbox input[type=range] { width: 100%; }
+.tp-cview.tc-fr { width: min(300px, calc(100vw - 20px)); height: auto; aspect-ratio: 1; } .tp-cview.tc-fr canvas { width: 100%; height: 100%; border-radius: 0; } /* 11.31.0 (photo-frame): the framing view - the frame of the chosen shape over the dimmed photo */
+.tc-shape { width: 100%; max-width: 300px; } .tc-shape .view-toggle { margin: 0; border-color: rgba(255,255,255,.5); } .tc-shape .view-toggle button { flex: 1 1 0; color: #fff; background: none; border-color: rgba(255,255,255,.5); }
+.tc-shape .view-toggle button[data-active="true"] { background: rgba(255,255,255,.22); color: #fff; }
+.memento-img { cursor: zoom-in; }
+@media (min-width: 1024px) { .tp-main { flex-direction: row; } .tp-picwrap { flex: 1 1 58%; padding: 12px; } .tp-pic > svg { max-height: calc(100vh - 110px); } .tp-side { flex: 1 1 42%; border-inline-start: 1px solid var(--outline-variant); } }
+.mem-block .chips-row { flex-wrap: wrap; overflow: visible; row-gap: 6px; } /* 4.35.1: all options in view, no sideways scroll */
+.memento-img { margin: 8px 0; border-radius: var(--r-card); overflow: hidden; box-shadow: var(--elev-2); }
+.memento-img > svg { width: 100%; height: auto; display: block; } /* 4.36.0: only the picture itself; its inner map box keeps its size */
+.memento-img > svg, .mem-map { direction: ltr; } /* the page is RTL; the pictures place their own text */
+.ph-btn { display: inline-grid; place-items: center; min-width: 38px; height: 34px; border: 1px solid var(--outline); border-radius: var(--r-pill); background: var(--surface-container); cursor: pointer; font-size: var(--fs-title-medium); }
+
+.hl-extras { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.hl-extras small { color: var(--on-surface-variant); }
+.ph-img.mh-photo { width: 64px; flex: 0 0 64px; }
+
+
+
+
+/* 11.9.0 (timeline-import; look/targets.md "Google Timeline"): the import's summary card, the rows by day with the Timeline tag
+   (a small green container, as "היינו"), the places not on the list, the steps of the sheets; the real path on the maps */
+.gl-sum { padding: 12px 14px; margin: 0 0 10px; }
+.gl-sum-h { display: flex; align-items: center; gap: var(--icon-gap); font-size: var(--fs-title-small); }
+.gl-sum-h .msi { color: var(--visited); }
+.gl-facts { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0 6px; }
+.gl-fact { display: inline-flex; align-items: center; gap: 3px; padding: 2px 6px; border-radius: var(--r-chip); background: var(--surface-container); font-size: var(--fs-label); }
+.gl-sum-l { color: var(--on-surface-variant); font-size: var(--fs-label); }
+.gl-day { margin: 10px 0 4px; }
+.gl-dh { display: flex; align-items: center; gap: var(--icon-gap); color: var(--on-surface-variant); font-size: var(--fs-label); margin: 0 2px 4px; }
+.gl-rn { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; flex: 1 1 auto; }
+.gl-tag { display: inline-flex; align-items: center; gap: 3px; padding: 1px 6px; border-radius: var(--r-xs); background: var(--surface-container-high); color: var(--on-surface-variant); font-size: var(--fs-label-small); max-width: 100%; flex-wrap: wrap; } /* 11.14.0 (P14): an offer's tag holds its day too - it wraps rather than run under the add button at large text */ /* closing-where (11.26.0, Q5): what comes from Google in a neutral tone, the family of "לא זוהה בציר הזמן" - green is only my "היינו" */
+.gl-miss, .gl-ll { color: var(--on-surface-variant); font-size: var(--fs-label-small); }
+/* closing-where (11.26.0, Q2): the one yes / no / unset mark (fmMark) - a segmented pair; the swipe's preview fills the matching segment;
+   green only on the selected "היינו" (Q5). It sits beside the name and wraps under it when they do not fit (flex-wrap of .cl-row) */
+/* 11.34.0 (phone-round-3-fixes P4, G71): the two halves always the same width - the wider one's (a grid of equal columns) */
+.fm-mark { display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr; flex: 0 0 auto; margin-inline-start: auto; border: 1px solid var(--outline); border-radius: var(--r-pill); overflow: hidden; background: var(--surface); }
+.fm-mark > .cl-vbtn { min-height: 40px; padding: 0 12px; border: none; border-radius: 0; background: transparent; color: var(--on-surface); font: inherit; font-size: var(--fs-label); white-space: nowrap; cursor: pointer; }
+.fm-mark > .cl-vbtn + .cl-vbtn { border-inline-start: 1px solid var(--outline); }
+.fm-mark > .cl-vbtn[data-clvis="1"][aria-pressed="true"], .fm-mark > .cl-vbtn[data-clvis="1"].g-prev { background: var(--visited-container); color: var(--visited); }
+.fm-mark > .cl-vbtn[data-clvis="0"][aria-pressed="true"], .fm-mark > .cl-vbtn[data-clvis="0"].g-prev { background: var(--secondary-container); color: var(--on-secondary-container); }
+.fm-markview { margin: 8px 0 2px; }
+/* 11.34.0 (P15, G72): the view switcher and "✓ היינו בהכל" on one line, the button at the other end; no room - it wraps under, at the far end, whole */
+.cl-viewline { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); margin: 8px 0 2px; }
+.cl-viewline > .fm-markview { margin: 0; flex: 0 0 auto; max-width: 100%; }
+.cl-viewline > .cl-allvis { width: auto; min-height: 40px; padding: 0 12px; margin-inline-start: auto; white-space: nowrap; }
+.cl-more { display: flex; align-items: center; gap: 4px; margin-top: 10px; } /* Q6: the action row "＋ עוד מקום שהיינו בו" with its ⓘ */
+.cl-more > .link-btn { display: inline-flex; align-items: center; gap: var(--icon-gap); min-height: 40px; text-decoration: none; text-align: start; } /* 11.44.1 (price-level-note item 7): wrapped at 320 wide ("ענק"), its words start at the icon, not centered away from it */
+.gl-nm { display: inline-flex; align-items: center; gap: var(--icon-gap); min-width: 0; }
+.gl-steps { margin: 8px 0; padding-inline-start: 22px; font-size: var(--fs-body); }
+.gl-steps li { margin: 4px 0; }
+.sh-p { font-size: var(--fs-body); margin: 4px 0 10px; }
+.wb-late { color: var(--on-surface-variant); font-size: var(--fs-label); margin: 0 0 6px; }
+.set-sw-row { padding: 4px 12px; }
+.gl-path { stroke: var(--visited); }
+#memBgRetry { height: auto; min-height: 32px; white-space: normal; text-align: start; } /* 11.44.1 (price-level-note item 7): the retry button's words wrap at 320 wide ("ענק") instead of spilling out */

@@ -1,0 +1,12 @@
+function renderTrashScreen() {
+  const items = STATE.trash.slice().reverse();
+  const kindLabel = t => t.kind === 'layer' ? msi('palette', { cls: 'msi-in' }) + ' שכבה: ' : t.kind === 'trip' ? msi('luggage', { cls: 'msi-in' }) + ' טיול: ' : t.kind === 'dest' ? 'יעד: ' : t.kind === 'photo' ? (String(t.entry.data.name).startsWith(SY.claude) ? '' : msi('photo_camera', { cls: 'msi-in' }) + ' ') : msi('location_on', { cls: 'msi-in' }) + ' '; // 10.8.0 (design-icons, gap 17)
+  const extra = t => t.kind === 'dest' ? `${SEP}${t.places || 0} מקומות` : t.kind === 'tripPlace' && STATE.trips[t.tripId] ? `${SEP}בטיול ${_qe(STATE.trips[t.tripId].name)}` : '';
+  document.getElementById('main').innerHTML = `<div class="section-head"><h2>${SY.del} סל מחזור</h2><p>מקומות, שכבות, טיולים, יעדים ותמונות שנמחקו. נשמרים 30 יום ואז נמחקים לגמרי.</p></div>` +
+    (items.length ? `<div class="trash-bar"><span class="sh-hint">${items.length === 1 ? 'פריט אחד' : items.length + ' פריטים'}</span><button type="button" class="tc-sm trash-empty" id="trashEmpty" data-act="trash.empty">${msi('delete_sweep', { size: 18 })} ריקון הסל</button></div>` + items.map(t => `<div class="card trash-card"><div class="card-top"><div><h3>${kindLabel(t)}${t.kind === 'photo' ? icHTML(_qe(plainMsg(t.entry.data.name))) : _qe(t.entry.data.name)}</h3><div class="sub">נמחק ${tmFmt('date', t.at)}${extra(t)}${SEP}יימחק לגמרי בעוד ${Math.max(0, 30 - Math.floor((Date.now() - t.at) / 864e5))} ימים</div></div></div>
+      <div class="brow card-actions"><button class="btn-nav" data-act="trash.restore" data-v="${t.id}">${msi('restore', { size: 18 })} שחזור</button><button type="button" class="tc-sm" data-act="trash.purge" data-v="${t.id}">${msi('delete_forever', { size: 18 })} מחיקה לצמיתות</button></div></div>`).join('') : emptyHTML(msi('delete'), 'מה שנמחק מחכה כאן 30 יום, ואפשר להחזיר אותו.', '', 'הסל ריק'));
+}
+
+act('trash.restore', c => restoreFromTrash(Number(c.v)));
+act('trash.purge', c => askSure({ ic: 'delete_forever', title: 'למחוק לתמיד?', text: 'אפשר עוד לבטל במשך 3 ימים, מ-⋮ או מהיומן.', ok: 'מחיקה לתמיד' }, () => { purgeFromTrash([Number(c.v)]); })); // a permanent delete asks once, in the dialog (10.13.0)
+act('trash.empty', () => askSure({ ic: 'delete_forever', title: 'לרוקן את הסל?', text: `${STATE.trash.length === 1 ? 'מה שבו נמחק' : `כל ה-${STATE.trash.length} נמחקים`} לתמיד. אפשר עוד לבטל במשך 3 ימים, מ-⋮ או מהיומן.`, ok: 'ריקון הסל' }, () => { purgeFromTrash(STATE.trash.map(x => x.id)); }));

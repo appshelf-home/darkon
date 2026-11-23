@@ -1,0 +1,272 @@
+.draft-map-status, .map-status { position: absolute; top: 8px; inset-inline-start: 8px; max-width: calc(100% - 60px); z-index: 1050; background: var(--surface-container); color: var(--on-surface); border: 1px solid var(--outline-variant); border-radius: var(--r-chip); padding: 4px 8px; font-size: var(--fs-label-small); line-height: 1.35; box-shadow: var(--elev-1); display: flex; align-items: flex-start; gap: 4px; cursor: pointer; }
+.draft-map-status[hidden] { display: none; }
+.draft-map-status[data-folded="true"] { border-radius: var(--r-pill); padding: 3px 9px; font-weight: 600; }
+.draft-map-status .dms-x { border: none; background: none; color: var(--on-surface-variant); font-size: var(--fs-body-small); padding: 0 2px; cursor: pointer; flex: 0 0 auto; }
+
+
+.pin-marker {
+  width: 30px; height: 30px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
+  border: 2px solid #fff; box-shadow: var(--elev-1); display: flex; align-items: center; justify-content: center;
+}
+.pin-marker > span { transform: rotate(45deg); font-size: var(--pin-ic); } /* phone-round-1-fixes P10 (11.14.0): only the pin's own child is turned back - `.pin-marker span` also turned the line icon inside it (.msi is a span), 45° off */
+.pin-marker.numbered { border-radius: 50%; transform: none; --lead-fg: color-mix(in srgb, var(--lc) var(--tone-mix), var(--tone-ink)); } /* phone-round-1-fixes P17 (11.14.0): the order badge (.pin-num) is the card's badge - its fill is the layer's tone (--lead-fg, which only the card's circle defined: on a pin the fill was empty and the white number stood on the map); 4.5:1 with --on-badge in both modes for every color of the palette and the day colors */
+.pin-marker.numbered > span { transform: none; font-size: var(--pin-num); font-weight: 700; color: #fff; font-family: 'Rubik', system-ui, sans-serif; } /* P10: the child only - on the icon inside, Rubik replaced the icon font and the glyph was drawn as a missing-glyph box */
+.pin-marker.unassigned { opacity: 0.55; }
+
+
+
+footer.legend {
+  max-width: 780px; margin: 0 auto; padding: 10px 18px 30px; font-size: var(--fs-label-small); color: var(--on-surface-variant);
+  display: flex; flex-wrap: wrap; gap: 10px;
+}
+footer.legend span { display: inline-flex; align-items: center; gap: var(--icon-gap); }
+footer.legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+.map-float .mf-x { position: absolute; top: 4px; inset-inline-end: 4px; width: 32px; height: 32px; border: none; background: none; color: var(--on-surface-variant); font-size: var(--fs-title-medium); cursor: pointer; z-index: 2; } /* phone-round-2b-fixes P12 (G63): above the card's body - a positioned .card after it covered it, so a finger on ✕ tapped the card */
+
+
+
+
+
+
+.map-empty-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1050; background: var(--surface-container); color: var(--on-surface); border: 1px solid var(--outline-variant);
+  border-radius: var(--r-tile); padding: 8px 12px; font-size: var(--fs-body); pointer-events: none; text-align: center; }
+.pin-sel .pin-marker { transform: rotate(-45deg) scale(1.35); box-shadow: 0 0 0 4px color-mix(in srgb, var(--on-surface) 30%, transparent); }
+.pin-sel .pin-marker.numbered { transform: scale(1.35); }
+.pin-sel .hotel-marker, .pin-sel .draft-pin > span, .pin-sel > span, .pin-sel .tv-pin { transform: scale(1.25); box-shadow: 0 0 0 4px color-mix(in srgb, var(--on-surface) 30%, transparent); }
+.hotel-marker.hm-s { width: 26px; height: 26px; border-radius: var(--r-chip); border-width: 2px; }
+.hotel-marker.hm-s > .msi { font-size: var(--pin-ic); }
+.hotel-marker.hm-m { width: 34px; height: 34px; }
+.hotel-marker.hm-l { width: 44px; height: 44px; border-radius: var(--r-tile); border-width: 3px; }
+.hotel-marker.hm-l > .msi { font-size: var(--pin-ic-l); }
+.chips-row.wrap { flex-wrap: wrap; overflow: visible; } .chips-row.wrap > .chip { max-width: 100%; } .chip > .t-ell, .fm-pickbtn > .t-ell { cursor: inherit; }
+.lyr-h { font-size: var(--fs-title-medium); margin: 14px 0 2px; }
+
+/* final-review 27: every map is one layer of its page - its floating buttons, cards and bars (z 1000-1100) are stacked inside the map's box,
+   so a sticky head or bar of the screen or window around it (z 5-30) always scrolls over the whole map, buttons included */
+.map-container, .leaflet-container { isolation: isolate; }
+/* 4.14.0: full-screen map. ⛶ in the corner of every map; in full screen it turns into ✕. Main map and draft: a small
+   status pill on top opens the same filter as a panel over the map. */
+.fs-btn { position: absolute; top: 10px; right: 10px; z-index: 1060; width: 38px; height: 38px; border-radius: var(--r-tile); border: none; background: var(--surface-container); color: var(--on-surface);
+  font: 600 var(--fs-title-medium) 'Rubik', system-ui, sans-serif; cursor: pointer; box-shadow: var(--elev-2); display: flex; align-items: center; justify-content: center; padding: 0;
+  -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; }
+.fs-btn svg { width: 20px; height: 20px; }
+.map-fs { position: fixed !important; inset: 0 !important; width: auto !important; height: auto !important; min-height: 0 !important; margin: 0 !important; border-radius: 0 !important; border: none !important; z-index: 2500; }
+.map-fs .fs-btn { top: calc(10px + var(--safe-top)); }
+.map-fs .fs-pill { display: flex; }
+.map-fs .leaflet-top { top: var(--safe-top); }
+.map-fs .locate-me-btn { bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
+.map-fs .map-float { bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
+.map-fs .draft-map-status, .map-fs .map-status { top: calc(54px + var(--safe-top)); inset-inline-start: auto; left: 50%; right: auto; transform: translateX(-50%); max-width: calc(100% - 124px); } /* 4.37.0: centered under the pill, clear of ⛶, the map buttons and zoom */
+.draft-map-status, .map-status { inset-inline-start: 56px; max-width: calc(100% - 110px); }
+/* 4.37.1: every map shows "📍 מאתר מיקומים" as this same small status over the map (it was a cover that hid the map) */
+.map-status { pointer-events: none; cursor: default; }
+body.fs-on header.top, body.fs-on .bottom-nav, body.fs-on .scroll-top-btn { display: none !important; }
+body.fs-on:not(.fs-main) .add-fab { display: none; }
+body.fs-on .add-fab { z-index: 2550; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); }
+body.fs-on .toast { bottom: calc(86px + env(safe-area-inset-bottom, 0px)); }
+body.fs-on .map-legend { display: none; }
+body.fs-on .map-fs + .map-legend { display: flex; position: fixed; left: 60px; right: 60px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 2510; margin: 0; padding: 5px 9px;
+  background: var(--surface-container); border: 1px solid var(--outline-variant); border-radius: var(--r-tile); box-shadow: var(--elev-2); }
+body.fs-on.map-card-open .map-fs + .map-legend { display: none; }
+/* the point picker of the place editor in full screen: search on top, a pin in the middle, ◎ and ✓ כאן */
+.fs-pick { position: fixed; inset: 0; z-index: 3050; background: var(--surface); }
+.fs-pick .fsp-map { position: absolute; inset: 0; z-index: 0; }
+.fsp-top { position: absolute; top: calc(10px + var(--safe-top)); right: 58px; left: 10px; z-index: 1060; display: flex; flex-direction: column; gap: 6px; }
+.fsp-search { display: flex; gap: 6px; background: var(--surface-container); border: 1px solid var(--outline-variant); border-radius: var(--r-tile); padding: 4px; box-shadow: var(--elev-2); }
+.fsp-search .clear-wrap { flex: 1; min-width: 0; }
+.fsp-search input { width: 100%; border: none; background: transparent; color: var(--on-surface); font: 400 var(--fs-title-small) 'Rubik', system-ui, sans-serif; padding: 8px 6px; outline: none; }
+.fsp-res { background: var(--surface-container); border: 1px solid var(--outline-variant); border-radius: var(--r-tile); max-height: 40vh; overflow-y: auto; box-shadow: var(--elev-2); }
+.fsp-res:empty { display: none; }
+.fsp-res .pe-res { width: 100%; }
+.fsp-res small { display: block; padding: 8px 10px; }
+.fsp-hint { align-self: center; background: rgba(28,43,51,.85); color: #fff; font: 600 var(--fs-label) 'Rubik', system-ui, sans-serif; padding: 5px 12px; border-radius: var(--r-pill); pointer-events: none; }
+.fsp-pin { position: absolute; left: 50%; top: 50%; z-index: 1050; transform: translate(-50%, -100%); font-size: var(--pin-pick); line-height: 1; pointer-events: none; filter: drop-shadow(0 2px 3px rgba(0,0,0,.35)); }
+.fsp-pin > .msi { font-size: var(--pin-pick); color: var(--map-pin); } /* 10.8.0 (design-icons): the pin as the line icon */
+.fsp-pin::after { content: ''; position: absolute; left: 50%; bottom: -3px; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%; background: #1C2B33; }
+.fsp-ok { position: absolute; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 1060; padding: 12px 34px; border: none; border-radius: var(--r-pill);
+  background: var(--primary); color: var(--on-primary); font: 700 var(--fs-title-medium) 'Rubik', system-ui, sans-serif; box-shadow: var(--elev-float); cursor: pointer; }
+.fs-pick .fs-btn { top: calc(10px + var(--safe-top)); }
+.fs-pick .locate-me-btn { bottom: calc(24px + env(safe-area-inset-bottom, 0px)); z-index: 1060; }
+.fsp-title { align-self: flex-start; background: var(--surface-container); color: var(--on-surface); font: 500 var(--fs-title-medium) 'Rubik', system-ui, sans-serif; padding: 6px 12px; border-radius: var(--r-pill); box-shadow: var(--elev-float); }
+.fs-pick > .fsp-pin { color: var(--map-pin); font-size: 0; } .fs-pick > .fsp-pin .msi { font-size: var(--pin-pick-ic); } .fs-pick > .fsp-pin::after { display: none; }
+.fsp-card { position: absolute; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); z-index: 1060; display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: var(--r-card); background: var(--surface-container); color: var(--on-surface); box-shadow: var(--elev-float); }
+.fsp-card small { color: var(--on-surface-variant); font-size: var(--fs-body-small); } .fsp-card b[hidden] { display: none; }
+.fsp-card .fsp-ok { position: static; transform: none; width: 100%; margin-top: 6px; display: inline-flex; align-items: center; justify-content: center; gap: var(--icon-gap); }
+.fs-pick .locate-me-btn { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
+
+/* 4.15.0: route map - stops, legs, ★ key points */
+.rt-stop { width: 1.875rem; height: 1.875rem; border-radius: 50%; background: var(--route-stop); color: var(--on-route); border: 2px solid var(--surface-container); display: flex; align-items: center; justify-content: center; font: 700 var(--fs-body-small) 'Rubik', system-ui, sans-serif; box-shadow: var(--elev-1); white-space: nowrap; }
+.rt-stop.wide { width: auto; min-width: 1.875rem; padding: 0 7px; border-radius: var(--r-pill); }
+.rt-stop.past { background: var(--route-past); }
+.rt-stop.now { background: var(--route-now); color: var(--on-route-now); box-shadow: 0 0 0 5px color-mix(in srgb, var(--route-now) 35%, transparent), var(--elev-1); }
+.rt-lbl { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 3px; background: var(--surface-container); color: var(--on-surface); border: 1px solid var(--outline); border-radius: var(--r-chip); padding: 1px 6px; font: 600 var(--fs-micro) 'Rubik', system-ui, sans-serif; white-space: nowrap; box-shadow: var(--elev-1); }
+.rt-key { width: 24px; height: 24px; border-radius: 50%; background: var(--route-now); color: var(--on-route-now); border: 2px solid var(--surface-container); display: flex; align-items: center; justify-content: center; font-size: var(--fs-body-small); box-shadow: var(--elev-1); }
+.rt-leg { width: 26px; height: 26px; border-radius: 50%; background: var(--surface-container); border: 1px solid var(--outline); display: flex; align-items: center; justify-content: center; font-size: var(--fs-body); box-shadow: var(--elev-1); }
+.rt-leg.next { border: 2px solid var(--primary); }
+.rt-leg.past { opacity: var(--fade); }
+.rt-goal { width: 26px; height: 26px; box-sizing: border-box; border-radius: 50%; background: var(--surface); color: var(--on-surface-variant); border: 2px solid var(--on-surface-variant); display: flex; align-items: center; justify-content: center; position: relative; box-shadow: var(--elev-1); } /* 11.2.0 (Q8): an outing's goal - a small pin with the kind's icon, its name in the stop's label */
+.leaflet-container path.rt-out { stroke: var(--on-surface-variant); } /* the outing's light dashed loop */
+/* 11.2.0 (travels-3-maps, Q9-Q10): a travel on the day map - its ends' pins in the travel tone with the kind's icon, its line (a flight dotted in the travel tone; a road, a rail or a ferry in the route's colors, which read on the map's light tiles in both schemes; an approximate line pale), the edge arrow of a far end */
+.tv-pin { width: 26px; height: 26px; box-sizing: border-box; border-radius: 50%; background: var(--travel-container); color: var(--on-travel); border: 2px solid var(--on-travel); display: flex; align-items: center; justify-content: center; box-shadow: var(--elev-1); }
+.tv-pin.big { width: 34px; height: 34px; }
+.leaflet-container path.tv-line.flight { stroke: var(--on-travel); }
+.leaflet-container path.tv-line.approx { stroke: var(--on-surface-variant); }
+.map-edge { position: absolute; left: 0; top: 0; transform: translate(-50%, -15px); display: flex; flex-direction: column; align-items: center; gap: 4px; white-space: nowrap; cursor: pointer; }
+.map-edge-ar { display: inline-flex; width: 30px; height: 30px; box-sizing: border-box; border-radius: 50%; background: var(--surface); border: 1.5px solid var(--on-surface-variant); align-items: center; justify-content: center; box-shadow: var(--elev-1); }
+.map-edge-ar svg { fill: var(--on-surface-variant); }
+.map-edge-lb { background: var(--surface); color: var(--on-surface); border-radius: var(--r-chip); padding: 2px 8px; font: 500 var(--fs-label-small) 'Rubik', system-ui, sans-serif; box-shadow: var(--elev-1); }
+.tv-edge .map-edge-ar { border-color: var(--on-travel); }
+.tv-edge .map-edge-ar svg { fill: var(--on-travel); }
+.tv-edge .map-edge-lb { color: var(--on-travel); }
+.leg-dash { display: inline-block; width: 18px; border-top: 2px dashed var(--on-surface-variant); vertical-align: middle; }
+.route-list { display: flex; flex-direction: column; gap: 0; margin: 4px 0 8px; }
+.rl-stop { display: grid; grid-template-columns: 1.875rem 1fr; gap: 8px; align-items: start; padding: 8px 6px; border-radius: var(--r-tile); cursor: pointer; text-align: start; border: none; background: none; color: inherit; font: inherit; width: 100%; }
+.rl-stop .rt-stop { width: 1.625rem; height: 1.625rem; font-size: var(--fs-label-small); }
+.rl-stop b { display: block; font-size: var(--fs-title-small); }
+.rl-stop small { display: block; color: var(--on-surface-variant); font-size: var(--fs-label); line-height: 1.4; }
+.rl-stop.now { background: color-mix(in srgb, var(--primary) 14%, transparent); }
+.rl-stop.past > :not(.rt-stop) { opacity: var(--fade); } /* the number keeps --route-past, a lighter tone, never faded */
+.rl-leg { padding: 2px 6px 2px 0; margin-inline-start: 18px; border-inline-start: 2px dashed var(--outline-variant); font-size: var(--fs-label); color: var(--on-surface-variant); padding-inline-start: 18px; }
+.rl-leg.next { color: var(--on-surface); font-weight: 600; border-color: var(--primary); }
+.rk-chips { display: flex; flex-wrap: wrap; gap: 5px; margin: 6px 0 2px; }
+.rk-chips button { border: 1px solid var(--outline); background: var(--surface); color: var(--on-surface); border-radius: var(--r-pill); padding: 3px 9px; font: 500 var(--fs-label-small) 'Rubik', system-ui, sans-serif; cursor: pointer; }
+/* 4.31.0: 📏 measuring, pin bubbles and the fan, map-type menu with explanations, relief */
+.ms-btn { position: absolute; top: 102px; right: 10px; z-index: 1060; width: 38px; height: 38px; border-radius: var(--r-tile); border: none; background: var(--surface-container); color: var(--on-surface);
+  font-size: var(--fs-title-medium); cursor: pointer; box-shadow: var(--elev-2); display: flex; align-items: center; justify-content: center; padding: 0; -webkit-tap-highlight-color: transparent; }
+.ms-btn[data-active="true"] { background: var(--primary); color: var(--on-primary); }
+.map-fs .ms-btn { top: calc(102px + var(--safe-top)); }
+.ms-bar { position: absolute; top: 10px; inset-inline: 10px; z-index: 1065; display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 6px 6px 10px; padding-inline-start: 12px; border-radius: var(--r-card);
+  background: var(--secondary-container); color: var(--on-secondary-container); box-shadow: var(--elev-float); font: 400 var(--fs-body-small) 'Rubik', system-ui, sans-serif; } /* 10.10.0 (design-maps, gap 7): the map's mode banner */
+.map-fs .ms-bar { top: calc(54px + var(--safe-top)); }
+.ms-top { display: flex; align-items: center; gap: 8px; } .ms-top > .ms-ic { flex: none; }
+.ms-tt { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.3; }
+.ms-t { font: 500 var(--fs-body) 'Rubik', system-ui, sans-serif; overflow-wrap: anywhere; } /* value-no-cut (Q1): a measured value is never cut by "…" - the title wraps to a second line when needed */ .ms-t b { font-weight: 700; } .ms-tt > small { font-size: var(--fs-body-small); opacity: .85; }
+.ms-bar .ms-x { flex: none; width: 36px; height: 36px; padding: 0; border: none; border-radius: 50%; background: none; color: inherit; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.ms-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-inline-end: 6px; }
+.ms-bar .seg { width: auto; margin: 0; border-color: var(--outline); background: transparent; }
+.ms-bar .seg > button { color: inherit; } .ms-bar .seg > button[data-active="true"] { background: var(--primary); color: var(--on-primary); }
+.ms-seg > button { flex: none; width: 52px; padding: 0; }
+.ms-ways { flex: 1 1 100%; } .ms-ways > button { flex: 1 1 auto; min-width: 0; padding: 0 6px; gap: var(--icon-gap); font-size: var(--fs-label); } .ms-ways > button.off { opacity: .45; } .ms-ways.tight > button > .msi { display: none; } /* size-fixes (1): measWaysFit - the words whole, the icons aside */
+.ms-undo { flex: none; display: inline-flex; align-items: center; gap: var(--icon-gap); height: 36px; padding: 0 12px; border: 1px solid var(--outline); border-radius: var(--r-pill); background: transparent; color: inherit; font: 500 var(--fs-body-small) 'Rubik', system-ui, sans-serif; white-space: nowrap; cursor: pointer; }
+.meas-host > .fs-btn, .meas-host > .ly-btn, .meas-host > .ms-btn, .meas-host > .disc-btn, .meas-host > .disc-bar { transform: translateY(var(--msb, 0px)); }
+.ms-pt { width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 3px solid #2563EB; box-shadow: var(--elev-1); position: relative; }
+.ms-pt.first { background: #2563EB; } .ms-pt.me { background: #4285F4; border-color: #fff; }
+.ms-pt b { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 3px; white-space: nowrap; background: #2563EB; color: #fff; font: 600 var(--fs-micro) 'Rubik', system-ui, sans-serif; padding: 1px 6px; border-radius: var(--r-xs); }
+.ms-seg, .ms-ring-lbl { display: inline-block; white-space: nowrap; background: rgba(255,255,255,.92); color: #1C2B33; border: 1px solid #2563EB; border-radius: var(--r-chip); padding: 0 5px; font: 600 var(--fs-micro) 'Rubik', system-ui, sans-serif; text-align: center; }
+.ms-ring-lbl { border-style: dashed; }
+
+.meas-d { color: var(--primary); font-size: var(--fs-label-small); font-weight: 600; }
+.meas-d { margin-inline-start: 6px; }
+.meas-banner { display: flex; align-items: center; gap: 8px; margin: 6px 0; padding: 4px 4px 4px 0; padding-inline: 12px 4px; border-radius: var(--r-tile); background: var(--secondary-container); color: var(--on-secondary-container); font: 500 var(--fs-body) 'Rubik', system-ui, sans-serif; }
+.meas-banner > span:not(.msi) { flex: 1; min-width: 0; } .meas-banner .icon-btn { background: none; border: none; color: inherit; }
+.clu-b { border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--outline); box-shadow: var(--elev-1); cursor: pointer; } /* 10.10.0 (design-maps, gap 1): a ring in the layers' colors, the card's surface in the middle */
+.clu-b > span { width: calc(100% - 10px); height: calc(100% - 10px); border-radius: 50%; background: var(--surface-container); color: var(--on-surface); display: flex; align-items: center; justify-content: center; gap: 1px; font: 500 var(--fs-label) 'Rubik', system-ui, sans-serif; }
+.clu-b.one .msi { font-size: var(--pin-ic); color: var(--lc, currentColor); }
+.clu-b.disc { background: var(--discover-ring); } .clu-b.disc > span { background: var(--discover-container); color: var(--on-discover); } .clu-b.disc .msi { font-size: var(--pin-ic); color: var(--on-discover); }
+.pin-marker.fanned, .fanned > * { outline: 2px solid #fff; }
+.ly-menu button b { display: block; font-weight: inherit; } .ly-menu button small { display: block; font-size: var(--fs-micro); color: var(--on-surface-variant); font-weight: 400; }
+.hs-layer { mix-blend-mode: multiply; } .hs-layer .leaflet-tile { filter: contrast(.85) brightness(1.08); }
+
+/* 4.16.0: map type (map / satellite / satellite with names / topographic) - button on every map, under ⛶ */
+.ly-btn { position: absolute; top: 56px; right: 10px; z-index: 1060; width: 38px; height: 38px; border-radius: var(--r-tile); border: none; background: var(--surface-container); color: var(--on-surface);
+  font-size: var(--fs-title-medium); cursor: pointer; box-shadow: var(--elev-2); display: flex; align-items: center; justify-content: center; padding: 0; -webkit-tap-highlight-color: transparent; }
+.map-fs .ly-btn, .fs-pick .ly-btn { top: calc(56px + var(--safe-top)); }
+.ly-menu { position: absolute; top: 56px; right: 54px; z-index: 1070; background: var(--surface-container); color: var(--on-surface); border: 1px solid var(--outline-variant); border-radius: var(--r-tile); box-shadow: var(--elev-float); padding: 4px; display: flex; flex-direction: column; min-width: 9.5rem; }
+.map-fs .ly-menu, .fs-pick .ly-menu { top: calc(56px + var(--safe-top)); }
+.ly-menu button { border: none; background: none; color: inherit; text-align: start; padding: 9px 10px; border-radius: var(--r-chip); font: 500 var(--fs-body) 'Rubik', system-ui, sans-serif; cursor: pointer; }
+.ly-menu button[data-active="true"] { background: color-mix(in srgb, var(--primary) 14%, transparent); font-weight: 700; }
+.ly-menu button { display: flex; align-items: center; gap: 12px; } .ly-menu .ly-ic { color: var(--on-surface-variant); flex: none; } .ly-menu .ly-t { flex: 1 1 auto; min-width: 0; }
+.ly-menu button[data-active="true"] { background: var(--secondary-container); color: var(--on-secondary-container); font-weight: 500; } .ly-menu .ly-ck { flex: none; }
+.pe-map .ly-btn { top: 54px; }
+.pe-map .ly-menu { top: 54px; }
+.ly-menu.fm-menu { position: fixed; right: auto; z-index: 3300; max-height: 60vh; overflow-y: auto; } /* 11.4.0: a choice field's menu, anchored to its field (fmSelect) over every layer */
+.elev-badge { white-space: nowrap; }
+
+/* 4.19.2: the pin in the middle of the small map of the place editor */
+.pe-map .pe-pin, #peMap .pe-pin { font-size: var(--pin-edit); } .pe-pin > .msi { font-size: var(--pin-edit); }
+#peMap .pe-pin.dim { opacity: .55; }
+#peMap .pe-hint { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 1060; white-space: nowrap; }
+/* 4.25.0: 📚 discoveries (what's around here) */
+.disc-btn { position: absolute; top: 148px; right: 10px; z-index: 1060; width: 38px; height: 38px; border-radius: var(--r-tile); border: none; background: var(--surface-container); color: var(--on-surface); font-size: var(--fs-title-medium); display: grid; place-items: center; cursor: pointer; padding: 0; box-shadow: var(--elev-1); -webkit-tap-highlight-color: transparent; }
+.disc-btn[aria-pressed="true"] { background: var(--discover-container); border-color: var(--on-discover); color: var(--on-discover); }
+.map-fs .disc-btn { top: calc(148px + var(--safe-top)); } .fs-pick .disc-btn { top: calc(102px + var(--safe-top)); } /* 5.15.0 (ד3): ⛶, type, 📏, 📚 */
+.disc-bar { position: absolute; top: 10px; inset-inline-start: 58px; inset-inline-end: 10px; z-index: 1055; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; }
+.disc-bar > * { pointer-events: auto; }
+.disc-mode { align-self: stretch; display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 0; padding-inline: 10px 6px; border-radius: var(--r-tile); background: var(--discover-container); color: var(--on-discover); box-shadow: var(--elev-float); }
+.disc-mode > b { flex: 1; min-width: 0; font: 500 var(--fs-body) 'Rubik', system-ui, sans-serif; overflow-wrap: anywhere; } /* value-no-cut (Q1): the count is never cut - the title wraps at its " · " */
+.disc-ic { flex: none; width: 32px; height: 32px; padding: 0; border: none; border-radius: 50%; background: var(--surface-container); color: var(--on-discover); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; } .disc-ic[data-act="disc.toggle"] { background: none; }
+.map-fs .disc-bar, .fs-pick .disc-bar { top: calc(58px + var(--safe-top)); }
+.fs-pick .disc-bar { top: calc(118px + var(--safe-top)); }
+.disc-bar > button { display: inline-flex; align-items: center; min-height: 32px; /* size-fixes (3): its touch size at "קטן" too */ gap: var(--icon-gap); box-shadow: var(--elev-float); border: 1px solid var(--outline); background: var(--surface-container); color: var(--on-surface); border-radius: var(--r-pill); padding: 6px 11px; font: 500 var(--fs-body-small) 'Rubik', system-ui, sans-serif; white-space: nowrap; box-shadow: var(--elev-1); cursor: pointer; }
+.disc-bar > button.go { background: var(--discover-container); color: var(--on-discover); border-color: var(--on-discover); }
+.disc-bar > button:disabled { opacity: .7; }
+.disc-pin { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; color: #fff; background: #5B4B8A; border: 2px solid #fff; box-shadow: var(--elev-1); } /* 10.2.0 (design-2): small violet / brown circles with the open book */
+.disc-pin.o { width: 22px; height: 22px; background: #8A7B5B; } .disc-pin.o .msi { font-size: var(--pin-ic-s); }
+
+.disc-th { width: 64px; height: 64px; object-fit: cover; border-radius: var(--r-tile); background: var(--outline-variant); }
+
+
+
+
+
+.dl-list { display: flex; flex-direction: column; } .dl-row { display: flex; align-items: center; gap: 4px; padding: 6px 0; border-bottom: 1px solid var(--outline-variant); }
+.dl-name { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 12px; border: none; background: none; color: var(--on-surface); text-align: start; padding: 2px 0; font: inherit; cursor: pointer; }
+.dl-th { flex: none; width: 48px; height: 48px; border-radius: var(--r-tile); background-size: cover; background-position: center; background: var(--surface-container-high); color: var(--on-surface-variant); display: inline-flex; align-items: center; justify-content: center; }
+.dl-tx { min-width: 0; display: flex; flex-direction: column; } .dl-tx b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .dl-tx small { color: var(--on-surface-variant); font-size: var(--fs-body-small); }
+.dl-ib { flex: none; width: 40px; height: 40px; border: none; border-radius: 50%; background: none; color: var(--on-surface-variant); display: inline-flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; text-decoration: none; }
+.dl-ib.dl-add { color: var(--primary); }
+.dl-have { flex: none; display: inline-flex; align-items: center; gap: var(--icon-gap-sm); padding: 3px 8px; border-radius: var(--r-chip); background: var(--secondary-container); color: var(--on-secondary-container); font-size: var(--fs-label); }
+.dl-g { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 10px; }
+.dl-gh { margin-top: 8px; font-weight: 600; }
+.dl-g a { text-decoration: none; color: var(--on-surface); display: inline-flex; align-items: center; gap: var(--icon-gap); }
+.sheet-backdrop.peek { background: transparent; } /* 10.10.0 (design-maps, gap 10): the map stays visible above the sheet */
+.sheet.peek:not(.grown) { height: 52vh; max-height: 52vh; } .sheet.peek { box-shadow: var(--elev-sheet); transition: transform var(--motion-fast) var(--ease), height var(--motion) var(--ease), max-height var(--motion) var(--ease); }
+.sheet.peek.grown { height: calc(100dvh - 64px); } .sheet.peek .sheet-handle { pointer-events: auto; cursor: pointer; } .sheet.peek .sheet-handle::after { content: ''; position: absolute; inset: -12px -48px; }
+.pe-maybe { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; font-size: var(--fs-body-small); color: var(--on-surface-variant); }
+.pe-need .chips-row { outline: 2px dashed var(--error); outline-offset: 3px; border-radius: var(--r-chip); }
+/* 4.24.0: hiding in the route map */
+.ic-eye { width: 18px; height: 18px; vertical-align: -4px; flex: none; }
+.rl-row { display: grid; grid-template-columns: 1fr 36px; align-items: center; }
+.rl-row.hid .rl-stop > *, .rl-leg.hid > span { opacity: var(--fade); } /* on the stop's parts, as a past stop's: hidden and past is one fade, not two */
+.rl-row.hid .rl-stop b, .rl-leg.hid > span { text-decoration: line-through; }
+.rl-leg { display: grid; grid-template-columns: 1.875rem 1fr 36px; gap: 8px; align-items: center; margin: 0; border: none; padding: 0; padding-inline-start: 6px; min-height: 30px; }
+.rl-out > span:nth-child(2) { border-inline-start: 2px dashed var(--outline); padding-inline-start: 8px; } /* 11.2.0 (Q8): an outing under its stop - a dashed start edge, no number */
+.rl-mode { position: relative; align-self: stretch; display: flex; align-items: center; justify-content: center; color: var(--travel, var(--on-surface-variant)); }
+.rl-mode::before { content: ''; position: absolute; inset-block: 0; inset-inline-start: calc(50% - 1px); border-inline-start: 2px dashed var(--outline-variant); } .rl-leg.next .rl-mode::before { border-color: var(--primary); }
+.rl-mode > .msi { position: relative; background: var(--surface-container); padding: 2px 0; } /* 10.9.0 (design-forms, gap 41): the leg's mode icon in the number column, on the line that joins the stops */
+.rl-row > .rl-eye, .rl-leg > .rl-eye { justify-self: center; } .rl-leg > .rl-eye { width: 28px; height: 28px; } .rl-leg > .rl-eye .ic-eye { width: 16px; height: 16px; } /* the legs' eye a little smaller, in the same column */
+.rl-eye { width: 34px; height: 34px; border: none; background: none; color: var(--on-surface-variant); border-radius: 50%; display: grid; place-items: center; cursor: pointer; padding: 0; -webkit-tap-highlight-color: transparent; }
+.rl-eye[aria-pressed="true"] { color: var(--on-surface); background: color-mix(in srgb, var(--on-surface) 8%, transparent); }
+.rh-all { width: 100%; margin-top: 8px; }
+/* 10.5.0 (design-4 part 2, look.md "Maps"): offline maps - "＋ אזור" outlined, a linear meter, rows with a map icon and a tonal ✕, the download in the pinned footer */
+.off-addrow { display: flex; justify-content: flex-end; } .off-add { display: inline-flex; align-items: center; gap: var(--icon-gap); height: 36px; padding: 0 14px; border-radius: var(--r-pill); border: 1px solid var(--outline); background: none; color: var(--primary); font: 500 var(--fs-body) 'Rubik', system-ui, sans-serif; cursor: pointer; white-space: nowrap; }
+.off-x { flex: none; width: 32px; height: 32px; border: none; border-radius: 50%; background: var(--surface-container-high); color: var(--on-surface-variant); display: inline-flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; }
+.off-row .off-ic { color: var(--on-surface-variant); }
+/* off-map-areas (11.47.0): an area's number - on its row (beside its icon) and on its pin, in the area's colour; an area out or taken out dashed */
+.off-n { flex: 0 0 auto; min-width: 1.7em; height: 1.7em; padding: 0 4px; box-sizing: border-box; border-radius: var(--r-pill); color: #fff; /* its background is the area's colour, inline (offAreaColor) */ font: 700 var(--fs-label) 'Rubik', system-ui, sans-serif; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; }
+.off-n.off-out, .pin-marker.off-pin.off-out { background: var(--surface-container); border: 1.5px dashed var(--outline); color: var(--on-surface-variant); }
+.pin-marker.off-pin.off-out > span { color: var(--on-surface-variant); }
+.off-row[data-offn] { cursor: pointer; } .off-row.off-hl { background: color-mix(in srgb, var(--primary) 16%, transparent); }
+.off-all { position: absolute; top: 10px; right: 56px; z-index: 1060; min-height: 38px; padding: 0 12px; border-radius: var(--r-tile); border: none; background: var(--surface-container); color: var(--on-surface);
+  font: 600 var(--fs-label) 'Rubik', system-ui, sans-serif; white-space: nowrap; cursor: pointer; box-shadow: var(--elev-2); -webkit-tap-highlight-color: transparent; }
+.off-all[hidden] { display: none; } .off-full .off-all { top: calc(10px + var(--safe-top)); } .off-cr { font-size: var(--fs-label-small); }
+.off-map { position: relative; } .off-map.off-full { position: fixed; inset: 0; z-index: 3060; background: var(--surface); height: auto; margin: 0; border-radius: 0; border: none; } .off-full .fs-btn { top: calc(10px + var(--safe-top)); }
+.off-map .off-lbl { left: 0; /* off-map-areas (11.47.0): the library places a tooltip by its transform only; with no `left`, a right-to-left page put it one label's width to the left of its area's centre */ overflow: hidden; text-overflow: ellipsis; background: var(--surface-container); color: var(--on-surface); border: none; box-shadow: none; font: 500 var(--fs-map-label) Rubik, Arial, sans-serif; padding: 1px 6px; border-radius: var(--r-xs); } .off-map .off-lbl::before { display: none; }
+.off-list { max-height: 38vh; overflow: auto; margin: 4px 0; direction: ltr; padding-right: 2px; } /* 4.46.3: the scrollbar on the right, away from the rows' text */
+.off-list > * { direction: rtl; }
+.off-row .icon-btn { width: auto; min-width: 36px; padding: 0 10px; white-space: nowrap; flex: 0 0 auto; } /* 4.46.3: ＋ להכניס fits its button */ .off-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(127,127,127,.15); }
+.off-row .off-ic { font-size: var(--icon-18); flex: 0 0 auto; } .off-row { flex-wrap: wrap; } .off-row .off-tx { flex: 1 1 9em; min-width: 0; /* 11.33.0 (text-size): with no room for the text beside its button, the button goes down a line (320 +30%: squeezed) */ display: flex; flex-direction: column; } .off-row .off-tx small { opacity: var(--fade); font-size: var(--fs-label); } .off-row .icon-btn { flex: 0 0 auto; }
+.off-row .off-hotel b, .off-row .off-hotel .off-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* phone-round-2b-fixes P5: a hotel's title on one line, ending in "…" */ .off-dim .off-tx b { opacity: var(--fade); } .off-out { font-weight: 600; } .off-prog { display: flex; align-items: center; gap: 8px; justify-content: space-between; margin: 6px 0; }
+.off-badge { background: rgba(255,255,255,.92); color: #333; border: 1px solid rgba(0,0,0,.2); border-radius: var(--r-tile); font: 600 var(--pin-num) Rubik, Arial, sans-serif; padding: 3px 9px; margin-top: 4px !important; box-shadow: var(--elev-1); cursor: pointer; }
+.rate-row { display: flex; align-items: center; gap: 6px; margin: 6px 0 2px; font-size: var(--fs-body); flex-wrap: wrap; }
+.rate-btn { border: 1px solid var(--outline); background: var(--surface-container); border-radius: var(--r-pill); min-width: 38px; height: 34px; font-size: var(--fs-title-medium); cursor: pointer; }
+.rate-btn[aria-pressed="true"] { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 20%, var(--surface-container)); }
+.past-rate { cursor: pointer; border: none; font-family: 'Rubik', system-ui, sans-serif; }
+.past-mini { display: inline-block; font-size: var(--fs-micro); padding: 0 6px; margin-inline-end: 4px; border-radius: var(--r-chip); background: color-mix(in srgb, var(--favorite) 18%, var(--surface-container)); color: var(--on-surface); white-space: nowrap; }
+.wb-thin { display: block; width: 100%; text-align: start; font: 600 var(--fs-body) 'Rubik', system-ui, sans-serif; color: var(--on-surface); cursor: pointer; padding: 8px 12px; }
+.wb-sum { font-size: var(--fs-body); margin: 4px 0 8px; }
+.mem-high { display: flex; flex-direction: column; gap: 8px; }
+.mh-item { display: flex; gap: 10px; align-items: center; border: 1px solid var(--outline-variant); border-radius: var(--r-tile); padding: 8px; background: var(--surface-container); }
+.mh-item small { display: block; color: var(--on-surface-variant); }
+.mem-rate { margin: 4px 0; font-size: var(--fs-body); line-height: 1.8; }
+.mr-item { display: inline-block; background: var(--outline-variant); border-radius: var(--r-pill); padding: 1px 10px; margin: 2px; }

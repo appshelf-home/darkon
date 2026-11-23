@@ -1,0 +1,165 @@
+/* ===== 10.4.0 (design-4, look.md "Windows and forms"): the shared window components ===== */
+.sheet:not(.full):not(.half) { max-height: calc(100dvh - 64px); }                                   /* grows with its content up to near full height; the top bar stays visible */
+.sheet-head > b { display: flex; align-items: center; gap: 8px; } .sheet-head > b > .head-ic { flex: none; color: var(--on-surface-variant); }
+.sheet-head > b .tip-i { flex: none; }
+/* final-review-fixes (family B): the title's words in their own boxes (headFit) - "…" works there, not on the flex row itself; the name (.nm) gives way first, in its own direction */
+.sheet-head > b > :is(.head-f, .head-t, .nm), .head-t > :is(.head-f, .nm) { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sheet-head > b > .head-t { display: flex; } .head-t > .head-f { white-space: pre; }
+/* the name (.nm.t-ell): cut by the order of reading (.t-ell, ellFit), so a mixed name keeps its start */
+.sheet-head > b > .nm, .head-t > .nm { flex-shrink: 100000; white-space: normal; text-overflow: clip; }
+.sheet.full > .sheet-head { min-height: 56px; padding-top: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--outline-variant); }
+.sheet.full > .sheet-head > .sheet-x { order: -1; flex: none; width: 40px; height: 40px; margin-inline-start: -8px; color: var(--on-surface); }
+.sheet .sheet-head > .head-save.btn-nav { order: 9; flex: none; width: auto; max-width: none; min-width: max-content; overflow: visible; height: 36px; min-height: 36px; padding: 0 18px; border-radius: var(--r-pill); box-shadow: none; white-space: nowrap; }
+/* the footer: pinned, the main (filled) action at its end, a second one beside it */
+.sheet-save-bar { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin: 6px -16px calc(-16px - env(safe-area-inset-bottom, 0px)); padding: 10px 16px calc(12px + env(safe-area-inset-bottom, 0px)); background: var(--surface-container); border-top: 1px solid var(--outline-variant); pointer-events: auto; }
+.sheet-save-bar .btn-nav { order: 9; box-shadow: none; white-space: nowrap; }
+.sheet-save-bar .sh-secondary, .sheet-save-bar .icon-btn { box-shadow: none; background: transparent; border: 1px solid var(--outline); color: var(--primary); white-space: nowrap; }
+.sheet-save-bar .sh-error { order: -2; box-shadow: none; } .sheet-save-bar > .callout { order: -1; flex: 1 1 100%; }
+.sheet > :is(.pw-body, .pk-in-body) ~ .sheet-save-bar { bottom: calc(-16px - env(safe-area-inset-bottom, 0px)); } /* 10.9.0 (design-forms, Q18): the shared frame keeps 16 px before its footer - the pinned footer sticks at the sheet's edge (its own negative margin), so it no longer rides up over the last control; phone-round-1-fixes P22 (11.14.0): the return-to-trip window's day tiles too */
+.sheet-save-bar.bar-empty { padding-top: 0; padding-bottom: 0; border-top: none; margin-bottom: 0; } .sheet-save-bar.bar-empty:not(:has(> :not([hidden]))) { display: none; }
+/* fields: Material outlined text fields, the label on the border */
+.sheet .fm-f:has(> input, > textarea, > .fm-pick, > .fm-inrow, > .fm-pickbtn:not([hidden])), .sheet .fm-dt { position: relative; padding-top: 7px; gap: 2px; }
+.sheet .fm-f:has(> input, > textarea, > .fm-pick, > .fm-inrow, > .fm-pickbtn:not([hidden])) > .fm-lbl, .sheet .fm-dt > .fm-lbl { position: absolute; top: 0; inset-inline-start: 10px; z-index: 1; max-width: calc(100% - 24px); padding: 0 4px; background: var(--surface-container); font-size: var(--fs-label-small); font-weight: 500; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--on-surface-variant); }
+.sheet .fm-f > input, .sheet .fm-f > textarea, .sheet .fm-inrow > input, .sheet .fm-dt > input { border: 1px solid var(--outline); border-radius: var(--r-xs); background: transparent; padding: 12px 12px 10px; min-height: 48px; box-sizing: border-box; }
+.sheet .fm-f > textarea { min-height: 72px; }
+.sheet .fm-f > input:focus, .sheet .fm-f > textarea:focus, .sheet .fm-inrow > input:focus, .sheet .fm-dt > input:focus { outline: none; border: 2px solid var(--primary); padding: 11px 11px 9px; }
+.sheet .fm-f:focus-within > .fm-lbl { color: var(--primary); }
+.sheet .fm-f > .fm-pick { min-height: 48px; border: 1px solid var(--outline); border-radius: var(--r-xs); background: transparent; text-align: start; padding: 10px 12px; }
+.sheet .fm-f.fm-bad > input, .sheet .fm-f.fm-bad > textarea, .sheet .fm-f.fm-bad > .fm-pick, .sheet .fm-f.fm-bad .fm-inrow > input { border: 2px solid var(--error); } .sheet .fm-f.fm-bad > .fm-lbl { color: var(--error); }
+.fm-inrow { position: relative; display: flex; } .fm-inrow > input { flex: 1 1 auto; min-width: 0; width: 100%; }
+.fm-inrow > .date-clr { position: absolute; top: 50%; transform: translateY(-50%); right: 40px; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; border: none; border-radius: 50%; background: none; color: var(--on-surface-variant); }
+.fm-inrow > .date-clr:active { background: var(--surface-container-high); }
+.fm-dt .wd-auto { padding-inline-start: 14px; }
+.req-mark { margin-inline-start: 2px; }
+/* switches: a title, a supporting line that says what "off" means, the switch at the end (Material) */
+.fm-togs { display: block; font-weight: 400; font-size: var(--fs-body-small); color: var(--on-surface-variant); margin-top: 1px; } /* 10.8.0 */
+.fm-togrow { gap: 0; } .fm-tog { width: 100%; justify-content: space-between; } .fm-tog > .fm-togl { flex: 1 1 auto; min-width: 0; } .fm-tog > .fm-sw { order: 2; }
+.fm-togrow > .fm-hint { margin-top: -4px; padding-inline-end: 56px; }
+.fm-sw { width: 44px; height: 26px; border-radius: var(--r-pill); background: var(--surface-container-high); box-shadow: inset 0 0 0 2px var(--outline); }
+.fm-sw::after { top: 6px; inset-inline-start: 6px; width: 14px; height: 14px; background: var(--outline); box-shadow: none; transition: all var(--motion-fast) var(--ease); }
+.fm-tog[aria-checked="true"] .fm-sw, .fswitch[aria-pressed="true"] .fm-sw { background: var(--primary); box-shadow: none; } .fm-tog[aria-checked="true"] .fm-sw::after, .fswitch[aria-pressed="true"] .fm-sw::after { top: 3px; inset-inline-start: 21px; width: 20px; height: 20px; background: var(--on-primary); }
+/* 2-4 exclusive options: segmented buttons, each option centered in its segment */
+.fm-chips.fm-seg { gap: 0; border: 1px solid var(--outline); border-radius: var(--r-pill); overflow: hidden; padding: 0; }
+.fm-chips.fm-seg > .chip { flex: 1 1 0; justify-content: center; text-align: center; min-width: 0; margin: 0; border: none; border-radius: 0; background: transparent; min-height: 40px; }
+.fm-chips.fm-seg > .chip + .chip { border-inline-start: 1px solid var(--outline); }
+.fm-chips.fm-seg > .chip[data-active="true"] { background: var(--secondary-container); color: var(--on-secondary-container); border-color: var(--outline); }
+.fm-chips.fm-seg.fm-measure > .chip { flex: none; }
+.fm-chips.fm-seg > .chip { min-width: max-content; } /* final-review-fixes (family B): equal segments as long as each holds its words; a longer one takes what it needs (fmFit already swaps the row for a picker when the words together do not fit) */
+/* folded groups: an outlined row - the group's name, a one-line summary, an expand arrow; opened, the fields inside the same outline */
+.sheet .fm-sec { border: 1px solid var(--outline-variant); border-radius: var(--r-tile); padding: 0 12px; }
+.sheet .fm-sec > summary { list-style: none; position: relative; display: grid; grid-template-columns: 1fr; padding: 12px 28px 12px 0; padding-inline: 0 28px; gap: 0; align-items: center; }
+.sheet .fm-sec > summary::-webkit-details-marker { display: none; }
+.sheet .fm-sec > summary::after { content: ''; position: absolute; inset-inline-end: 6px; top: 50%; width: 8px; height: 8px; margin-top: -6px; border-right: 2px solid var(--on-surface-variant); border-bottom: 2px solid var(--on-surface-variant); transform: rotate(45deg); transition: transform var(--motion-fast) var(--ease); }
+.sheet .fm-sec[open] > summary::after { transform: rotate(-135deg); margin-top: -2px; }
+.sheet .fm-sec .fm-sect { color: var(--on-surface); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .sheet .fm-sec .fm-sum:empty { display: none; } .sheet .fm-sec .fm-sum { font-size: var(--fs-body-small); color: var(--on-surface-variant); }
+.fm-sum:not(:empty)::before { content: ' · '; } .sheet .fm-sec .fm-sum::before { content: none; } /* outside a window the summary follows the name on its line */
+.sheet .fm-sec[open] > .fm-sec-in { padding: 4px 0 12px; }
+/* editor-end-actions: the end of an editor - one outlined group of full-width list rows (a leading icon and the words, dividers),
+   the deleting row last in error red; a reversible action is a neutral row (fmEndActs) */
+.fm-acts { display: flex; flex-direction: column; margin: 18px 0 4px; border: 1px solid var(--outline-variant); border-radius: var(--r-tile); overflow: hidden; }
+.fm-act { display: flex; align-items: center; column-gap: 12px; width: 100%; min-height: 48px; padding: 12px 16px; border: 0; border-radius: 0; background: none; color: var(--on-surface); font: 400 var(--fs-body) 'Rubik', system-ui, sans-serif; text-align: start; cursor: pointer; }
+.fm-act + .fm-act { border-top: 1px solid var(--outline-variant); }
+.fm-act:active { background: var(--surface-container-high); }
+.fm-act > .msi { flex: none; color: var(--on-surface-variant); }
+.fm-act > span { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.fm-act.fm-act-del, .fm-act.fm-act-del > .msi { color: var(--error); }
+.sh-hint.note-on { display: flex; align-items: center; gap: var(--icon-gap); } .sh-hint.note-on > .cd-lead { flex: none; }
+/* checkboxes for a one-time action: "always inside" checked and dimmed */
+.fm-chk[aria-disabled="true"] { opacity: .55; }
+/* the scheduling window: outlined day cells; each chosen day a card with the segmented part of the day */
+.sheet .day-grid { grid-template-columns: repeat(auto-fill, minmax(4.1rem, 1fr)); }
+.sheet .day-cell { background: transparent; border-radius: var(--r-chip); }
+.sc-row { flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 12px; border: none; border-radius: var(--r-tile); background: var(--surface-container-high); }
+.sc-row > b { min-width: 0; font-weight: 600; } .sc-row > b small { font-weight: 400; font-size: var(--fs-label); color: var(--on-surface-variant); }
+.sc-seg { margin: 0; background: var(--surface-container); } .sc-seg > .chip { flex: 1 1 0; min-width: 0; justify-content: center; gap: var(--icon-gap-sm); margin: 0; border: none; border-radius: 0; background: transparent; padding: 0 2px; min-height: 38px; font-size: var(--fs-body-small); white-space: nowrap; }
+/* final-review-fixes (family B, 9c): a segment is never narrower than its icon and word (equal parts as long as they fit); in a narrow row (large text) the icons give way to the words */
+.sc-row { container-type: inline-size; } .sc-seg > .chip { min-width: max-content; } @container (max-width: 17em) { .sc-seg > .chip > .msi { display: none; } }
+.sc-seg > .chip + .chip { border-inline-start: 1px solid var(--outline); } .sc-seg > .chip[data-active="true"] { background: var(--secondary-container); color: var(--on-secondary-container); }
+.sc-more { display: flex; flex-wrap: wrap; gap: 6px; justify-content: space-between; } .sc-more:empty { display: none; }
+.sc-more > .sc-again { border: none !important; background: none; color: var(--primary); padding-inline: 2px; } .sc-more > .sc-rm { order: 2; }
+.sheet .day-cell[data-active="true"] { background: var(--primary); }
+/* 10.9.0 (design-forms, gap 40): a range of days is one band - the ends filled, the days between tinted, the gaps between them filled too */
+.sheet .day-grid:has([data-band]) { isolation: isolate; } .sheet .day-cell[data-band] { position: relative; }
+.sheet .day-cell[data-band="mid"] { background: var(--secondary-container); border-color: transparent; border-radius: 0; color: var(--on-secondary-container); }
+.sheet .day-cell[data-band]::before { content: ''; position: absolute; inset-block: -1px; inset-inline: -7px; z-index: -1; background: var(--secondary-container); }
+.sheet .day-cell[data-band="start"]::before { inset-inline-start: 50%; } .sheet .day-cell[data-band="end"]::before { inset-inline-end: 50%; }
+.fm-inrow > .date-clr[hidden] { display: none; }
+/* 10.5.0 (after the audit, look.md gaps 29, 30, 36, 37): a short full-screen form keeps its fields at their own height (the window's column stretched them);
+   a choice field's label on the border and its ▾ at the field's end; a checkbox row's count at the row's end; the "what Claude will do" card visible on the window */
+.sheet > .sh-field { flex: 0 0 auto; } .fm-caret { margin-inline-start: auto; padding-inline-start: 6px; color: var(--on-surface-variant); }
+.fm-chk .fm-chkl { flex: 1 1 auto; display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 4px; } .fm-chk .fm-chkl > small.fm-chkc { margin-inline-start: auto; }
+.sheet .cl-part { background: var(--surface-container-high); } .sheet .cl-part .cl-lock { background: var(--surface-container); }
+.sheet .fm-choice > .fm-pickbtn { min-height: 48px; border: 1px solid var(--outline); border-radius: var(--r-xs); background: transparent; color: var(--on-surface); text-align: start; padding: 10px 12px; }
+/* 11.0.0: a travel's end (fmEnd) - its proposal line */
+.fm-endprop { font-size: var(--fs-label); color: var(--on-surface-variant); } .fm-endprop.prop { color: var(--primary); }
+/* menu screens (settings, the instructions for Claude): a list of rows - icon, title, an expand arrow; a row opens inline, its content indented */
+.screen-main .acc-row { border: none; border-radius: 0; margin: 0; background: none; border-bottom: 1px solid var(--outline-variant); }
+.screen-main .acc-row > .accordion-header { gap: 14px; padding: 14px 4px; justify-content: flex-start; background: none; }
+.screen-main .acc-row > .accordion-header > span:not(.msi):not(.accordion-arrow) { flex: 1 1 auto; min-width: 0; text-align: start; }
+.acc-row .acc-ic { flex: none; color: var(--on-surface-variant); } .acc-row .accordion-arrow { flex: none; font-size: inherit; display: inline-flex; }
+.screen-main .acc-row > .accordion-body { padding: 0 42px 14px 4px; padding-inline: 42px 4px; }
+/* 10.9.0 (design-forms): a menu screen's value line (gap 33); outlined fields outside windows (gap 31); exclusive choices as segmented buttons or a list of rows (gap 32) */
+.acc-val { display: block; font-size: var(--fs-body-small); font-weight: 400; color: var(--on-surface-variant); overflow-wrap: anywhere; } /* value-no-cut (Q1): a setting's value line (times, sizes) wraps, never cut by "…" */
+.acc-val[hidden] { display: none; }
+.accordion-body .fm-f:has(> input) { position: relative; padding-top: 7px; gap: 2px; }
+.accordion-body .fm-f:has(> input) > .fm-lbl { position: absolute; top: 0; inset-inline-start: 10px; z-index: 1; max-width: calc(100% - 24px); padding: 0 4px; background: var(--surface); font-size: var(--fs-label-small); font-weight: 500; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--on-surface-variant); }
+.accordion-body .fm-f > input { border: 1px solid var(--outline); border-radius: var(--r-xs); background: transparent; padding: 12px 12px 10px; min-height: 48px; box-sizing: border-box; font-size: var(--fs-body); }
+.accordion-body .fm-f > input:focus { outline: none; border: 2px solid var(--primary); padding: 11px 11px 9px; } .accordion-body .fm-f:focus-within > .fm-lbl { color: var(--primary); }
+.ch-f { margin: 0 0 12px; gap: 6px; } .ch-f > .ch-lbl { font-weight: 600; }
+.ch-f > .ch-seg { margin: 0; } .ch-seg > button { height: auto; min-height: 40px; padding: 4px 8px; }
+/* 11.46.0 (phone-round-4c-fixes P6; decisions 2026-11-22 · Review of the `price-level-note` summary, Q1): settings › "חלקי היום" - a local
+   exception like the measuring banner's: its two segments drop their icons when the field is under 12.5em of its own text (only "ענק" at
+   320 wide: 11.6em; the next, "גדול מאוד" at 320, is 13.3em), so "רשימה אחת" no longer spills out of its segment; the section's indent unchanged */
+.acc-row:has(> [data-acc="set-parts"]) .ch-f { container-type: inline-size; }
+@container (max-width: 12.5em) { .acc-row:has(> [data-acc="set-parts"]) .ch-seg > button > .msi { display: none; } }
+.ch-sub { font-size: var(--fs-body-small); font-weight: 400; color: var(--on-surface-variant); }
+.opt-list { display: flex; flex-direction: column; border: 1px solid var(--outline-variant); border-radius: var(--r-tile); overflow: hidden; }
+.opt-list > button { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 8px 12px; border: none; background: transparent; color: var(--on-surface); text-align: start; font: 400 var(--fs-body) 'Rubik', system-ui, sans-serif; cursor: pointer; }
+.opt-list > button + button { border-top: 1px solid var(--outline-variant); }
+.opt-list > button[data-active="true"] { background: var(--secondary-container); color: var(--on-secondary-container); }
+.opt-list .ol-ic { flex: none; color: var(--on-surface-variant); } .opt-list .ol-t { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; } .opt-list .ol-t b { font-weight: 500; }
+.opt-list .ol-t small { font-size: var(--fs-body-small); color: var(--on-surface-variant); } .opt-list .ol-ck { flex: none; color: var(--primary); }
+/* pickers (openFmChoice): list rows, the chosen one tinted with ✓; group sub-headers in the accent; chips with ✓ when on */
+.sheet .fm-ch { border: none; border-radius: var(--r-chip); background: none; min-height: 48px; font-weight: 400; }
+.sheet .fm-ch:active { background: var(--surface-container-high); }
+.sheet .fm-ch.on { box-shadow: none; background: var(--secondary-container); color: var(--on-secondary-container); font-weight: 500; }
+.sheet .fm-ch.on::after { content: ''; flex: none; width: 6px; height: 12px; margin-inline-start: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translate(-2px, -2px); }
+.sheet .fm-ch.on > small + * , .sheet .fm-ch.on:not(:has(small))::after { margin-inline-start: auto; }
+.sheet .fm-ch-group { color: var(--primary); font-weight: 500; margin: 12px 4px 2px; }
+.fm-ch .fm-ch-t { display: flex; flex-direction: column; min-width: 0; } .fm-ch .fm-ch-t > small { margin: 0; font-size: var(--fs-body-small); text-align: start; } .fm-ch .fm-ch-end { margin-inline-start: auto; color: var(--on-surface-variant); font-weight: 400; }
+.sheet.tall { height: 92vh; max-height: 92vh; overflow: hidden; } .sheet.tall > .fm-choice-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; margin: 0 -16px; padding: 0 16px; } .sheet.tall > .ap-search { flex: none; margin-bottom: 0; } /* 10.9.0 (design-forms, gap 39) */
+.sheet .chips-row:not(.fm-seg) > .chip[data-active="true"]:not(:has(.msi))::before { content: '✓'; margin-inline-end: 4px; font-weight: 600; }
+.sh-hint.de-offer, .sh-hint.de-ccoffer { display: flex; align-items: center; flex-wrap: wrap; gap: 4px var(--icon-gap); margin: 6px 0 0; } .sh-hint.de-offer > .chip, .sh-hint.de-ccoffer > .chip { flex: none; } /* 11.14.0 (phone-round-1-fixes P15): what the chosen country has, beside a currency or clock the user set; 11.28.0 (area-search Q4): .de-ccoffer - the picked area's other country, the same look */
+/* 11.20.0 (place-search-upgrade, Q8): the place search's window - a row: an icon by type, the name, under it the short address · the distance
+   from the destination's center; one line while searching (the previous rows stay); the end rows wrap */
+.pe-res.ps-row { flex-direction: row; align-items: center; gap: 10px; }
+.ps-row > .msi { flex: none; color: var(--on-surface-variant); }
+.ps-t { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.ps-t b, .ps-t small { overflow-wrap: anywhere; }
+.ps-rows { max-height: 55vh; overflow-y: auto; }
+.fsp-res .ps-rows { max-height: none; }
+.ps-line { display: block; color: var(--on-surface-variant); padding: 6px 2px; font-size: var(--fs-body-small); }
+/* 11.46.0 (phone-round-4c-fixes P3; standard ui-look-layout "Waiting on an outside service"): "in progress" - the one indicator of a screen
+   waiting on an outside service (js/services.js waitOn, waitLineHTML): a moving bar under the window's or screen's head, the stage line
+   with moving dots, and a map it waits for dimmed with a pulsing ring on the estimated area. Done - all of it leaves; failed - the screen's
+   own failure line takes the stage line's place */
+.wait-bar { position: sticky; top: 0; z-index: 3; height: 3px; margin: 0 0 -3px; overflow: hidden; background: color-mix(in srgb, var(--primary) 18%, transparent); border-radius: var(--r-xs); }
+.wait-bar::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 40%; background: var(--primary); border-radius: var(--r-xs); animation: waitBar 1.3s cubic-bezier(.4, 0, .2, 1) infinite; }
+@keyframes waitBar { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+[dir="rtl"] .wait-bar::before { inset: 0 0 0 auto; animation-direction: reverse; }
+.wait-dots { display: inline-block; animation: waitDots 1.2s steps(4, jump-none) infinite; } /* the "…" itself (read as text), shown one dot at a time from the word on */
+@keyframes waitDots { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0 0 0 0); } }
+.wait-map { position: relative; }
+.wait-map > :not(.wait-ring) { filter: grayscale(.5) brightness(.85); opacity: .7; transition: opacity var(--motion) var(--ease); }
+.wait-ring { position: absolute; z-index: 1000; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; border: 3px solid var(--primary); pointer-events: none; animation: waitRing 1.6s ease-out infinite; }
+@keyframes waitRing { 0% { transform: scale(.4); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .wait-bar::before { animation-duration: 3s; } .wait-ring { animation-duration: 3s; } .wait-dots { animation: none; } }
+.ps-end { margin-top: 6px; flex-wrap: wrap; }
+.ps-other { margin: 6px 0 0; padding: 4px 2px; color: var(--on-surface-variant); font-size: var(--fs-body-small); overflow-wrap: anywhere; } /* 11.21.0 (Q5): the quiet way out at the end of a results list */
+.ps-other .link-btn { padding: 6px 0; display: inline; }
+.fsp-res .ps-row small { padding: 0; }
+.fsp-res .ps-line, .fsp-res .ps-end, .fsp-res .ps-other { padding: 6px 10px; }
+.ps-chfoot { padding: 4px 0 8px; }
+.ps-chfoot:empty { display: none; }
+/* text-size (decisions 2026-11-19 · Text size follows the phone, Q4): settings' sample place card under the size chips - drawn by the app's own card, inert */
+.ts-sample { margin-top: 10px; pointer-events: none; } .ts-sample .card { margin: 0; }

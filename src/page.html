@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<!-- מחתימים דרכון. Mechanism map (one mechanism per kind of thing): `darkon/spec/index.md` and its topic files (the parts: `src/order.json`) - read before any change. Storage: the DATA REGISTRY block (REG). Dates and times: the TIME block (tmFmt by role, tmTodayOf / tmZoneAt). Requests to the outside: the EXTERNAL SERVICES block (svcAsk). Fields of forms and windows: the FORM BUILDING BLOCKS block (fm*). Hidden things and the way back: the HIDDEN block (hiddenGroups). Gestures: the TOUCH block. Photos: the PHOTOS block (PHOTO_PLACES). -->
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="text-scale" content="scale">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="דרכון">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#2E4A73">
+<meta name="author" content="מחתימים דרכון">
+<meta name="copyright" content="מחתימים דרכון · קוד פתוח ברישיון MIT © 2026">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgdmlld0JveD0iMCAwIDE4MCAxODAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPHJlY3Qgd2lkdGg9IjE4MCIgaGVpZ2h0PSIxODAiIHJ4PSIzOCIgZmlsbD0iIzFDMkIzMyIvPgogIDxyZWN0IHg9IjQ4IiB5PSIzMCIgd2lkdGg9Ijg0IiBoZWlnaHQ9IjEyMCIgcng9IjEwIiBmaWxsPSIjQzA4QTJFIi8+CiAgPGNpcmNsZSBjeD0iOTAiIGN5PSI3OCIgcj0iMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzFDMkIzMyIgc3Ryb2tlLXdpZHRoPSI1Ii8+CiAgPGVsbGlwc2UgY3g9IjkwIiBjeT0iNzgiIHJ4PSIxMCIgcnk9IjI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMxQzJCMzMiIHN0cm9rZS13aWR0aD0iNCIvPgogIDxsaW5lIHgxPSI2NiIgeTE9Ijc4IiB4Mj0iMTE0IiB5Mj0iNzgiIHN0cm9rZT0iIzFDMkIzMyIgc3Ryb2tlLXdpZHRoPSI0Ii8+CiAgPHJlY3QgeD0iNjgiIHk9IjExNiIgd2lkdGg9IjQ0IiBoZWlnaHQ9IjYiIHJ4PSIzIiBmaWxsPSIjMUMyQjMzIi8+CiAgPGNpcmNsZSBjeD0iMTI4IiBjeT0iMTM0IiByPSIyMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRjJGMEU3IiBzdHJva2Utd2lkdGg9IjUiIHN0cm9rZS1kYXNoYXJyYXk9IjYgNCIvPgogIDxwYXRoIGQ9Ik0xMjAgMTM0IGw2IDYgbDExIC0xMiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRjJGMEU3IiBzdHJva2Utd2lkdGg9IjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4=">
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgdmlld0JveD0iMCAwIDE4MCAxODAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPHJlY3Qgd2lkdGg9IjE4MCIgaGVpZ2h0PSIxODAiIHJ4PSIzOCIgZmlsbD0iIzFDMkIzMyIvPgogIDxyZWN0IHg9IjQ4IiB5PSIzMCIgd2lkdGg9Ijg0IiBoZWlnaHQ9IjEyMCIgcng9IjEwIiBmaWxsPSIjQzA4QTJFIi8+CiAgPGNpcmNsZSBjeD0iOTAiIGN5PSI3OCIgcj0iMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzFDMkIzMyIgc3Ryb2tlLXdpZHRoPSI1Ii8+CiAgPGVsbGlwc2UgY3g9IjkwIiBjeT0iNzgiIHJ4PSIxMCIgcnk9IjI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMxQzJCMzMiIHN0cm9rZS13aWR0aD0iNCIvPgogIDxsaW5lIHgxPSI2NiIgeTE9Ijc4IiB4Mj0iMTE0IiB5Mj0iNzgiIHN0cm9rZT0iIzFDMkIzMyIgc3Ryb2tlLXdpZHRoPSI0Ii8+CiAgPHJlY3QgeD0iNjgiIHk9IjExNiIgd2lkdGg9IjQ0IiBoZWlnaHQ9IjYiIHJ4PSIzIiBmaWxsPSIjMUMyQjMzIi8+CiAgPGNpcmNsZSBjeD0iMTI4IiBjeT0iMTM0IiByPSIyMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRjJGMEU3IiBzdHJva2Utd2lkdGg9IjUiIHN0cm9rZS1kYXNoYXJyYXk9IjYgNCIvPgogIDxwYXRoIGQ9Ik0xMjAgMTM0IGw2IDYgbDExIC0xMiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRjJGMEU3IiBzdHJva2Utd2lkdGg9IjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4=">
+<title>מחתימים דרכון</title>
+<!-- legal-server (11.41.0): the text fonts come from the site itself (generated/text-fonts.css, fonts/), no request to Google Fonts -->
+<style>
+/* @slot style */
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="title-row">
+      <h1 class="display title-h"><button type="button" class="title-btn" id="titleBtn" data-act="title.trips" aria-label="טיולים ויעדים"><span class="title-ic" id="appTitleIc" aria-hidden="true"></span><span class="title-name" id="appTitle">הטיולים שלי</span><span class="dates" id="appDates"></span><span class="title-caret" aria-hidden="true">▾</span></button></h1>
+      <div class="header-actions">
+        <button class="net-badge" id="netBadge" type="button" data-act="net.info" aria-label="אין רשת" title="אין רשת" hidden></button>
+        <button class="top-ic" id="searchToggle" data-act="search.toggle" title="חיפוש" aria-label="חיפוש" data-ms="search"></button>
+        <div class="menu-wrap">
+          <button class="top-ic" id="menuBtn" data-act="menu.toggle" title="תפריט" aria-label="תפריט" aria-haspopup="true" data-ms="more_vert"></button>
+          <div class="menu-dd" id="menuDD" hidden>
+            <button class="menu-item menu-undo" id="undoBtn" data-act="undo.last" hidden></button>
+            <button class="menu-item menu-install" id="installBtn" data-act="app.install" data-ms="install_mobile" hidden>התקנה כאפליקציה</button>
+            <button class="menu-item" id="tripsBtn" data-act="menu.screen" data-v="trips" data-ms="luggage">טיולים ויעדים</button>
+            <button class="menu-item" id="claudeBtn" data-act="menu.screen" data-v="claude" data-ms="auto_awesome">ההוראות ל-&#x2068;AI&#x2069;</button>
+            <button class="menu-item" id="syncBtn" data-act="menu.screen" data-v="sync" data-ms="cloud_upload">גיבוי ושחזור</button>
+            <button class="menu-item" id="logBtn" data-act="menu.screen" data-v="log" data-ms="history">יומן שינויים</button>
+            <div class="menu-sep"></div>
+            <button class="menu-item" id="settingsBtn" data-act="menu.screen" data-v="settings" data-ms="settings">הגדרות</button>
+            <button class="menu-item" id="themeToggle" data-act="theme.next" data-ms="contrast">תצוגה: אוטומטית</button>
+            <button class="menu-item" id="guideBtn" data-act="menu.screen" data-v="guide" data-ms="menu_book">מדריך</button>
+            <button class="menu-item" id="tourBtn" data-act="tour.start" data-ms="explore">סיור מודרך</button>
+            <button class="menu-item" id="reportBtn" data-act="report.open" data-ms="feedback" hidden><span class="mi-t">דיווח תקלה או רעיון<small id="reportWait" hidden></small></span></button>
+            <button class="menu-item" id="whatsNewBtn" data-act="menu.screen" data-v="whatsnew" data-ms="new_releases">מה חדש · <span id="menuVersion"></span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="search-wrap" id="searchWrap" style="display:none;">
+      <input id="search" type="text" data-sfield="1" enterkeyhint="search" autocomplete="off" placeholder="חיפוש לפי שם, כתובת, תיאור, אזור או שכבה">
+      <button class="search-clear" id="searchClear" type="button" data-act="search.clearTop" data-keepfocus aria-label="ניקוי החיפוש" hidden>✕</button>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </div>
+    <nav class="tabs chips-row" id="tabs"></nav>
+    <div id="layerBlock"></div>
+  </div>
+</header>
+<nav class="bottom-nav" id="bottomNav">
+  <button data-act="nav.section" data-sec="points"><span class="nav-pill" data-ms="location_on"></span><i data-tx="places"></i></button>
+  <button data-act="nav.section" data-sec="map"><span class="nav-pill" data-ms="map"></span><i>מפה</i></button>
+  <button data-act="nav.section" data-sec="plan"><span class="nav-pill" data-ms="calendar_month"></span><i>תכנון</i></button>
+  <button data-act="nav.section" data-sec="info"><span class="nav-pill" data-ms="dashboard"></span><i>כללי</i></button>
+</nav>
+
+<main id="main"></main>
+
+<button id="scrollTopBtn" class="scroll-top-btn" data-act="page.top" title="למעלה" aria-label="למעלה" data-ms="keyboard_arrow_up"></button>
+<button id="addFab" class="add-fab" type="button" data-act="place.add" hidden aria-label="הוספת מקום" title="הוספת מקום" data-ms="add"></button>
+<div class="toast" id="toast"></div>
+<!-- 10.7.0 (task feedback): the report form, declared for Netlify Forms (Netlify finds it in the uploaded page); the app sends its own submissions with the same fields (reportForm) -->
+<form name="report" data-netlify="true" netlify-honeypot="bot-field" hidden><input type="hidden" name="form-name" value="report"><input name="line"><input name="kind"><textarea name="text"></textarea><input name="contact"><textarea name="details"></textarea><textarea name="errors"></textarea><input name="bot-field"><input type="file" name="photo"></form>
+<div class="sheet-backdrop" id="sheetBackdrop" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+
+<script id="bundle" type="application/json">{"kind": "bundle", "copy": "empty", "destinations": [], "trips": []}</script>
+<script>
+// @slot script
+</script>
+</body>
+</html>

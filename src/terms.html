@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<!-- מחתימים דרכון · the terms and privacy page (task legal-page, 11.39.0; decisions 2026-11-21 · Review of the legal-review report, Q6-Q7, Q11).
+     A page of the site outside the app (/terms), kept offline by the service worker. Its content meets every row of
+     notes/legal-page/research.md (tests/t1137.py reads the table and finds each row's text here). Its own version and date are at the
+     bottom: a change of content raises them (1.3, task open-source: the code open under MIT, in "terms"). The contact address: appshelf.home@gmail.com (the owner, 21.11.2026; decisions Q7). A detail not yet given
+     would be a marked placeholder (data-placeholder) - shared/site/site_push.py refuses a page with one on the live site. -->
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#2E4A73">
+<meta name="author" content="מחתימים דרכון">
+<title>תנאי שימוש ופרטיות · מחתימים דרכון</title>
+<style>
+:root { --bg: #F4F6F9; --surface: #FFFFFF; --on: #1B1F26; --muted: #4A5261; --primary: #2E4A73; --line: #DDE2EA; --chip: #E8EEF7; }
+@media (prefers-color-scheme: dark) { :root { --bg: #111418; --surface: #1B1F26; --on: #E6E9EF; --muted: #AEB6C3; --primary: #9DB8E3; --line: #2F3540; --chip: #232A35; } }
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--on); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 760px; margin: 0 auto; padding: 16px 16px 40px; }
+header { background: var(--primary); color: #fff; padding: 20px 16px; }
+@media (prefers-color-scheme: dark) { header { background: #22324D; } }
+header div { max-width: 760px; margin: 0 auto; }
+header h1 { margin: 0; font-size: 1.5rem; line-height: 1.3; }
+header p { margin: 4px 0 0; opacity: .9; }
+section { background: var(--surface); border-radius: 16px; padding: 4px 16px 12px; margin: 12px 0; }
+h2 { font-size: 1.15rem; margin: 14px 0 6px; color: var(--primary); }
+h3 { font-size: 1rem; margin: 14px 0 4px; }
+p, li { margin: 6px 0; }
+ul { padding-inline-start: 20px; margin: 6px 0; }
+a { color: var(--primary); text-underline-offset: 30%; }
+.muted { color: var(--muted); font-size: .9rem; }
+.svc { list-style: none; padding: 0; }
+.svc li { border-top: 1px solid var(--line); padding: 8px 0; }
+.svc li:first-child { border-top: none; }
+.svc b { display: block; }
+.svc span { display: block; color: var(--muted); font-size: .95rem; }
+.svc a { font-size: .9rem; }
+nav.toc { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 8px 0 0; }
+footer { color: var(--muted); font-size: .9rem; text-align: center; margin-top: 20px; }
+bdi { unicode-bidi: isolate; }
+</style>
+</head>
+<body>
+<header><div>
+  <h1>תנאי שימוש ופרטיות</h1>
+  <p>מחתימים דרכון · אפליקציה לתכנון טיולים ולזיכרונות מהם</p>
+</div></header>
+<main>
+<nav class="toc" aria-label="תוכן הדף">
+  <a href="#what">מה זו האפליקציה</a><a href="#terms">תנאי שימוש</a><a href="#google">מפות Google</a><a href="#privacy">פרטיות</a><a href="#services">השירותים החיצוניים</a><a href="#timeline">ציר הזמן</a><a href="#reports">דיווח תקלה או רעיון</a><a href="#rights">הזכויות שלכם</a><a href="#contact">מי אחראי ואיך פונים</a>
+</nav>
+
+<section id="what">
+  <h2>מה זו האפליקציה</h2>
+  <p>"מחתימים דרכון" היא אפליקציה חינמית לתכנון טיולים, לשימוש בזמן הטיול ולזיכרונות ממנו. אין בה חשבון, הרשמה או התחברות, אין בה פרסומות, ולא מוכרים בה כלום. הדף הזה פתוח לכל אחד, בכתובת קבועה באתר של האפליקציה.</p>
+  <p><b>הטיולים נשמרים רק בטלפון.</b> הטיולים, המקומות, התמונות, ההערות וההגדרות נשמרים בזיכרון של הדפדפן או של האפליקציה המותקנת בטלפון שלכם - לא אצלנו ולא בשרת אחר. גיבוי, קובץ טיול או תמונת טיול יוצאים מהטלפון רק כשאתם שולחים אותם בעצמכם, ולמי שאתם בוחרים.</p>
+  <p><b>מה האפליקציה לא אוספת:</b> אין מעקב ואין כלי סטטיסטיקה או פרסום, אין עוגיות (cookies) שלנו, המיקום שלכם לא נאסף ולא נשמר אצלנו, ואנחנו לא מוכרים ולא מעבירים מידע לאף אחד. כדי לעבוד, האפליקציה כן פונה לשירותים חיצוניים, וגם משתמשת בממשקים של מפות Google (<bdi>Google Maps APIs</bdi>) - מה כל אחד מקבל כתוב <a href="#services">בהמשך</a>, אחד אחד.</p>
+</section>
+
+<section id="terms">
+  <h2>תנאי שימוש</h2>
+  <ul>
+    <li><b>כמו שהיא, בלי אחריות.</b> האפליקציה ניתנת כמו שהיא (AS IS) ובלי שום אחריות. מידע שמוצג בה - מפות, שעות פתיחה, מסלולים וזמני נסיעה, מזג אוויר, שערי מטבע, מידע על מקומות, ותוכן שהגיע מקלוד או מכל AI אחר - מגיע מאחרים ועלול להיות שגוי, חסר או לא מעודכן. בדקו אותו לפני שאתם מסתמכים עליו, במיוחד בכל מה שנוגע לבטיחות, לבריאות, לכסף ולהזמנות. האפליקציה לא מיועדת לשימוש שבו טעות מסכנת אדם (למשל ניווט בשטח מסוכן או במצב חירום).</li>
+    <li><b>השימוש על אחריותכם.</b> ככל שהחוק מאפשר, אין אחריות לנזק שנגרם משימוש באפליקציה או מהסתמכות עליה, ולא לאובדן מידע - הנתונים שמורים רק בטלפון, וגיבוי הוא באחריותכם (<bdi>⋮ › גיבוי</bdi>).</li>
+    <li><b>מפות Google.</b> האפליקציה כוללת תכונות ותוכן של מפות Google. השימוש בהם כפוף לתנאים של Google (<a href="#google">למטה</a>), ומי שלא עומד בהם - האפליקציה רשאית להפסיק לתת לו את התכונות האלה.</li>
+    <li><b>התוכן שלכם.</b> מה שאתם כותבים, מצלמים ומוסיפים הוא שלכם, ואתם אחראים לו - גם כשאתם שולחים אותו לאחרים בקובץ, בתמונה או בדף לחברים.</li>
+    <li><b>שירותים ותוכן של אחרים.</b> המפות, נתוני המקומות, מזג האוויר, התמונות והטקסטים מוויקיפדיה, וגם הקוד, הגופנים והאייקונים של אחרים שבאפליקציה, שייכים לבעליהם ולתורמים שלהם, כל אחד בתנאים וברישיון שלו. הרשימה המלאה, עם הקרדיט והתנאים של כל אחד: בהגדרות › "מקורות ורישיונות", ו<a href="licenses.txt">טקסט הרישיונות</a>.</li>
+    <li><b>שימוש הוגן.</b> אל תשתמשו באפליקציה כדי להעמיס על השירותים שהיא פונה אליהם (למשל הורדה המונית של מפות או נתונים), ואל תשלחו בדיווח תוכן פוגע או מידע של אנשים אחרים בלי רשותם.</li>
+    <li><b>זכויות וקוד פתוח.</b> © מחתימים דרכון. הקוד של האפליקציה פתוח ברישיון <bdi>MIT</bdi>: מותר להשתמש בו, לשנות ולהפיץ אותו, כל עוד שומרים על שורת הזכויות ועל נוסח הרישיון - <a href="https://github.com/appshelf-home/darkon/blob/main/LICENSE">הרישיון (<bdi>LICENSE</bdi>)</a> ו<a href="https://github.com/appshelf-home/darkon">מאגר הקוד</a>. הרישיון חל על הקוד של האפליקציה בלבד; התוכן של אחרים שבה שייך לבעליו ובתנאים שלו, כאמור.</li>
+    <li><b>שינויים.</b> האפליקציה והדף הזה יכולים להשתנות. שינויים מתפרסמים בדף הזה: בתחתית הדף - הגרסה והתאריך שלו, ושינוי מהותי יופיע גם ב"מה חדש" שבאפליקציה. המשך שימוש אחרי שינוי הוא הסכמה לדף המעודכן.</li>
+    <li><b>הדין.</b> על התנאים האלה חל הדין הישראלי.</li>
+  </ul>
+</section>
+
+<section id="google">
+  <h2>מפות Google</h2>
+  <p>האפליקציה משתמשת בתכונות ובתוכן של מפות Google (Google Maps): השרת של האפליקציה מחפש ב-Google Maps Platform (Places API) את המזהה של מקום בגוגל, כדי ש"Maps" יפתח בדיוק אותו מקום; קישור מגוגל מפות ששיתפתם אל האפליקציה נפתח דרך השרת שלה; וכפתורי "Maps" ו"ניווט" פותחים את גוגל מפות.</p>
+  <p><b>בשימוש באפליקציה אתם מסכימים להיות מחויבים לתנאי השירות של Google:</b> השימוש בתכונות ובתוכן של מפות Google כפוף ל<a href="https://maps.google.com/help/terms_maps/">תנאי השימוש הנוספים של מפות Google ו-Google Earth</a> (https://maps.google.com/help/terms_maps/), ל<a href="https://policies.google.com/terms">תנאים וההגבלות של Google</a> (https://policies.google.com/terms), ול<a href="https://policies.google.com/privacy">מדיניות הפרטיות של Google</a> (https://policies.google.com/privacy), <b>שהיא חלק ממדיניות הפרטיות הזו</b> ונכללת בה בהפניה.</p>
+  <p><b>מה Google מקבלת:</b> שם של מקום שבטיול, שם היעד שלו והנקודה שלו על המפה - מהשרת של האפליקציה, כך שגוגל רואה את השרת ולא את כתובת הרשת של הטלפון שלכם; וקישור מגוגל מפות ששיתפתם. <b>לא נשלחים לגוגל</b> השם שלכם, פרטי קשר, מזהה המכשיר או המיקום של הטלפון - רק השם והנקודה של המקום עצמו. נשמר רק המזהה של המקום בגוגל.</p>
+</section>
+
+<section id="privacy">
+  <h2>פרטיות</h2>
+  <p>האפליקציה עצמה לא שומרת עליכם מידע אצלנו. מה שיוצא מהטלפון:</p>
+  <ul>
+    <li><b>בכל פנייה לשירות חיצוני</b> הטלפון שולח, כמו בכל גלישה, את כתובת הרשת שלו (IP), את סוג הדפדפן, ואת כתובת האתר של האפליקציה (Referer) - כך השירותים יודעים שהבקשה הגיעה מ"מחתימים דרכון". הטיול והמסך לא נשלחים. השירות רואה את המידע הזה ואת מה שהבקשה מבקשת, ומטפל בו לפי מדיניות הפרטיות שלו (קישור לכל אחת ברשימה).</li>
+    <li><b>מה נשלח:</b> רק מה שהבקשה צריכה - טקסט שחיפשתם, שם של מקום, נקודה על המפה (קואורדינטות), תאריכים, או אזור במפה. לא נשלחים שמות של אנשים, הטיולים שלכם, ההערות או התמונות שלכם. לפי חוק הגנת הפרטיות, נקודות על המפה שנשלחות יחד עם כתובת הרשת, מזהה המכשיר ופרטי קשר הם מידע אישי - ולכן הם כתובים כאן במפורש.</li>
+    <li><b>המיקום שלכם (GPS)</b> נלקח רק כשאתם מבקשים ומאשרים בטלפון (הכפתור "הראה את המיקום שלי" במפה, מיון לפי קרבה, "המיקום שלי" בעריכת מקום). הוא משמש בטלפון, לא נשלח לשום שירות ולא נשמר אצלנו. רק כשאתם שומרים אותו כמיקום של מקום, הנקודה של המקום יוצאת כמו של כל מקום (לשירותים שברשימה); וכשהמפה מראה את האזור שלכם, האריחים של האזור הזה נטענים משירות המפות.</li>
+    <li><b>האתר של האפליקציה</b> מתארח ב-Netlify. כמו כל שרת, Netlify רושמת את כתובת הרשת ואת סוג הדפדפן של מי שפותח את האפליקציה או פונה לשרת שלה. <b>הגופנים</b> של האפליקציה נטענים מהאתר עצמו, לא משירות חיצוני.</li>
+    <li><b>עבודה עם קלוד או AI אחר</b>: האפליקציה לא פונה לשום AI בעצמה. כשאתם מעבירים קובץ לקלוד (או לכל עוזר אחר) ומחזירים ממנו קובץ, אתם עושים את זה בעצמכם, ועל מה ששלחתם חלים התנאים ומדיניות הפרטיות של אותו שירות.</li>
+    <li><b>קישורים שאתם פותחים</b> (גוגל מפות, וואטסאפ, אתר של מקום) נושאים רק את מה שבחרתם לשלוח, ועליהם חלים התנאים של אותו שירות.</li>
+    <li><b>קבצים ודפים לחברים</b>: קובץ טיול, גיבוי או דף ששלחתם הוא שלכם ושל מי שקיבל אותו. דף לחברים עם מפה טוען את המפה אצל מי שפותח אותו, ואז הדפדפן שלו פונה לשירות המפות ול-cdnjs (וכתובת הרשת שלו מגיעה אליהם); בלי רשת מוצגת תמונה.</li>
+  </ul>
+</section>
+
+<section id="services">
+  <h2>השירותים החיצוניים ומה כל אחד מקבל</h2>
+  <p class="muted">כל שירות מקבל גם את כתובת הרשת (IP), את סוג הדפדפן ואת כתובת האתר של האפליקציה, כאמור למעלה. כמה זמן הוא שומר אותם - לפי מה שהוא כותב.</p>
+  <ul class="svc">
+    <li data-prov="nominatim" data-host="nominatim.openstreetmap.org"><b>Nominatim - קרן OpenStreetMap (בריטניה)</b><span>טקסט שחיפשתם, שמות וכתובות של מקומות עם אזור היעד, ונקודות על המפה כדי לתת להן שם (גם מציר הזמן) - כדי למצוא מקומות ולשים אותם על המפה. הבקשות עוברות דרך <b>התור המשותף בשרת של האפליקציה</b>, כך ש-Nominatim רואה את השרת ולא את כתובת הרשת של הטלפון שלכם. השרת שומר את מה שנשאל ואת התשובה עד 30 יום, כדי לא לשאול שוב - בלי כתובת הרשת ובלי שום פרט על מי ששאל. כשהשרת לא עונה, הטלפון פונה ל-Nominatim ישירות.</span><a href="https://osmfoundation.org/wiki/Privacy_Policy">מדיניות הפרטיות</a></li>
+    <li data-prov="photon" data-host="photon.komoot.io"><b>Photon - komoot (גרמניה)</b><span>טקסט שחיפשתם עם מרכז המפה, כתובות, ונקודות מציר הזמן כש-Nominatim עמוס - חיפוש מקומות, כשירות נוסף. komoot כותבת שכתובות רשת נשמרות עד 90 יום.</span><a href="https://www.komoot.com/privacy">מדיניות הפרטיות</a></li>
+    <li data-prov="fossgis" data-host="routing.openstreetmap.de"><b>מסלולים - FOSSGIS (גרמניה)</b><span>נקודות ההתחלה והסיום של קטע בדרך - כדי לחשב מסלול, מרחק וזמן הליכה, נסיעה או רכיבה. הבקשה נרשמת ביומן השרת שלהם.</span><a href="https://routing.openstreetmap.de/about.html">האתר והתנאים</a></li>
+    <li data-prov="transitous" data-host="api.transitous.org"><b>תחבורה ציבורית - Transitous</b><span>נקודות ההתחלה והסיום של קטע, התאריך ושעת היציאה - כדי להציע נסיעה בתחבורה ציבורית. גם הן עוברות דרך התור המשותף בשרת של האפליקציה (וישירות כשהוא לא עונה). נשמר אצלם עד יומיים.</span><a href="https://transitous.org/privacy/">מדיניות הפרטיות</a></li>
+    <li data-prov="openmeteo" data-host="api.open-meteo.com archive-api.open-meteo.com"><b>Open-Meteo (שווייץ)</b><span>נקודות על המפה ותאריכים - תחזית, אקלים של חודש, וגובה של מקום. יומני השרת נמחקים אחרי 90 יום.</span><a href="https://open-meteo.com/en/terms">התנאים והפרטיות</a></li>
+    <li data-prov="wikimedia" data-host="he.wikipedia.org en.wikipedia.org upload.wikimedia.org"><b>ויקיפדיה וויקישיתוף - קרן ויקימדיה (ארה"ב)</b><span>מרכז המפה, שמות של ערכים וכתובות של תמונות - כדי להציע מקומות מעניינים בקרבת מקום, עם הטקסט והתמונה שלהם. רוב המידע נמחק או מוסתר אחרי 90 יום.</span><a href="https://foundation.wikimedia.org/wiki/Policy:Privacy_policy">מדיניות הפרטיות</a></li>
+    <li data-prov="wikidata" data-host="www.wikidata.org"><b>ויקינתונים (Wikidata) - קרן ויקימדיה</b><span>שם של אזור שחיפשתם בעברית - כדי למצוא את שמו באנגלית.</span><a href="https://foundation.wikimedia.org/wiki/Policy:Privacy_policy">מדיניות הפרטיות</a></li>
+    <li data-prov="overpass1 overpass2 overpass3" data-host="overpass-api.de overpass.kumi.systems overpass.private.coffee"><b>Overpass - overpass-api.de, ושני שרתים של Private.coffee (אוסטריה)</b><span>מלבן של אזור במפה סביב יעד - כדי לצייר את מפת הזיכרונות ולהציע מקומות מהמפה הפתוחה. Private.coffee שומרת חלק מכתובת הרשת עד 48 שעות.</span><a href="https://overpass.private.coffee/">התנאים</a></li>
+    <li data-prov="openfreemap" data-host="tiles.openfreemap.org"><b>OpenFreeMap (הונגריה, דרך Cloudflare)</b><span>אריחי המפה של האזור שמוצג או שהורדתם לשימוש בלי רשת, רקע תמונת הטיול, והמפה החיה בדף לחברים (אצל מי שפותח אותו). לפי הכתוב, כתובות רשת נשמרות רק ביומני תקלות, 7 ימים.</span><a href="https://openfreemap.org/privacy/">מדיניות הפרטיות</a></li>
+    <li data-prov="osm" data-host="tile.openstreetmap.org"><b>אריחי המפה של OpenStreetMap - קרן OpenStreetMap</b><span>אריחי המפה של האזור שאתם מסתכלים עליו (הטלפון שומר אותם 7 ימים).</span><a href="https://osmfoundation.org/wiki/Privacy_Policy">מדיניות הפרטיות</a></li>
+    <li data-prov="opentopomap" data-host="a.tile.opentopomap.org b.tile.opentopomap.org c.tile.opentopomap.org"><b>OpenTopoMap</b><span>אריחי המפה הטופוגרפית של האזור שמוצג.</span><a href="https://opentopomap.org/about">התנאים</a></li>
+    <li data-prov="esri" data-host="ibasemaps-api.arcgis.com static-map-tiles-api.arcgis.com"><b>Esri (ארה"ב)</b><span>אריחי תצלומי הלוויין והתבליט של האזור שמוצג, עם המפתח של האפליקציה - או מפתח Esri משלכם, אם הכנסתם אחד בהגדרות. האריחים האלה לא נשמרים בטלפון.</span><a href="https://www.esri.com/en-us/privacy/overview">מדיניות הפרטיות</a></li>
+    <li data-prov="erapi" data-host="open.er-api.com"><b>ExchangeRate-API</b><span>קוד של מטבע (למשל EUR) - שער המטבע, פעם ביום.</span><a href="https://www.exchangerate-api.com/terms">התנאים והפרטיות</a></li>
+    <li data-prov="site siteIds"><b>Netlify - האתר והשרת של האפליקציה (ארה"ב)</b><span>כל פתיחה של האפליקציה, הדיווחים ששלחתם (<a href="#reports">למטה</a>), קישור מגוגל מפות ששיתפתם אל האפליקציה (כדי לפתוח אותו), שם, יעד ונקודה של מקום לחיפוש המזהה שלו בגוגל, והחיפושים שעוברים בתור המשותף (Nominatim ו-Transitous, למעלה).</span><a href="https://www.netlify.com/privacy/">מדיניות הפרטיות</a></li>
+    <li data-prov="google" data-host="places.googleapis.com maps.app.goo.gl goo.gl share.google consent.google.com www.google.com maps.google.com"><b>Google (מפות Google, Places API)</b><span>שם של מקום, שם היעד שלו והנקודה שלו - מהשרת של האפליקציה, לא מהטלפון; וקישור מגוגל מפות ששיתפתם, גם הוא דרך השרת (<a href="#google">למעלה</a>). כשאתם לוחצים "Maps" או "ניווט" נפתחת גוגל מפות עצמה, בתנאים שלה.</span><a href="https://policies.google.com/privacy">מדיניות הפרטיות</a></li>
+    <li data-prov="jsdelivr" data-host="cdn.jsdelivr.net"><b>jsDelivr</b><span>בקשה לקובץ קבוע של גבולות המדינות (בלי שום מידע שלכם מעבר לכתובת הרשת).</span><a href="https://www.jsdelivr.com/terms/privacy-policy-jsdelivr-net">מדיניות הפרטיות</a></li>
+    <li data-prov="cdnjs" data-host="cdnjs.cloudflare.com"><b>cdnjs - Cloudflare (ארה"ב)</b><span>בקשה לספריית המפות (Leaflet), קובץ קבוע - בטלפון שלכם, ואצל חבר שפותח דף ששלחתם.</span><a href="https://www.cloudflare.com/privacypolicy/">מדיניות הפרטיות</a></li>
+  </ul>
+</section>
+
+<section id="timeline">
+  <h2>ציר הזמן של גוגל</h2>
+  <p>בסגירת טיול אפשר לבחור קובץ ייצוא של ציר הזמן מגוגל מפות. <b>הקובץ נקרא רק בטלפון</b> ולא נשלח לשום מקום. מתוכו נשמרים בטלפון רק הימים של הטיול: המקומות שהייתם בהם והמסלולים של כל יום.</p>
+  <p>מקום מהקובץ שלא התאים לאף מקום בטיול מוצע לכם כ"היינו גם כאן", ורק אז נשלחת הנקודה שלו - בלי השעה ובלי שום פרט אחר - לשירות הכתובות (Nominatim, או Photon כשהוא עמוס) כדי לתת לו שם. <b>מקומות שהקובץ מסמן כבית או כעבודה לא מוצעים ולא נשלחים</b>, וגם לא מקומות מחוץ לימי הטיול.</p>
+  <p><b>מקום קרוב לבית או לעבודה, או מקום שאתם חוזרים אליו בימים רבים</b> (לפי הקובץ, מחוץ לימי הטיול) מוצע בלי שם - את השם נותנים בעצמכם. <b>הנקודה שלו לא נשלחת לחיפוש שם, כתובת או מזהה של גוגל</b>, גם אחרי שהוספתם אותו לטיול ונתתם לו שם (כשהוא מוצג במפה, נטענים אריחי המפה של האזור, כמו בכל מפה).</p>
+</section>
+
+<section id="reports">
+  <h2>דיווח תקלה או רעיון</h2>
+  <p>בחלון "דיווח תקלה או רעיון" (בתפריט ⋮) אפשר לשלוח לנו הודעה. <b>הכל רשות</b> - אין חובה חוקית למסור את הפרטים, ובלי לדווח האפליקציה עובדת בדיוק אותו דבר. בלי פרטי קשר לא נוכל לחזור אליכם.</p>
+  <ul>
+    <li><b>מה נשלח:</b> מה שכתבתם וסוג הדיווח; תמונה, אם צירפתם; שם וטלפון או מייל ו"אפשר לחזור אליי", רק אם מילאתם (הם נשלחים רק עם הדיווח, ונזכרים בטלפון לפעם הבאה); וגם הפרטים הטכניים שמוצגים בחלון תחת "מה מצורף" - גרסת האפליקציה, המסך והחלון שהיו פתוחים, סוג המכשיר, המערכת והדפדפן, גודל המסך והטקסט, הזמן והרשת, עד 10 שגיאות אחרונות, ו"מזהה מכשיר": מספר אקראי שהאפליקציה בחרה, שמקבץ דיווחים מאותו טלפון ולא מזהה אתכם. הטיולים, המקומות והתמונות שלכם לא נשלחים.</li>
+    <li><b>לשם מה:</b> רק כדי להבין את התקלה או את הרעיון, לתקן ולשפר את האפליקציה; פרטי הקשר - רק כדי לחזור אליכם אם ביקשתם.</li>
+    <li><b>לאן ולמי:</b> הדיווח נשמר בשירות הטפסים של Netlify (Netlify Forms), שמארחת את האתר, ונשלח ממנו במייל אל האחראי (<a href="#contact">למטה</a>). Netlify ונותני השירות שלה (אחסון, סינון דואר זבל ושליחת מייל) נמצאים בארה"ב, ומטפלים בו רק בשבילנו. הוא לא מועבר לאף אחד אחר ולא נמכר.</li>
+    <li><b>כמה זמן:</b> דיווח נמחק (מ-Netlify ומהמייל) כשהטיפול בו נגמר, ולכל המאוחר שנה אחרי שנשלח.</li>
+    <li>דיווח שנכתב בלי רשת נשמר בטלפון ונשלח כשהרשת חוזרת.</li>
+  </ul>
+</section>
+
+<section id="rights">
+  <h2>הזכויות שלכם</h2>
+  <p>לפי חוק הגנת הפרטיות, מותר לכם לעיין במידע עליכם שנשמר אצלנו, לבקש לתקן אותו אם הוא לא נכון, לא שלם, לא ברור או לא מעודכן, ולבקש למחוק אותו. אצלנו נשמרים רק דיווחים שנשלחו.</p>
+  <ul>
+    <li><b>איך מבקשים:</b> כותבים לכתובת <a href="#contact">למטה</a> - אלינו, לא ל-Netlify - עם הזמן המשוער של הדיווח, או המזהה שמופיע בו תחת "מזהה מכשיר", או הפרטים שמילאתם בו.</li>
+    <li><b>תשובה:</b> בעברית, בערבית או באנגלית, תוך 30 יום. אם נסרב לבקשה לעיון - נודיע תוך 21 יום, ולבקשה לתיקון - תוך 30 יום, עם הסיבה.</li>
+    <li><b>מחיקה:</b> דיווח שלכם יימחק לפי בקשה, בלי תנאים, מ-Netlify ומהמייל. מידע שתוקן או נמחק - נעדכן גם את מי שקיבל אותו מאיתנו.</li>
+  </ul>
+  <p>מה שבטלפון שלכם בידיים שלכם: אפשר למחוק כל דבר באפליקציה, או למחוק את האפליקציה ואת נתוני האתר בדפדפן. מידע ששלחתם לשירות חיצוני נשמר אצלו לפי המדיניות שלו - אליו פונים ישירות (הקישורים ברשימה למעלה).</p>
+</section>
+
+<section id="contact">
+  <h2>מי אחראי ואיך פונים</h2>
+  <p>"מחתימים דרכון" היא אפליקציה פרטית, לא מסחרית. האחראי על המידע ועל האפליקציה: ערן שיים.</p>
+  <p>לכל שאלה, בקשה לעיון, לתיקון או למחיקה, או תלונה - במייל: <a href="mailto:appshelf.home@gmail.com"><bdi>appshelf.home@gmail.com</bdi></a>. אפשר לפנות גם דרך "דיווח תקלה או רעיון" באפליקציה.</p>
+</section>
+
+<footer data-stamp="426c48ee46a8">
+  <p>גרסת הדף <bdi>1.4</bdi> · <bdi>21.11.2026</bdi> · <a href="./">חזרה לאפליקציה</a></p>
+</footer>
+</main>
+</body>
+</html>

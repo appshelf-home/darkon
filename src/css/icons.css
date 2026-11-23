@@ -1,0 +1,43 @@
+/*! Material Symbols Outlined (Google) - Apache-2.0 (licenses.txt on the site) - a subset, built into the page by tests/msfont.py */
+/* 5.0.0: drawn symbols (CSS masks, so they take the text color and work in any text, the guide included):
+   .sym-key - a key point of the trip (an award ribbon, not to be confused with ⭐ favorites); .sym-booked - booked (a calendar with ✓,
+   one family with 📅 "to book") */
+.sym { display: inline-block; width: 1.1em; height: 1.1em; vertical-align: -.18em; background-color: currentColor; -webkit-mask: var(--sym) center / contain no-repeat; mask: var(--sym) center / contain no-repeat; flex-shrink: 0; }
+.sym-key { --sym: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M5.2 10.2 3.6 15.4 6 14.2 7.3 16 8.1 11.6ZM10.8 10.2 12.4 15.4 10 14.2 8.7 16 7.9 11.6Z'/%3E%3Cpath fill-rule='evenodd' d='M8 .9a5.4 5.4 0 1 1 0 10.8A5.4 5.4 0 0 1 8 .9ZM8.00 3.30 L8.73 5.29 L10.85 5.37 L9.19 6.69 L9.76 8.73 L8.00 7.55 L6.24 8.73 L6.81 6.69 L5.15 5.37 L7.27 5.29Z'/%3E%3C/svg%3E"); color: var(--on-key); }
+.sym-booked { --sym: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 1v3M11.5 1v3' stroke='%23000' stroke-width='1.8' stroke-linecap='round'/%3E%3Crect x='1.7' y='2.8' width='12.6' height='11.8' rx='2' fill='none' stroke='%23000' stroke-width='1.6'/%3E%3Cpath d='M1.7 4.8a2 2 0 0 1 2-2h8.6a2 2 0 0 1 2 2V6.6H1.7Z'/%3E%3Cpath d='M5 10.4l2.1 2.1 4-4.2' fill='none' stroke='%23000' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); color: var(--visited); }
+#nlRow[hidden] { display: none; }  /* 5.0.0: the layer choice of a note with an address */
+.rt-key .sym-key { color: var(--on-route-now); width: 15px; height: 15px; }
+.key-badge { color: var(--on-key); font-weight: 700; }
+
+
+
+/* 10.1.0 (design-1): icons - Material Symbols Outlined by code point (msi), filled = on; the giraffe is drawn (GIRAFFE_SVG) */
+.msi { font-family: 'MS'; font-weight: normal; font-style: normal; line-height: 1; display: inline-block; vertical-align: middle; font-size: var(--icon-20); direction: ltr; letter-spacing: normal; text-transform: none; white-space: nowrap; word-wrap: normal; -webkit-font-smoothing: antialiased; font-variation-settings: 'FILL' 0; }
+.msi svg { width: 1em; height: 1em; display: block; stroke: currentColor; } .msi.msi-in > svg { display: inline-block; vertical-align: -0.125em; } /* size-fixes-2: a drawn icon (the giraffe) inside a line of text is inline - a block broke the line before and after it (found by t1124: the zoo's icon alone at a line's end) */
+/* final-review-fixes (family C): an icon beside its word - the one shared rule (look/icons.md "An icon beside its word").
+   A label (a button, a link, a label, a badge) that holds a line icon directly is a row, and the gap between the icon and its
+   word is the token --icon-gap - whichever side the word is on, in RTL too (an icon is direction: ltr, so a logical margin of its
+   own falls on the wrong side; the gap belongs to the row). :where() keeps the rule at no specificity and free of the order of
+   the style files: a component that sets its own display or gap keeps it. An icon alone gets nothing (a gap needs two).
+   No justify-content here: it would move the content of every label that is a row already. */
+:where(button, a, label, .badge):where(:has(> :is(.msi, .sym, svg.il-flag))):where(:not([hidden])) { display: inline-flex; align-items: center; column-gap: var(--icon-gap); }
+/* inside a line of text (msi-in) the gap is the line's word space, written as a no-break space (msiT). The icon is a plain inline
+   there, not an inline-block: a line may break beside an inline-block even at a no-break space, which left the icon at the end of
+   one line and its word on the next. */
+.msi.msi-in { display: inline; unicode-bidi: isolate; } /* isolate: beside digits or Latin the icon keeps its place, as the inline-block did */
+/* the line icon's modifiers (size steps, fill, inside a text, a warning) must beat the components' icon rules of the same weight, so they carry
+   one element of weight more, the html prefix (look/index.md "The order of the style files"): they win by their selector, never by their place */
+html .msi.fill { font-variation-settings: 'FILL' 1; } html .msi.s16 { font-size: var(--icon-16); } html .msi.s18 { font-size: var(--icon-18); } html .msi.s22 { font-size: var(--icon-22); } html .msi.s24 { font-size: var(--icon-24); }
+.msi.msi-dir { transform: scaleX(-1); } .msi.msi-in.msi-dir { display: inline-block; } /* 11.5.0: a directional icon is mirrored right-to-left (MS_DIR); inside a text it becomes a box, which a transform needs */
+.msi-tie { white-space: nowrap; } /* size-fixes (2): msiT - a mirrored icon (a box) and its first word on one line */
+html .msi.msi-in { font-size: 1.15em; vertical-align: -0.2em; } html .msi.warn-ic { color: var(--error); } /* 10.8.0 (design-icons, Q19): a line icon inside a text - at the text's size and color */
+.acc-sub { display: block; font-weight: 400; font-size: var(--fs-body-small); color: var(--on-surface-variant); } /* 10.8.0 (design-icons, gap 24): a row's supporting line */
+.accordion-header > .acc-ic { flex: none; color: var(--on-surface-variant); } .accordion-header > .acc-ic + * { margin-inline-start: 10px; } /* 10.15.0 (design-review Q15): the fixed gap sits on the title - an icon is direction: ltr, so its own inline-end margin fell on the wrong side */ .accordion-header > .acc-emo { font-size: 1.1em; line-height: 1; } .accordion-header > svg.il-flag { width: 20px; height: 20px; } .accordion-header > .acc-ic + span { flex: 1 1 auto; min-width: 0; text-align: start; } /* 10.8.0 (design-icons): a section head's line icon */
+.le-ic .msi { color: var(--on-surface-variant); } .le-ic[data-active="true"] .msi { color: var(--on-secondary-container); }
+/* 10.1.0 (design-1): Claude's mark (sparkles) in Claude's color, the size of the text beside it; one color in the ⋮ menu */
+.cl-mark { color: var(--on-claude); font-size: 1.2em; vertical-align: -.2em; }
+:is(.ta-item, .menu-item) > .msi.cl-mark { color: var(--on-claude); } :is(.btn-nav, .ta-main) .cl-mark { color: inherit; } /* final review 11: Claude's mark keeps Claude's color as a row's leading icon too (a row's icon color is a stronger rule); on a filled button it takes the button's ink */
+/* 10.1.0 (design-1): the logo (the oval stamp) in the primary color */
+.logo { display: inline-block; color: var(--primary); line-height: 0; } .logo svg { width: 100%; height: auto; display: block; overflow: visible; }
+.logo-l { width: 210px; } .logo-m { width: 110px; } .logo-s { width: 64px; }
+

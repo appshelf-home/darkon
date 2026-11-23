@@ -1,0 +1,45 @@
+* { box-sizing: border-box; }
+[hidden] { display: none !important; } /* phone-round-1-fixes P1 (11.14.0): `hidden` always wins - the browser's own [hidden] rule has no weight, so any rule that sets display (.menu-item { display: flex }) drew a hidden row anyway (the install row once installed, an empty undo row, the report row) */
+html, body { height: 100%; overflow-x: clip; }
+body {
+  margin: 0;
+  background: var(--surface);
+  color: var(--on-surface);
+  font-family: 'Rubik', system-ui, sans-serif;
+  padding-top: env(safe-area-inset-top, 0px); /* the page's own space, not a layer's top: the sticky top bar adds var(--safe-top) itself (test-address) */
+  padding-bottom: 70px; /* one body rule (final-review-fixes Q9): a second one in buttons-chips.css set this by its later place, over env(safe-area-inset-bottom) written here */
+  -webkit-font-smoothing: antialiased;
+  text-decoration-skip-ink: none; text-underline-offset: 30%; /* phone-round-1-fixes P7 (11.14.0): every underline (a text link: .link-btn, .pw-link, a link in a text, .hid-btn) is one unbroken line - the browser skipped it where a letter goes below the line (ן ף ץ ק); 30% of the letter's size (inherited as a percentage, so it follows each text's own size) puts it under the lowest of them (ק, 0.19 em in Rubik) instead of through them */
+}
+a { color: var(--primary); } /* final review 21: the one link style - every link in a text takes the app's accent in both modes (a link that is a button or a chip sets its own color) */
+h1, h2, h3, .display { font-family: 'Rubik', system-ui, sans-serif; } /* 10.13.0 (design-screens, gaps 2-3, Q2): the app's font; a trip's heading font is only on its name (.trip-name) */
+.trip-name { font-family: var(--tn-f, inherit); } .trip-name-c { color: color-mix(in srgb, var(--tn-c, var(--on-surface)) var(--trip-name-mix), var(--on-surface)); }
+
+/* 10.1.0 (design-1): loading - a small spinner; offline - the cloud-off icon in the quiet color */
+.spin { display: inline-block; width: 1em; height: 1em; box-sizing: border-box; border-radius: 50%; border: 2px solid var(--outline); border-top-color: var(--primary); vertical-align: -0.15em; margin-inline-end: 6px; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spin { animation-duration: 2.4s; } }
+/* final-review-fixes (finding 20): a button that waits keeps its line icon; the icon breathes (btnBusy) */
+[aria-busy="true"] > .msi { animation: busyPulse 0.7s ease-in-out infinite alternate; }
+@keyframes busyPulse { from { opacity: 1; } to { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { [aria-busy="true"] > .msi { animation: none; opacity: 0.5; } }
+.svc-line.svc-off, .net-wait { color: var(--on-surface-variant); } .svc-off .msi, .net-wait .msi { vertical-align: -0.2em; } /* final-review-fixes (family C): no margin on the icon - it fell on the far side (an icon is direction: ltr); the gap is the row's or the word space (msiT) */
+main { max-width: 780px; margin: 0 auto; padding: 6px 18px calc(118px + env(safe-area-inset-bottom, 0px)); } /* 10.7.0: the end of a long screen clears the bottom navigation (the body is 100% high, so its own bottom padding never added room after the content - the last row sat under the navigation) */
+
+.section-head { padding: 18px 2px 8px; }
+/* 4.3.1: the heading fades in only when you arrive at a screen, not on every refresh of the same screen */
+main.fresh .section-head { animation: fadeIn var(--motion) var(--ease); }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+.section-head h2 { font-size: var(--fs-title-large); margin: 0 0 3px; }
+.section-head p { margin: 0; font-size: var(--fs-body); color: var(--on-surface-variant); }
+
+/* final-review-fixes (family B): a field's placeholder or value that is longer than the field ends with "…" while not typing (never cut mid-letter) */
+input { text-overflow: ellipsis; }
+
+/* text that wraps (t-wrap) and one line that ends with "…" (t-ell) must beat the components' rules of the same weight, so they carry one element
+   of weight more, the html prefix (look/index.md "The order of the style files"): they win by their selector, never by their place in the style files */
+html .t-wrap { white-space: normal; }
+/* final-review-fixes (family B): one line that ends with "…", cut by the order of reading and not at the box's edge: the text wraps as usual and only its first
+   line shows (a line limit of one); a box that holds more is marked .cut by ellFit and draws the "…" itself at its end - see ellFit in js/forms.js */
+html .t-ell { display: block; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; min-width: 0; white-space: normal; overflow-wrap: anywhere; overflow: hidden; cursor: default; }
+@supports (height: 1lh) { html .t-ell.cut { display: block; position: relative; max-height: 1lh; padding-inline-end: .9em; word-break: break-all; } html .t-ell.cut::after { content: '…'; position: absolute; inset-inline-end: 0; top: 0; } }

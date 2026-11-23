@@ -1,0 +1,13 @@
+# Darkon's server package (11.20.0; 11.23.0; 11.41.0): three server functions live in netlify/functions - maps-link (opens a Google Maps
+# short link), place-id (Google's id of a place, with the key GOOGLE_PLACES_KEY from the site's environment) and queue (the shared queue
+# for Nominatim and Transitous); package.json holds their one dependency (@netlify/blobs: place-id's monthly counter, the queue's slots
+# and cache), installed by Netlify at deploy
+[functions]
+  directory = "netlify/functions"
+
+# 11.46.0 (phone-round-4c-fixes P5; decisions 2026-11-21 · Review of the `legal-server-fixes` summary, Q1): the test address is not
+# indexed. Netlify's headers ([[headers]], _headers) are global - never per branch - and it sends no noindex on a branch's latest deploy;
+# its documented way (docs.netlify.com, "Custom headers for different branch or deploy contexts") is a build command of that context only
+# that writes the header into the published _headers. The darkon-test branch deploy only - production (darkon-live) runs no command.
+[context.darkon-test]
+  command = "printf '/*\\n  X-Robots-Tag: noindex\\n' >> _headers"
