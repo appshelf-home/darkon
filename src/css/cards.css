@@ -187,7 +187,7 @@ body.read-only .tl-vis { pointer-events: none; }
 /* between and around plan cards: slot headers with a round ＋, leg rows, landing lines, tonight's hotel */
 .tl-div { display: flex; align-items: center; gap: 8px; margin: 10px 0 2px; font-size: var(--fs-label); color: var(--on-surface-variant); }
 .tl-div .msi { font-size: var(--icon-18); } .tl-div-ln { flex: 1; border-top: 1px dashed var(--outline); }
-.tl-leg { display: flex; align-items: center; gap: var(--icon-gap); width: 100%; min-height: 24px; padding: 3px 0; padding-inline-start: 12px; border: none; background: none; color: var(--on-surface-variant); font: 400 var(--fs-label) 'Rubik', system-ui, sans-serif; text-align: start; cursor: pointer; } /* size-fixes (3): min-height - its touch size at "קטן" too */
+.tl-leg { display: flex; align-items: center; gap: var(--icon-gap); width: 100%; min-height: var(--h-btn); padding: 3px 0; padding-inline-start: 12px; border: none; background: none; color: var(--on-surface-variant); font: 400 var(--fs-label) 'Rubik', system-ui, sans-serif; text-align: start; cursor: pointer; } /* size-fixes (3): min-height - its touch size at "קטן" too; along-drive item 7 (review Q1): the 36 px touch size at every text size (--h-btn), was 24 px */
 .tl-leg::before { content: ''; flex: none; width: 2px; height: 14px; margin-inline-end: 4px; background: var(--outline); }
 .tl-leg .msi { font-size: var(--icon-16); flex: none; }
 .tl-leg.warn { color: var(--on-today); } .tl-leg.est > :not(b) { opacity: var(--fade); }

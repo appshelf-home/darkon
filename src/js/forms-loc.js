@@ -11,7 +11,7 @@ function fmLoc(F, id, o) { o = o || {}; fmReg(F, id, 'loc', o.value || null, o);
     map: MAP_AVAILABLE ? () => { const G = fmLive(F), b = G && fmQ(G, `[data-act="fm.locFs"][data-v="${id}"]`); if (b) b.click(); } : null, ret: F.locs[id].ret = o.ret ? () => psFormRet(fmLive(F), o.ret, id) : null }); // 11.21.0 (Q3): with the whole form
   return `<div class="sh-field fm-f fm-loc" data-fmw="${id}">${fmLabel(o)}
     <div class="brow tight pe-loc-actions">${o.gps === false ? '' : `<button type="button" class="chip" data-act="fm.locMe" data-v="${id}">${msi('my_location', { size: 18 })} המיקום שלי</button>`}${o.link === false ? '' : `<button type="button" class="chip" data-act="fm.locLink" data-v="${id}">${msi('link', { size: 18 })} הדבקה מגוגל מפות</button>`}</div>
-    <div class="pe-search"><span class="clear-wrap"><input type="text" data-fmq="${id}" data-ps="${ps}" placeholder="${fmEsc(o.placeholder || 'שם, כתובת או קואורדינטות')}" data-act-enter="fm.locGo"><button type="button" class="field-clear" data-act="fm.locX" data-v="${id}" aria-label="ניקוי" hidden>✕</button></span><button type="button" class="btn-nav" data-act="fm.locGo" data-v="${id}">חיפוש</button></div>
+    <div class="pe-search">${searchFieldHTML('', o.placeholder || 'שם, כתובת או קואורדינטות', '', { enter: 'fm.locGo', attrs: ` data-fmq="${id}" data-ps="${ps}"` })}<button type="button" class="btn-nav" data-act="fm.locGo" data-v="${id}">חיפוש</button></div>
     <div data-fmlink="${id}" hidden><textarea rows="2" data-fmlinkt="${id}" placeholder="הדביקו כאן קישור או טקסט ששותף מ-Google Maps" dir="auto"></textarea><button type="button" class="btn-nav" data-act="fm.locLinkGo" data-v="${id}">קריאת הקישור</button></div>
     <div class="fm-locres" data-fmres="${id}"></div>
     ${MAP_AVAILABLE ? `<div class="pe-map fm-map" id="fmMap_${id}"></div><small class="sh-hint">${o.zoom === 'area' ? 'מזיזים את המפה עד שמרכז היעד מתחת לסיכה' : 'לחיצה על המפה או הזזה שלה מזיזה את המיקום'}${SEP}בטלפון: אצבע אחת גוללת את הטופס, שתי אצבעות מזיזות ומגדילות את המפה</small>` : ''}
@@ -48,7 +48,6 @@ act('fm.locFs', c => { const F = fmOf(c.el); if (!F) return; const id = c.v, v =
 act('fm.locMe', async c => { const F = fmOf(c.el); if (!F) return; const b = c.el, back = btnBusy(b, 'מאתר…'); const pos = await requestUserLocation(); back(); // final-review-fixes (finding 20): the chip keeps its line icon
   if (pos) fmLocSet(F, c.v, pos); else showToast('לא התקבל מיקום (צריך הרשאת מיקום, באפליקציה המותקנת)'); });
 act('fm.locLink', c => { const F = fmOf(c.el); if (!F) return; const b = fmQ(F, `[data-fmlink="${c.v}"]`); if (b) { b.hidden = !b.hidden; if (!b.hidden) reveal(b); } return 'quiet'; }); // 10.6.0: the link field comes into view; focus on its button, the keyboard waits for a tap
-act('fm.locX', c => { const F = fmOf(c.el); if (!F) return; const q = fmQ(F, `[data-fmq="${c.v}"]`); q.value = ''; c.el.hidden = true; const H = PS_HOSTS[F.locs[c.v].ps]; if (H) H.st = null; fmQ(F, `[data-fmres="${c.v}"]`).innerHTML = ''; q.focus(); return 'quiet'; });
 // a Google Maps link, shared or pasted (11.20.0, Q9): the name (when the name field is empty), the place's own point, the link that opens exactly that place
 // phone-round-4b-fixes P1 (G93): pre - the link already read by the share (psShareIn), so "מקום חדש" does not read it again
 // 11.46.0 (phone-round-4c-fixes P3): the read waits with the "in progress" indicator (waitOn) - the bar under the window's head, the stage
@@ -82,7 +81,7 @@ function fmGidLinkRead(F, id, r) { const L0 = F.locs[id], g = r && gidNew(r.rec,
   if (box) box.innerHTML = `<small class="ps-line">${g ? 'יקושר למקום מהקישור בשמירה' : 'בקישור הזה אין את המזהה של המקום בגוגל'}</small>`; }
 act('fm.gidRelink', c => { const F = fmOf(c.el); if (!F) return; const L0 = F.locs[c.v]; L0.relink = true; const b = fmQ(F, `[data-fmglink="${c.v}"]`);
   if (b) { b.hidden = false; reveal(b); }
-  const box = fmQ(F, `[data-fmgres="${c.v}"]`), H = PS_HOSTS[L0.ps]; if (box && H) box.innerHTML = `<small class="ps-line">מוצאים את המקום בגוגל מפות ומשתפים אותו לדרכון, או מדביקים את הקישור כאן${SEP}<a class="link-btn" href="${fmEsc(psGmUrl(fmGet(F, 'name') || ''))}" target="_blank" rel="noopener" data-act="ps.gm" data-v="${H.id}">לחפש בגוגל מפות</a></small>`;
+  const box = fmQ(F, `[data-fmgres="${c.v}"]`), H = PS_HOSTS[L0.ps]; if (box && H) box.innerHTML = `<small class="ps-line">מוצאים את המקום בגוגל מפות ומשתפים אותו לדרכון, או מדביקים את הקישור כאן${SEP}<a class="link-btn" href="${escH(psGmUrl(fmGet(F, 'name') || ''))}" target="_blank" rel="noopener" data-act="ps.gm" data-v="${H.id}">לחפש בגוגל מפות</a></small>`;
   return 'quiet'; });
 act('fm.gidOff', c => { const F = fmOf(c.el); if (!F) return; F.locs[c.v].gid = { src: 'user', at: todayStr(), off: true }; F.locs[c.v].relink = false; fmGidRow(F, c.v); const b = fmQ(F, `[data-fmglink="${c.v}"]`); if (b) b.hidden = true; const r = fmQ(F, `[data-fmgres="${c.v}"]`); if (r) r.innerHTML = ''; return 'quiet'; });
 act('fm.gidGo', async c => { const F = fmOf(c.el); if (!F) return; const id = c.v, box = fmQ(F, `[data-fmgres="${id}"]`); if (box) box.innerHTML = waitLineHTML('קוראים את הקישור');
@@ -94,4 +93,3 @@ async function fmLocSearch(F, id, q) { q = String(q || '').trim(); if (!q) { sho
   if (psSpecial(q)) { fmLocLinkRead(F, id, q); return; }
   psRun(F.locs[id].ps, q, 'explicit'); }
 act('fm.locGo', c => { const F = fmOf(c.el); if (!F) return; const id = c.v || (c.el.dataset.fmq); fmLocSearch(F, id, fmQ(F, `[data-fmq="${id}"]`).value); return 'quiet'; });
-document.addEventListener('input', e => { const q = e.target; if (!q || !q.dataset || q.dataset.fmq == null) return; const x = q.parentElement.querySelector('.field-clear'); if (x) x.hidden = !q.value; });

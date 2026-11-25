@@ -116,7 +116,7 @@ function renderDraftScreen() {
   if (draftAdds(D).length) sum += `<p class="dr-line">${msi('library_add', { size: 18 })} ${draftAdds(D).length} נוספו על ידיך</p>`; // 4.26.0
   sum += draftRoundHTML(D); // 4.27.0
   let html = `<div class="section-head dr-head"><h2>טיוטה${SEP}${esc(draftTitle(D))}</h2></div><div class="dr-hero"><p class="dr-src">${msi('download', { size: 16 })}${SOURCE_LABEL[D.source] || ''}${d.signature ? SEP + esc(d.signature) : ''}</p>${fileDroppedHTML(d._dropped)}${hero}</div>
-    <div class="card draft-sum"><div class="dr-tiles">${tiles}</div>${draftFromClaude(d) ? `<p class="sh-hint dr-wrong">${tipText('wrong.draft')}</p>` : ''}${draftPropHTML(D)}${sum}</div>`;
+    <div class="card draft-sum"><div class="dr-tiles">${tiles}</div>${draftFromClaude(d) ? `<p class="sh-hint dr-wrong">${tipText('wrong.draft')}</p>${kitBehind(d.kitVersion) ? `<p class="sh-hint dr-oldkit">הקובץ נכתב לפי הוראות ישנות. כדאי לעדכן את הסקיל. <button type="button" class="pw-link" data-act="kit.install">לעדכון</button></p>` : ''}` : ''}${draftPropHTML(D)}${sum}</div>`;
   if (all.length) {
     // 5.14.0 (ד7): the same header as the places - the layers in one row, then [source ▾] [funnel · N] … "N מקומות · ✕"
     html += '<div id="draftFilter">';
@@ -135,26 +135,25 @@ function renderDraftScreen() {
     }
   } else html += `<div class="callout">אין בקובץ מקומות חדשים לבדוק${d.kind === 'trip' ? ' (היעדים של הטיול כבר בטלפון)' : ''}.</div>`;
   { const more = draftMoreHTML(D); if (more) html += `<div class="accordion" style="margin-top:10px">${more}</div>`; } // 4.27.0
-  if (D.round) html += `<div class="callout" id="drRoundAsk" hidden><b>יש סבב שיפורים אצל ה-${AI} (סבב ${D.round.n}).</b> לאשר עכשיו ולקלוט את השיפורים כעדכון כשיחזרו, או לחכות?<br><small>אם מאשרים עכשיו: הקובץ שיחזור ייקלט כעדכון רגיל של ${d.kind === 'trip' ? 'הטיול' : 'היעד'}, התשובות להערות והמלצות ההורדה יוצגו בחלון כשהוא נקלט, ומה שאישרתם (הורדות ותיקונים) לא יידרס.</small><div class="brow export-actions"><button class="icon-btn btn-copy" id="drWait" data-act="draft.drWait" style="width:auto;padding:0 12px;">${msi('hourglass_top', { size: 18 })} לחכות לסבב</button><button class="btn-nav" id="drOkAnyway" data-act="draft.drOkAnyway">✓ לאשר עכשיו</button></div></div>`;
-  html += `<div class="brow draft-actions"><button class="icon-btn btn-copy" id="drDrop" data-act="draft.drDrop" style="width:auto;padding:0 12px;">${msi('delete', { size: 18 })} לוותר על הייבוא</button></div>`;
+  if (D.round) html += `<div class="callout" id="drRoundAsk" hidden><b>יש סבב שיפורים אצל ה-${AI} (סבב ${D.round.n}).</b> לאשר עכשיו ולקלוט את השיפורים כעדכון כשיחזרו, או לחכות?<br><small>אם מאשרים עכשיו: הקובץ שיחזור ייקלט כעדכון רגיל של ${d.kind === 'trip' ? 'הטיול' : 'היעד'}, התשובות להערות והמלצות ההורדה יוצגו בחלון כשהוא נקלט, ומה שאישרתם (הורדות ותיקונים) לא יידרס.</small>${cardActionsHTML({ id: 'drOkAnyway', act: 'draft.drOkAnyway', label: '✓ לאשר עכשיו' }, [{ id: 'drWait', act: 'draft.drWait', label: `${msi('hourglass_top', { size: 18 })} לחכות לסבב` }])}</div>`;
+  html += `<div class="brow draft-actions"><button type="button" class="btn-sec" id="drDrop" data-act="draft.drDrop">${msi('delete', { size: 18 })} לוותר על הייבוא</button></div>`;
   html += `<div class="dr-dock">${MAP_AVAILABLE && all.length ? `<div class="view-toggle seg" role="group">${[['list', 'view_agenda', 'רשימה'], ['map', 'map', 'מפה']].map(([v, ic, w]) => `<button type="button" data-act="draft.drView" data-v="${v}" data-active="${v === dMode}" aria-pressed="${v === dMode}" aria-label="${w}">${msi(ic, { size: 18 })}<span class="vt-l">${w}</span></button>`).join('')}</div>` : ''}<button class="btn-nav draft-ok" id="drOk" data-act="draft.drOk">${msi('done_all', { size: 18 })}${draftOkLabel(onAll, all.length)}</button></div>`; // the pinned bottom bar (no floating list ⇄ map button)
   main.innerHTML = html;
   { const e = screenTop(), tools = e && e.tab === 'draft' && e.el.querySelector('.screen-tools'); // the head after scrolling: ⓘ and the improvement round as Claude's icon button
-    if (tools) tools.innerHTML = `${tipI('draft.what')}<button type="button" class="top-ic dr-cl" data-act="draft.drRound" aria-label="${_qe(TX.claude.round.btn)}" title="${_qe(TX.claude.round.btn)}">${claudeMark({ size: 22 })}</button>`; }
+    if (tools) tools.innerHTML = `${tipI('draft.what')}<button type="button" class="top-ic dr-cl" data-act="draft.drRound" aria-label="${escH(TX.claude.round.btn)}" title="${escH(TX.claude.round.btn)}">${claudeMark({ size: 22 })}</button>`; }
   draftScreenCtl(shown, layerChips);
   if (MAP_AVAILABLE && dMode === 'map' && all.length) renderDraftMap(shown.concat(all.filter(x => x.locked && !shown.includes(x) && selOn(FILTER.draft.srcs, x.src)))); // 4.45.0: hotels stay through layer filters (as on every map) but follow the destination chips
 }
 // 9.1.1 (12ג-1): a draft place's notes line, once - for its row (with 📌 when it has a place) and its map card
-const draftEsc = escH;
 function draftNotes(x, pin) { const p = x.p, reg = x.dp && p.region ? ((x.dp.meta.regions || []).find(r => r.id === p.region) || {}).name : '';
-  return [reg ? draftEsc(reg) : '', draftCoord(p) && pin ? msi('push_pin', { cls: 'msi-in', fill: true }) : ''].filter(Boolean).join(SEP); }
+  return [reg ? escH(reg) : '', draftCoord(p) && pin ? msi('push_pin', { cls: 'msi-in', fill: true }) : ''].filter(Boolean).join(SEP); }
 // 10.8.0 (design-icons, gap 21): the draft place's marks as the card's tags with line icons (no emoji)
 function draftTags(x) { const p = x.p, t = (ic, s, c) => `<span class="tl-tag${c ? ' ' + c : ''}">${tagIc(ic)}${s}</span>`;
   return [x.dupOf ? t('content_copy', 'כבר קיים') : '', x.added ? t('auto_stories', 'נוסף על ידיך', 'upd') : '', !draftCoord(p) && !p.address ? t('warning', 'בלי מיקום', 'must') : '', x.fixed ? t('edit', 'תוקן', 'mine') : '', x.locked ? t('hotel', 'לינה') : '', x.scope === 'trip' ? t('luggage', 'רק בטיול') : ''].filter(Boolean); }
 // 10.3.0 (design-3): one draft card for the list and the map - "להשאיר" as the top-left toggle (where "היינו" sits). In the list a tap
 // opens the place's window (fix and a note for Claude are there); on the map fix and the note are icons in the actions row
 function draftCardHTML(x, D, list) {
-  const esc = draftEsc, p = x.p, on = !D.off[x.key];
+  const esc = escH, p = x.p, on = !D.off[x.key];
   return cdCard({ cls: list ? 'mc-card draft-row' : '', attrs: list ? ` data-off="${!on}"` : '', body: list ? ` data-act="draft.drinfo" data-drinfo="${esc(x.key)}"` : '',
     lead: leadHTML('place', typeIcon(p.icon || x.L.icon, { size: 18 }), x.L.color), name: esc(p.name), tags: [cdMeta([esc(x.L.label || x.L.name || ''), draftNotes(x, list)]), ...draftTags(x)],
     desc: `${p.description ? `<span class="mc-desc">${esc(String(p.description))}</span>` : ''}${list ? roundMarksHTML(D, x) + notePreviewHTML(itemTarget(x)) : ''}`,
@@ -253,7 +252,7 @@ ctlActs('draftMap', ['statusX']);
 // line; ✏️ (תיקון לפני אישור, full screen), 🧭, 🔍 and 💬 a note for Claude; removing a place you added is the red row at the end
 function openDraftPlaceSheet(key) {
   const x0 = draftItems(DRAFT).find(i => i.key === key); if (!x0) return;
-  const esc = _escH, row = (k, v) => v ? `<div class="iw-row"><b>${k}</b> ${v}</div>` : '';
+  const esc = escH, row = (k, v) => v ? `<div class="iw-row"><b>${k}</b> ${v}</div>` : '';
   openCandWin({ key: 'draft:' + key, get x() { return draftItems(DRAFT).find(i => i.key === key) || x0; },
     get lead() { const x = this.x; return leadHTML('place', typeIcon(x.p.icon || x.L.icon, { size: 18 }), x.L.color); }, get name() { return this.x.p.name; },
     get pick() { const x = this.x, on = !DRAFT.off[x.key]; return { label: on ? '✓ נשאר בטיוטה' : '＋ להשאיר', active: on, disabled: !!x.locked, on: () => { draftToggle([x.key], !!DRAFT.off[x.key]); winRedraw(); } }; },
@@ -316,8 +315,8 @@ function draftedTrip(D) { // the trip as approved: trip places taken out or fixe
 function askTripForDest(destId) { const ctl = {}; layerNote(askTripForDest, arguments);
   const dp = DESTS[destId]; if (!dp) return; const sheet = document.getElementById('sheet'), name = dp.meta.name;
   sheet.innerHTML = `${fmHead(`🧳 טיול ל${nameB(name)}?`, 'atX')}
-    <p>היעד <b>${_qe(name)}</b> בטלפון: המקומות והמידע. <b>טיול</b> הוא ביקור אחד בו - תאריכים או מספר ימים, נסיעות, לינות ותוכנית. בלי טיול, היעד מחכה במסך הטיולים.</p>
-    <div class="ta-list"><button type="button" class="ta-item t-wrap" id="atNew" data-act="tripForDest.atNew">🧳 טיול חדש ל${_qe(name)}</button><button type="button" class="ta-item t-wrap" id="atLater" data-act="tripForDest.atLater">${msi('event_upcoming')}לא עכשיו<small>＋ טיול חדש במסך הטיולים, כשתרצו</small></button></div>`;
+    <p>היעד <b>${escH(name)}</b> בטלפון: המקומות והמידע. <b>טיול</b> הוא ביקור אחד בו - תאריכים או מספר ימים, נסיעות, לינות ותוכנית. בלי טיול, היעד מחכה במסך הטיולים.</p>
+    <div class="ta-list"><button type="button" class="ta-item t-wrap" id="atNew" data-act="tripForDest.atNew">🧳 טיול חדש ל${escH(name)}</button><button type="button" class="ta-item t-wrap" id="atLater" data-act="tripForDest.atLater">${msi('event_upcoming')}לא עכשיו<small>＋ טיול חדש במסך הטיולים, כשתרצו</small></button></div>`;
   
   ctl.atLater = () => closeSheet();
   ctl.atNew = () => { closeSheet(); setTimeout(() => openTripEditor(null, { dest: destId }), 120); };

@@ -68,7 +68,7 @@ function exitCWOk() { try { return typeof CloseWatcher === 'function'; } catch (
 function exitCWArm() { if (_exitCW || _exitWarn || !exitTwice() || document.querySelector('body > .sure-q')) return;
   if (history.state && history.state.exitGuard) { _exitGuard = false; layerAppBack(1); return; } // a guard entry left from before (a reload on it): one step of the app's own, then the watcher
   try { const w = new CloseWatcher(); w.onclose = () => { if (_exitCW !== w) return; _exitCW = null;
-    if (Date.now() - _exitEsc < 500 || WIN_STACK.length) { exitGuardSync(); return; } exitWarnShow(); }; _exitCW = w; } catch (e) { _exitCW = null; } }
+    if (Date.now() - _exitEsc < 500 || WIN_STACK.length || popMenuClose()) { exitGuardSync(); return; } exitWarnShow(); }; _exitCW = w; } catch (e) { _exitCW = null; } }
 function exitCWOff() { const w = _exitCW; _exitCW = null; if (w) try { w.destroy(); } catch (e) {} }
 function exitGuardArm() { if (exitCWOk()) { exitCWArm(); return; } if (_exitGuard || _exitWarn || !exitTwice() || !exitActive()) return; _exitGuard = true; layerPushRaw(0); }
 function exitGuardSync() { if ((WIN_STACK && WIN_STACK.length) || _ignorePops > 0 || _pushLater > 0 || _exitWarn || _sureEntry) return; // only on the bare page, history settled, no dialog's entry on top
@@ -292,8 +292,8 @@ function closeAllSheets() { if (!WIN_STACK || !WIN_STACK.length) { if (_sheetOpe
 // aside); render() draws into it as before. ✕ / back return to the place it was opened from, exactly as it was (drawn again only
 // when something was saved meanwhile). The trips screen and the four content screens stay base screens.
 const SCREEN_X = new Set(['draft', 'closing', 'proposal']);
-var SCREEN_TABS = new Set(['settings', 'guide', 'whatsnew', 'log', 'trash', 'hidden', 'claude', 'sync', 'memory', 'memories', 'draft', 'closing', 'layers', 'proposal']);
-const SCREEN_TITLE = { settings: '⚙️ הגדרות', guide: '📖 מדריך', whatsnew: '🆕 מה חדש', log: '📜 יומן שינויים', trash: SY.del + ' סל', hidden: SY.hide + ' מוסתרים', claude: SY.claude + ' ההוראות ל-' + AI, sync: '💾 גיבוי ושחזור', memory: '🖼️ זיכרון', memories: '🖼️ כל הזיכרונות', draft: '📥 טיוטה', proposal: SY.claude + ' הצעת לו״ז מה-' + AI, closing: '🗄️ סגירת טיול', layers: '🎨 שכבות' };
+var SCREEN_TABS = new Set(['settings', 'guide', 'whatsnew', 'log', 'trash', 'hidden', 'claude', 'sync', 'memory', 'memories', 'passport', 'countries', 'draft', 'closing', 'layers', 'proposal']);
+const SCREEN_TITLE = { settings: '⚙️ הגדרות', guide: '📖 מדריך', whatsnew: '🆕 מה חדש', log: '📜 יומן שינויים', trash: SY.del + ' סל', hidden: SY.hide + ' מוסתרים', claude: SY.claude + ' ההוראות ל-' + AI, sync: '💾 גיבוי ושחזור', memory: '🖼️ זיכרון', memories: '🖼️ כל הזיכרונות', countries: 'מדינות שביקרנו', passport: 'הדרכון שלי', draft: '📥 טיוטה', proposal: SY.claude + ' הצעת לו״ז מה-' + AI, closing: '🗄️ סגירת טיול', layers: '🎨 שכבות' };
 var _screenN = 0;
 function screenTop() { for (let i = WIN_STACK.length - 1; i >= 0; i--) if (WIN_STACK[i].tab) return WIN_STACK[i]; return null; }
 function openScreen(tab, over) { // over: 10 (ה14) - open over the window that asked for it, ✕ returns to it
@@ -305,13 +305,13 @@ function openScreen(tab, over) { // over: 10 (ה14) - open over the window that 
   const base = document.getElementById('main'), n = ++_screenN;
   const el = document.createElement('div'); el.className = 'screen-layer'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
   const x = SCREEN_X.has(tab); // 10.3.0 (design-3): navigation at the start - a back arrow on menu screens, ✕ on the draft and closing (look.md)
-  el.innerHTML = `<div class="sheet-head screen-head" data-tab="${tab}"><button type="button" class="top-ic screen-x" data-act="screen.close" aria-label="${x ? 'סגירה' : 'חזרה'}" title="${x ? 'סגירה' : 'חזרה'}">${msi(x ? 'close' : 'arrow_back')}</button><b class="screen-title"></b><span class="screen-tools"></span></div><main class="screen-main"></main>`;
+  el.innerHTML = screenHeadHTML({ tab, x }) + '<main class="screen-main"></main>';
   base.id = 'main-under-' + n; el.querySelector('main').id = 'main';
   document.body.appendChild(el);
   const e = { key: 'screen:' + tab, shape: 'full', tab, prevTab: activeTab, base, el, gen: _dataGen, y: window.scrollY, over: !!(over && top && top.shape === 'sheet') };
   e.close = fp => { const i = WIN_STACK.indexOf(e); if (i >= 0) WIN_STACK.splice(i, 1); if (!fp) layerAppBack(1); screenRemove(e); };
   { const up = document.createElement('button'); up.type = 'button'; up.className = 'scroll-top-btn'; up.title = 'למעלה'; up.innerHTML = msi('keyboard_arrow_up'); up.dataset.act = 'screen.top'; el.appendChild(up); // 5.8.0: ↑ in a screen follows the screen's own scroll
-    el.addEventListener('scroll', () => { up.classList.toggle('show', el.scrollTop > 400); const hero = el.querySelector('.dr-hero'); el.classList.toggle('scrolled', !!hero && hero.getBoundingClientRect().bottom < 60);
+    sysOn(el, 'scroll', () => { up.classList.toggle('show', el.scrollTop > 400); const hero = el.querySelector('.dr-hero'); el.classList.toggle('scrolled', !!hero && hero.getBoundingClientRect().bottom < 60);
       if (hero) { const h = el.querySelector(':scope > .screen-head'); if (h) el.style.setProperty('--sh-h', h.offsetHeight + 'px'); } }, { passive: true }); } // 10.13.0 (gap 48): the draft's filter sticks right under the head // 10.3.0: the draft's hero collapses into the head
   WIN_STACK.push(e); layerPushHistory(); document.body.classList.add('screen-on');
   activeTab = tab; render(); el.scrollTop = 0;
@@ -319,6 +319,8 @@ function openScreen(tab, over) { // over: 10 (ה14) - open over the window that 
   if (e.over) { const hide = () => { el.style.zIndex = ''; if (WIN_STACK.includes(e)) document.body.classList.add('screen-over-sheet'); }; // the window waits below, as it was
     if (an) { el.style.zIndex = '3100'; an.finished.catch(() => {}).then(hide); } else hide(); } // while the screen comes in, it is above the window (which does not move)
 }
+// a full screen's one head: its navigation at the start (a back arrow, or ✕), the title, its tools; o.act - another close (task terms-inside: the site page's layer.back)
+function screenHeadHTML(o) { const x = o.x; return `<div class="sheet-head screen-head"${o.tab ? ` data-tab="${escH(o.tab)}"` : ''}><button type="button" class="top-ic screen-x" data-act="${escH(o.act || 'screen.close')}" aria-label="${x ? 'סגירה' : 'חזרה'}" title="${x ? 'סגירה' : 'חזרה'}">${msi(x ? 'close' : 'arrow_back')}</button><b class="screen-title">${o.title ? escH(o.title) : ''}</b>${o.tab ? '<span class="screen-tools"></span>' : ''}</div>`; }
 function screenRemove(e) {
   if (e.over) document.body.classList.remove('screen-over-sheet');
   const main = e.el.querySelector('main'); if (main) main.id = '';
@@ -346,7 +348,7 @@ function layerDirty(e) { if (!e) return false; const root = e.el ? e.el.firstChi
 ['input', 'change', 'click'].forEach(ev => layerOn(document, ev, e => {
   if (!e.isTrusted) return; const el = e.target; if (!el.closest || !el.closest('#sheet') || el.closest('.sheet-head, .sheet-save-bar, .uns-q')) return;
   if (ev === 'click' && !el.closest('[data-active], [aria-pressed], input[type=checkbox], input[type=radio]')) return;
-  if (el.matches && el.matches('input[type=text]') && (el.dataset.sfield || el.dataset.fmq || el.closest('.sfield, .pe-search, .fsp-search, .tp-search, .ap-search') || /חיפוש/.test(el.placeholder || ''))) return; // a search field is not an edit (10.8.0: placeholders carry no 🔍)
+  if (el.matches && el.matches('input[type=text]') && el.dataset.sfield) return; // a search field is not an edit (one-way (1): every search field is the form block's one kind and carries its mark)
   const t = layerTop(); if (t && t.shape === 'sheet') t.touched = true;
 }, true));
 // ✕, the phone's back, swiping down or a tap outside: close - unless there are unsaved changes, then ask in the save row
@@ -389,7 +391,7 @@ function sheetFrame(sheet, e) {
   const full = !!(e && SHEET_FULL.has(e.key));
   if (head && head.parentElement === sheet) winHeadFrame(sheet, head, full);
   sheet.querySelectorAll('.ta-item:not([data-framed])').forEach(menuRowFrame);
-  sheet.querySelectorAll(':scope > .sheet-save-bar > button:not([data-framed]), :scope > .sheet-head > .head-save:not([data-framed])').forEach(btnIconFrame);
+  sheet.querySelectorAll(':scope > .sheet-save-bar > button:not([data-framed]), :scope > .sheet-save-bar > .card-acts button:not([data-framed]), :scope > .sheet-head > .head-save:not([data-framed])').forEach(btnIconFrame); // card-actions: a file window's actions sit in the component
   let h = sheet.querySelector('.sheet-handle'); // a bottom sheet: a small handle at the top of its head
   if (!full && !h) { h = document.createElement('div'); h.className = 'sheet-handle'; h.setAttribute('aria-hidden', 'true'); (head || sheet).prepend(h); }
   if (full && h) h.remove();
@@ -477,16 +479,20 @@ gestureOn('pull', '#sheet.peek', { touchOnly: true, at: .2, up: .12, done: (sh, 
   when: (sh, t) => { if (sh.classList.contains('grown') || t.closest('input, textarea, select, .leaflet-container')) return false;
     for (let n = t; n && n !== sh.parentElement; n = n.parentElement) if (n.scrollTop > 0) return false; return true; } });
 act('sheet.grow', c => { const sh = c.el.closest('#sheet'); if (sh) sh.classList.toggle('grown'); return 'quiet'; });
+// round6-behaviour (G117): back closes an open popup menu first and nothing else - the ⋮ menu, a map's type or tools menu (.ly-menu), a choice
+// field's menu; the entry it took is made again (the guard on the bare page, the top layer's otherwise), so the next back goes on as before
+function popMenuClose() { const m = [...document.querySelectorAll('.ly-menu')].pop(); if (m) { m.remove(); return true; } if (!menuDD.hidden) { closeMenu(); return true; } return false; }
 // the one back handler: the top layer, whatever it is
-window.addEventListener('popstate', () => {
+layerOn(window, 'popstate', () => {
   const st = history.state || {}, under = _exitGuard && !st.exitGuard && !st.layer && !st.sure; if (under) _exitGuard = false; // back-exit: back went under the guard
   if (_ignorePops > 0) { _ignorePops--; if (!_ignorePops) { layerPushFlush(); exitGuardSync(); } return; }
   if (sureClose()) { if (_sureEntry) { _sureEntry = false; exitGuardSync(); return; } /* back-exit-fix (finding 3): back took the dialog's own entry - nothing under it moved */
     if (layerTop()) layerPushHistory(); return; } // 10.13.0: back closes the confirmation dialog first; the window under it stays (a dialog with no entry - opened before a touch after a share start)
+  if (popMenuClose()) { if (layerTop()) layerPushHistory(); else exitGuardSync(); return; } // round6-behaviour (G117): a menu first
   if (under && !layerTop()) { exitWarnShow(); return; } // back-exit: a leave press - the message; a second one within it leaves
   layerAskClose(true); exitGuardSync();
 });
-layerOn(document, 'keydown', e => { if (e.key !== 'Escape') return; if (sureDismiss() || !layerTop()) return; layerAskClose(false); });
+layerOn(document, 'keydown', e => { if (e.key !== 'Escape') return; if (sureDismiss() || popMenuClose() || !layerTop()) return; layerAskClose(false); });
 // place-find (G68): the first touch or key after a share start makes the windows' waiting history entries (with an activation)
 // back-exit: the same first touch or key arms the exit guard - at once, so it is under the entry of a window this tap opens (and under the waiting ones)
 layerOn(window, 'click', () => { _exitAct = true; exitGuardSync(); if (_pushNoAct) setTimeout(layerPushActFlush, 0); }, true); // a tap (TOUCH owns pointer events - t920)

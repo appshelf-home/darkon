@@ -18,11 +18,11 @@ function wireCurrencyConverter() {
   async function doConvert() {
     const huf = parseFloat(input.value);
     if (!huf || huf <= 0) { result.textContent = ''; return; }
-    result.innerHTML = '<span class="spin" aria-hidden="true"></span>טוען שער...'; // 10.1.0 (design-1): the small spinner
+    result.innerHTML = waitLineHTML('טוען שער'); // wait-look: the one stage line of a wait (was the small spinner, 10.1.0)
     const e = await rateLoad(code, 'screen');
     if (!e) { result.textContent = svcNetDown() ? SVC_MSG.offline + ' לשער (עוד לא נשמר שער בטלפון)' : 'לא הצלחנו לטעון שער - נסו את הלינק לגוגל למעלה'; return; }
     const old = !svcFresh('rate', e) ? `${SEP}שער מ-${tmFmt('dayN', tmPhoneDate(e.at))}` : '';
-    result.innerHTML = `<bdi dir="ltr" class="cv-sum">${_escH(huf.toLocaleString('he-IL'))} ${_escH(code)} ≈ ${_escH((huf * e.v).toLocaleString('he-IL', { maximumFractionDigits: 2 }))} ₪</bdi>${old}<br><small>${svcCredit('erapi')}</small>`; // phone-round-2b-fixes P10 (G60): the sum in one left-to-right isolate - "10 ARS ≈ 0.02 ₪", never reordered by the Hebrew line
+    result.innerHTML = `<bdi dir="ltr" class="cv-sum">${escH(huf.toLocaleString('he-IL'))} ${escH(code)} ≈ ${escH((huf * e.v).toLocaleString('he-IL', { maximumFractionDigits: 2 }))} ₪</bdi>${old}<br><small>${svcCredit('erapi')}</small>`; // phone-round-2b-fixes P10 (G60): the sum in one left-to-right isolate - "10 ARS ≈ 0.02 ₪", never reordered by the Hebrew line
   }
   CONVERT = doConvert; btn.dataset.act = 'currency.convert'; input.dataset.actEnter = 'currency.convert'; // the converter comes in the destination's content
 }

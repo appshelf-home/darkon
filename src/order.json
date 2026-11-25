@@ -165,6 +165,18 @@
     "about": "EXTERNAL SERVICES - the one client for every request to the outside, the registry of services"
    },
    {
+    "path": "js/services-queue.js",
+    "about": "EXTERNAL SERVICES, continued: the shared queue's client - a request through the site's /api/queue, its fallbacks, the background's share of the edge's minute"
+   },
+   {
+    "path": "js/wait-on.js",
+    "about": "Waiting on an outside service: waitOn, the one \"in progress\" indicator of a screen or window (a moving bar, the stage line, the dimmed map) - split from services.js"
+   },
+   {
+    "path": "js/service-health.js",
+    "about": "The 🩺 service health window: each provider's state, today's requests, what is kept and the recent troubles, its copied report and its actions - split from services.js"
+   },
+   {
     "path": "js/content-edits.js",
     "about": "CONTENT EDITS - edits to a destination's places and info, kept apart from its file"
    },
@@ -198,11 +210,11 @@
    },
    {
     "path": "js/map-types.js",
-    "about": "MAP TYPES - map, satellite, topographic, hillshade"
+    "about": "MAP TYPES - map, satellite, topographic, map with relief"
    },
    {
     "path": "js/map-tools.js",
-    "about": "MAP TOOLS - 📏 measuring, pin clustering and the fan"
+    "about": "MAP TOOLS - 📏 measuring, pin clustering and the fan; the relief drawn on the phone (relief-phone: reliefCore in a worker, reliefLayer, reliefInto)"
    },
    {
     "path": "js/legs.js",
@@ -210,7 +222,7 @@
    },
    {
     "path": "js/map-full-screen.js",
-    "about": "The full-screen map and the point picker"
+    "about": "The full-screen map and the point picker; the tilted 3D map of a full-screen map (map-3d; 3d-find: the map types menu's row m3Row, MapLibre GL JS from the site on the first open, the trip read from the 2D map, the one-time note, its lifecycle)"
    },
    {
     "path": "js/item-window.js",
@@ -314,7 +326,7 @@
    },
    {
     "path": "js/route-map.js",
-    "about": "THE ROUTE MAP - stops, legs, key points"
+    "about": "THE ROUTE MAP - stops, legs, key points; a route's side view (map-side-view): \"גובה\" and its window - the route's map and the height chart"
    },
    {
     "path": "js/travel-maps.js",
@@ -417,6 +429,10 @@
     "about": "GOOGLE TIMELINE - read the export on the phone, match the trip's places, the days' paths and walking km; the review (in the closing step and a window), names for the offered places, the doors (and the trip's dates when it has none), the reminder and the late line (11.9.0, 11.10.0)"
    },
    {
+    "path": "js/timeline-paths.js",
+    "about": "The Google Timeline's day paths (tl-paths): a day's visits and moves cleaned into walk / ride segments at the import (TL_CLEAN, tlDaySegs, tlSimplifyDays), a day stored before cleaned on read, and the one reader every drawer uses (tlPaths)"
+   },
+   {
     "path": "js/photos.js",
     "about": "PHOTOS - one mechanism for a photo's whole life (under the MEMENTO heading, which continues in memento.js)"
    },
@@ -430,7 +446,23 @@
    },
    {
     "path": "js/offline-maps.js",
-    "about": "MAPS WITHOUT NETWORK - what to download, downloading, the review screen, stored maps"
+    "about": "MAPS WITHOUT NETWORK - what to download, downloading, the review screen, stored maps (the drawing: offline-draw.js)"
+   },
+   {
+    "path": "js/offline-draw.js",
+    "about": "Offline maps' drawing: the downloaded vector tiles drawn as a canvas layer under the tile layers when there is no network (offDrawTile, offDrawLayers - shared with the trip picture and \"מפה בעברית\" - OFF_STYLE, OFF_ROAD), the offline badge"
+   },
+   {
+    "path": "js/offline-area-editor.js",
+    "about": "Offline maps' area editor: an area framed, resized and moved on the map (the point picker's frame), its size line by the plan's own cost (offFrameInfo), a computed area changed becoming the user's (openOffFrame)"
+   },
+   {
+    "path": "js/hebrew-map.js",
+    "about": "\"מפה בעברית\" - the app's vector drawing of OpenFreeMap's tiles as a live map type: the tiles through the one client, light and dark styles from the --vmap-* tokens, the names placed once per view"
+   },
+   {
+    "path": "js/world-borders.js",
+    "about": "The world's borders inside the app (countries-visited): the site file countries-110m.json read (topoRings - also the schematic maps' world), the point-in-country lookup, the world map's projection and paths; pure - it calls no other part"
    },
    {
     "path": "js/schematic-maps.js",
@@ -438,7 +470,7 @@
    },
    {
     "path": "js/memory-live-map.js",
-    "about": "The live map in the memory screen; a past trip's point"
+    "about": "The live map in the memory screen; a past trip's point; the highlights' photos at their places (memPhotoSpots, memPhotoMarks) and \"תמונות\" in its filter (memory-photos); ▶ play the trip on it day after day (trip-replay: RP, the bar, the speeds, the jump to a day)"
    },
    {
     "path": "js/page-maps.js",
@@ -446,7 +478,7 @@
    },
    {
     "path": "js/memory-screen.js",
-    "about": "The memory screen, part 3; a page for people leaves one way"
+    "about": "The memory screen, part 3; a page for people leaves one way; \"מדינות שביקרנו\" - the countries of closed trips and of countries marked by hand, the world map and its card (countries-visited)"
    },
    {
     "path": "js/recommendations.js",
@@ -510,6 +542,9 @@
   "package.json",
   "terms.html",
   "licenses.txt",
-  "fonts/*.woff2.b64"
+  "countries-110m.json",
+  "countries-50m.json",
+  "fonts/*.woff2.b64",
+  "maplibre/*"
  ]
 }

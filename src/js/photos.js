@@ -25,6 +25,33 @@ function photoPlace(k) { k = String(k || ''); return Object.keys(PHOTO_PLACES).f
 function photoTripOf(k) { const p = photoPlace(k); return p === 'art' ? String(k).slice(4) : p === 'trip' || p === 'point' ? String(k).split(':')[1] : null; }
 function photoUrl(k) { const v = MEMO.get(k); return typeof v === 'string' ? v : null; }
 function photoPut(k, v) { return MEMO_DB.put(k, v); } // the only writes of a photo (outside: the registry's own moves - restore, a trip that left the trash, a file)
+// hidden-data (H2; decisions 2026-11-24 · Review of the legal-review-2 report, Q11): THE ONE CLEANER of a stored image that comes in. A photo the
+// person adds is re-encoded by shrinkImage (a canvas keeps only pixels); one that arrives in a file, a restore or an undo is cleaned here: a JPEG
+// loses its APP1-APP15 segments (the camera's block with its location, XMP, maker notes) and its comments and anything after its end; a PNG keeps
+// only its picture's chunks (no text, camera block or time). APP0 (JFIF), an APP2 that is an ICC colour profile (the canvas writes one into
+// every photo of the app's own) and APP14 (Adobe: only the colour transform's flags) stay - the picture decodes and looks the same. Anything but a data:image/jpeg|png that parses is refused (null): the door drops and counts it (fileClean), the store never writes it
+// (MEMO_DB.put). Synchronous, so every write keeps its order; a clean value comes back as the same string.
+const PHOTO_PNG_KEEP = new Set(['IHDR', 'PLTE', 'IDAT', 'IEND', 'tRNS', 'gAMA', 'cHRM', 'sRGB', 'sBIT', 'bKGD', 'pHYs']);
+function photoClean(v) { const m = typeof v === 'string' && /^data:image\/(jpeg|png);base64,([A-Za-z0-9+/]*={0,2})$/.exec(v); if (!m) return null;
+  let b; try { b = atob(m[2]); } catch (e) { return null; }
+  const out = m[1] === 'png' ? photoPngStrip(b) : photoJpegStrip(b); if (out == null) return null;
+  return out === b ? v : `data:image/${m[1]};base64,${btoa(out)}`; }
+// the store's write (MEMO_DB.put): a string under a photo's key is cleaned (null - refused); anything else is the app's own (the illustrated version in the trash)
+function photoCleanAt(k, v) { return typeof v === 'string' && FILE_PHOTO_KEY.test(String(k)) ? photoClean(v) : v; }
+function photoJpegStrip(b) { const n = b.length, at = i => b.charCodeAt(i); if (n < 4 || at(0) !== 0xFF || at(1) !== 0xD8) return null;
+  const keep = ['\xFF\xD8']; let i = 2, cut = false;
+  while (i < n) { if (at(i) !== 0xFF) return null; const mk = at(i + 1); if (mk === 0xFF) { i++; continue; } // a fill byte
+    if (mk === 0xD9) { keep.push('\xFF\xD9'); cut = cut || i + 2 < n; break; } // the end: what follows it (a trailer, a second picture) goes
+    if ((mk >= 0xD0 && mk <= 0xD7) || mk === 0x01) { keep.push(b.substr(i, 2)); i += 2; continue; }
+    if (i + 3 >= n) return null; const L = (at(i + 2) << 8) | at(i + 3); if (L < 2 || i + 2 + L > n) return null; let end = i + 2 + L;
+    if (mk === 0xDA) { for (;;) { end = b.indexOf('\xFF', end); if (end < 0 || end + 1 >= n) { end = n; break; } const x = at(end + 1); if (x !== 0 && !(x >= 0xD0 && x <= 0xD7)) break; end += 2; } } // a scan runs to the next marker
+    if ((mk >= 0xE1 && mk <= 0xEF && mk !== 0xEE && !(mk === 0xE2 && b.substr(i + 4, 12) === 'ICC_PROFILE\0')) || mk === 0xFE) cut = true; else keep.push(b.slice(i, end));
+    i = end; }
+  return cut ? keep.join('') : b; }
+function photoPngStrip(b) { if (b.slice(0, 8) !== '\x89PNG\r\n\x1a\n') return null; const n = b.length, keep = [b.slice(0, 8)]; let i = 8, cut = false;
+  while (i + 12 <= n) { const L = ((b.charCodeAt(i) << 24) | (b.charCodeAt(i + 1) << 16) | (b.charCodeAt(i + 2) << 8) | b.charCodeAt(i + 3)) >>> 0, ty = b.substr(i + 4, 4), end = i + 12 + L;
+    if (end > n) return null; if (PHOTO_PNG_KEEP.has(ty)) keep.push(b.slice(i, end)); else cut = true; i = end; if (ty === 'IEND') break; }
+  if (i < n) cut = true; return cut ? keep.join('') : b; }
 function photoDel(k) { return MEMO_DB.del(k); }
 function photoReadOnly(k) { return photoPlace(k) === 'hotel' && (!!activeTripObj().archived || !!ARCHIVE_VIEW); }
 // ---- add: 📷 camera and 🖼️ gallery (standard), one look - the compact icon buttons; names on a long press ----
@@ -35,9 +62,13 @@ async function photoRead(inp, px) { const fs = [...(inp.files || [])], out = [];
   for (const f of fs) { try { out.push(await shrinkImage(f, px)); } catch (e) { showToast('התמונה לא נקראה'); } }
   return out; }
 // the one shrink: the longest side to max px, JPEG (sizes per place in PHOTO_PLACES - hotel 900, trip 1,100, a point 900 before its crop)
-function shrinkImage(file, max) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => { const img = new Image(); img.onload = () => {
-  const k = Math.min(1, max / Math.max(img.width, img.height)), c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
-  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); res(c.toDataURL('image/jpeg', 0.72)); }; img.onerror = rej; img.src = r.result; }; r.onerror = rej; r.readAsDataURL(file); }); }
+// one-way (8): THE ONE LOCAL IMAGE LOADER - an image of the phone itself (data: / blob:), with a time limit and a real size; null when it
+// does not load. Every local image loads here: a photo being shrunk, a drawing turned into a canvas (svgToCanvas), the picture editor's images.
+function localImg(url) { return new Promise(res => { const im = new Image(); let done = false; const fin = ok => { if (done) return; done = true; res(ok ? im : null); }; // only data: / blob: - nothing leaves the phone
+  im.onload = () => fin(im.naturalWidth > 0); im.onerror = () => fin(false); setTimeout(() => fin(false), 20000); im.src = url; }); }
+function shrinkImage(file, max) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file); }).then(localImg).then(img => {
+  if (!img) throw new Error('the image did not load'); const k = Math.min(1, max / Math.max(img.width, img.height)), c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', 0.72); }); }
 // crop to a shape (a point of the trip picture): the small square image, shown round - crop {cx, cy, k} - the centre (0..1 of the image) and the zoom over "cover"
 function photoCropTo(im, crop) { const w = im.naturalWidth, h = im.naturalHeight, k = Math.max(1, crop.k || 1), s0 = Math.max(PIC_IMG_PX / w, PIC_IMG_PX / h), s = s0 * k, size = PIC_IMG_PX / s;
   const sx = Math.max(0, Math.min(w - size, (crop.cx == null ? .5 : crop.cx) * w - size / 2)), sy = Math.max(0, Math.min(h - size, (crop.cy == null ? .45 : crop.cy) * h - size / 2));
@@ -53,12 +84,46 @@ function photoFrame(k) { const v = k ? MEMO.get(PHOTO_FRAME_PRE + k) : null; ret
 function photoFrameStyle(k) { const f = photoFrame(k); if (!f) return ''; const p = `${(f.cx * 100).toFixed(2)}% ${(f.cy * 100).toFixed(2)}%`;
   return `object-position:${p};transform-origin:${p}${f.k > 1 ? `;transform:scale(${+f.k.toFixed(3)})` : ''}`; }
 // the photo cut to its box (the box clips: overflow hidden) - every <img> of a stored photo shown cut
-function photoImgHTML(k, u) { const st = photoFrameStyle(k); return `<img src="${fmEsc(u)}" alt=""${st ? ` style="${st}"` : ''}>`; }
+function photoImgHTML(k, u) { const st = photoFrameStyle(k); return `<img src="${escH(u)}" alt=""${st ? ` style="${st}"` : ''}>`; }
 // the same cut in a drawing (the trip picture, its export): an <image> in the box x, y, w, h (the caller clips it to its shape)
-function photoImageSVG(k, u, x, y, w, h, more) { const f = photoFrame(k), m = more || ''; // the stored photo's data URL, escaped
-  if (!f || !f.r) return `<image href="${fmEsc(u)}" xlink:href="${fmEsc(u)}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice"${m}/>`;
-  const K = Math.max(1, f.k || 1), iw = Math.max(w, h * f.r) * K, ih = iw / f.r, r1 = v => +v.toFixed(1);
-  return `<image href="${fmEsc(u)}" xlink:href="${fmEsc(u)}" x="${r1(x + f.cx * (w - iw))}" y="${r1(y + f.cy * (h - ih))}" width="${r1(iw)}" height="${r1(ih)}" preserveAspectRatio="none"${m}/>`; }
+function photoImageSVG(k, u, x, y, w, h, more) { const f = photoFrame(k), m = more || '', P = PHOTO_PAGE.cur, r1 = v => +(+v).toFixed(1); let sl = false; // the stored photo's data URL, escaped
+  if (P) { u = P.cuts && P.cuts.get(photoCutKey(k, w, h)); if (!u) { if (P.need) P.need.set(photoCutKey(k, w, h), { k, w, h }); return ''; } } // hidden-data (H3): a page carries the cut, not the photo
+  else if (f && f.r) { const K = Math.max(1, f.k || 1), iw = Math.max(w, h * f.r) * K, ih = iw / f.r; x = r1(x + f.cx * (w - iw)); y = r1(y + f.cy * (h - ih)); w = r1(iw); h = r1(ih); }
+  else sl = true;
+  return `<image ${svgHref(u)} x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="${sl ? 'xMidYMid slice' : 'none'}"${m}/>`; }
+// an <image>'s address: href and its old twin xlink:href in the app's own drawings (the export's canvas), href alone in a page (H3 d: one copy of the bytes)
+function svgHref(u) { return PHOTO_PAGE.cur ? `href="${escH(u)}"` : `href="${escH(u)}" xlink:href="${escH(u)}"`; }
+// ---- hidden-data (H3; decisions 2026-11-24 · Review of the legal-review-2 report, Q11): a page for people carries only what it shows. THE ONE
+// CUTTER: a stored photo cut to the shape it is shown in (the box w × h, around its framing - the same rule as photoImgHTML and photoImageSVG), at
+// about twice its displayed size (px for the box's longer side; never larger than the photo has), re-encoded - so the cut-away part never travels.
+// The trip summary's grid (480), the recommendations' thumbnail (128), the trip picture's circles (twice their size in the picture's own units -
+// photoPageSVG) and the memory map's thumbnails on a page (240, memPhotoThumb) all come from here.
+const PHOTO_PAGE = { cur: null }; // cur, while a page's drawing is made: { need } (the first pass collects the boxes) or { cuts } (the second draws them); { off } - no photo
+const photoCutKey = (k, w, h) => `${k}|${+(+w).toFixed(1)}|${+(+h).toFixed(1)}`;
+async function photoCut(k, w, h, px) { const u = photoUrl(k), im = u ? await localImg(u) : null; if (!im) return null;
+  const W = im.naturalWidth, H = im.naturalHeight, f = photoFrame(k) || { cx: .5, cy: .5, k: 1 }, K = Math.max(1, f.k || 1), r = W / H;
+  const iw = Math.max(w, h * r) * K, ih = iw / r, sx = -f.cx * (w - iw) / iw * W, sy = -f.cy * (h - ih) / ih * H, sw = w / iw * W, sh = h / ih * H;
+  const sc = Math.min(px / Math.max(w, h), sw / w), c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w * sc)); c.height = Math.max(1, Math.round(h * sc));
+  c.getContext('2d').drawImage(im, sx, sy, sw, sh, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', 0.8); }
+// a page's <img> of a stored photo: its square cut (the box clips it as before); '' when it does not load
+async function photoPageImg(k, px) { const c = await photoCut(k, 1, 1, px); return c ? `<img src="${escH(c)}" alt="">` : ''; }
+// a drawing for a page (the trip picture in the summary): drawn once to learn its photos' boxes, the cuts made, drawn again with them;
+// o.off - drawn with no photo at all (the window's "התמונות" off: picSVG leaves the circles to their icons)
+async function photoPageSVG(make, o) { o = o || {}; const run = cur => { PHOTO_PAGE.cur = cur; try { return make(); } finally { PHOTO_PAGE.cur = null; } };
+  if (o.off) return run({ off: true }); const need = new Map(); run({ need });
+  const cuts = new Map(); for (const [key, q] of need) { const c = await photoCut(q.k, q.w, q.h, 2 * Math.max(q.w, q.h)); if (c) cuts.set(key, c); }
+  return run({ cuts }); }
+// a page's drawing without photos (o.off): no cover, no highlight's photo, no photo of my own on a point
+function photoPageOff() { return !!(PHOTO_PAGE.cur && PHOTO_PAGE.cur.off); }
+// the trip picture (picSVG): photoOff - no cover and no highlight's photo (the AI's base - placeholders only - or a page without photos);
+// photoOwn - a point's picture, but not my own photo in a page without photos
+function photoOff(o) { return !!(o && o.base) || photoPageOff(); }
+function photoOwn(img) { return img && !(img.src === 'own' && photoPageOff()) ? img : null; }
+// the illustrated version in a page (picResolveArt, before its placeholders are filled): one copy of every image's bytes (H3 d), and with no
+// photos my own photo on a point is left out too (a Wikipedia picture is not mine and stays)
+function photoPageArt(id, root) { if (!PHOTO_PAGE.cur) return; const img = picOf(id).img || {};
+  root.querySelectorAll('*').forEach(el => { if (el.hasAttribute('href')) el.removeAttribute('xlink:href'); const h = el.getAttribute('href') || '';
+    if (photoPageOff() && h.startsWith('pimg:') && (img[h.slice(5)] || {}).src === 'own') el.setAttribute('href', ''); }); }
 // saves a framing (with undo); the centre with no zoom stores nothing
 async function photoFrameSet(k, c, im) { const fk = PHOTO_FRAME_PRE + k, old = photoFrame(k), r3 = v => Math.round(v * 1000) / 1000;
   const f = { cx: r3(Math.max(0, Math.min(1, c.cx))), cy: r3(Math.max(0, Math.min(1, c.cy))), k: r3(Math.max(1, c.k || 1)), r: r3(im.naturalWidth / im.naturalHeight) };
@@ -68,11 +133,11 @@ async function photoFrameSet(k, c, im) { const fk = PHOTO_FRAME_PRE + k, old = p
   showUndoToast(centre ? 'התמונה חזרה למרכז' : 'המסגור של התמונה נשמר'); }
 // ---- show: a thumbnail is a button - a tap enlarges it (o.act: a picker's own action instead) ----
 function photoThumbHTML(k, o) { o = o || {}; const u = photoUrl(k); if (!u) return '';
-  return `<button type="button" class="ph-img${o.cls ? ' ' + o.cls : ''}" data-act="${o.act || 'photo.view'}" data-v="${fmEsc(k)}"${o.data ? ' ' + o.data : ''}${o.on != null ? ` aria-pressed="${!!o.on}"` : ''} aria-label="${fmEsc(o.label || 'הגדלה')}">${photoImgHTML(k, u)}${o.badge ? `<span class="ph-badge">${o.badge}</span>` : ''}</button>`; }
+  return `<button type="button" class="ph-img${o.cls ? ' ' + o.cls : ''}" data-act="${o.act || 'photo.view'}" data-v="${escH(k)}"${o.data ? ' ' + o.data : ''}${o.on != null ? ` aria-pressed="${!!o.on}"` : ''} aria-label="${escH(o.label || 'הגדלה')}">${photoImgHTML(k, u)}${o.badge ? `<span class="ph-badge">${o.badge}</span>` : ''}</button>`; }
 act('photo.view', c => { openPhotoView({ key: c.v, name: c.el.dataset.name || '' }); return 'quiet'; });
 // 10.7.0: a photo that is not stored (a report's) - the same thumbnail; a tap (o.act) enlarges it in the one view ({ url, place, del })
 function photoDraftHTML(url, o) { o = o || {}; if (!url) return '';
-  return `<button type="button" class="ph-img${o.cls ? ' ' + o.cls : ''}" data-act="${o.act}" aria-label="${fmEsc(o.label || 'הגדלה')}"><img src="${fmEsc(url)}" alt=""></button>`; } // 11.8.0 (small-fixes item 4): a stored value into an attribute is escaped (the second line after the door check)
+  return `<button type="button" class="ph-img${o.cls ? ' ' + o.cls : ''}" data-act="${o.act}" aria-label="${escH(o.label || 'הגדלה')}"><img src="${escH(url)}" alt=""></button>`; } // 11.8.0 (small-fixes item 4): a stored value into an attribute is escaped (the second line after the door check)
 // the one full-screen view (Q13): a stored photo ({ key }) or the trip picture ({ pic: trip, byTurn } - ⛶, also Claude's illustrated
 // version); move and zoom (TOUCH 'pic', up to ×8), ✕, and per place 🗑️ (where the place allows) and "לשים כשער" (the trip's photos)
 function openPhotoView(o) { const ctl = {};
@@ -81,13 +146,13 @@ function openPhotoView(o) { const ctl = {};
   Object.assign(PIC_FS, { open: true, id: o.pic != null ? o.pic : null, key: o.key || null, url: o.url || null, name: o.name || '', byTurn: !!o.byTurn, k: 1, x: 0, y: 0 });
   const acts = [];
   if (o.url && P.del && o.del) acts.push(`<button type="button" class="ph-vbtn" data-act="${o.del}">${msi('delete')}<span>מחיקה</span></button>`); // a photo not stored: out of its form, nothing to the trash
-  if (o.key && P.cover && tripPhotoKeys(photoTripOf(key))[0] !== key) acts.push(`<button type="button" class="ph-vbtn" data-act="photo.cover" data-v="${fmEsc(key)}">${msi('image')}<span>לשים כשער</span></button>`);
-  if (o.key && P.frame && !photoReadOnly(key)) acts.push(`<button type="button" class="ph-vbtn" data-act="photo.frame" data-v="${fmEsc(key)}">${msi('crop')}<span>מסגור</span></button>`); // 11.31.0 (photo-frame, Q2)
-  if (key && P.del && !photoReadOnly(key)) acts.push(`<button type="button" class="ph-vbtn" data-act="photo.del" data-v="${fmEsc(key)}">${msi('delete')}<span>מחיקה</span></button>`);
+  if (o.key && P.cover && tripPhotoKeys(photoTripOf(key))[0] !== key) acts.push(`<button type="button" class="ph-vbtn" data-act="photo.cover" data-v="${escH(key)}">${msi('image')}<span>לשים כשער</span></button>`);
+  if (o.key && P.frame && !photoReadOnly(key)) acts.push(`<button type="button" class="ph-vbtn" data-act="photo.frame" data-v="${escH(key)}">${msi('crop')}<span>מסגור</span></button>`); // 11.31.0 (photo-frame, Q2)
+  if (key && P.del && !photoReadOnly(key)) acts.push(`<button type="button" class="ph-vbtn" data-act="photo.del" data-v="${escH(key)}">${msi('delete')}<span>מחיקה</span></button>`);
   const el = document.createElement('div'); el.className = 'tp-fs'; el.id = 'tpFsv'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', o.key || o.url ? P.what : 'תמונת הטיול במסך מלא');
   // 10.5.0 (design-4 part 2, look.md "Photos"): full screen on black - ✕ and "N מתוך M" on top, the caption, the actions as icon + word at the bottom
   const ks = o.key && P.cover ? tripPhotoKeys(photoTripOf(key)) : [], at = ks.indexOf(o.key), cnt = at >= 0 && ks.length > 1 ? `${at + 1} מתוך ${ks.length}` : '';
-  el.innerHTML = `<div class="tp-fsin" id="tpFsIn"></div><div class="ph-vtop"><button type="button" class="tp-x tp-fsx" id="tpFsX" data-act="picFs.tpFsX" aria-label="סגירה" title="סגירה">${msi('close')}</button>${cnt ? `<b class="ph-vcnt">${cnt}</b>` : ''}</div>${o.name ? `<div class="ph-vcap">${_escH(o.name)}</div>` : ''}${acts.length ? `<div class="ph-vacts">${acts.join('')}</div>` : ''}`;
+  el.innerHTML = `<div class="tp-fsin" id="tpFsIn"></div><div class="ph-vtop"><button type="button" class="tp-x tp-fsx" id="tpFsX" data-act="picFs.tpFsX" aria-label="סגירה" title="סגירה">${msi('close')}</button>${cnt ? `<b class="ph-vcnt">${cnt}</b>` : ''}</div>${o.name ? `<div class="ph-vcap">${escH(o.name)}</div>` : ''}${acts.length ? `<div class="ph-vacts">${acts.join('')}</div>` : ''}`;
   document.body.appendChild(el); photoViewDraw();
   layerPush('picFs', 'full', fp => closePhotoView(fp)); layerTop().ctl = ctl; // 5.4.0
   if (o.byTurn && el.requestFullscreen) el.requestFullscreen().catch(() => {});
@@ -98,13 +163,13 @@ function openPhotoView(o) { const ctl = {};
 }
 ctlActs('picFs', ['tpFsX']);
 function photoViewDraw() { const inn = document.getElementById('tpFsIn'); if (!inn) return; const id = PIC_FS.id;
-  if (PIC_FS.url || PIC_FS.key) inn.innerHTML = `<img class="ph-vimg" src="${fmEsc(PIC_FS.url || photoUrl(PIC_FS.key) || '')}" alt="">`;
+  if (PIC_FS.url || PIC_FS.key) inn.innerHTML = `<img class="ph-vimg" src="${escH(PIC_FS.url || photoUrl(PIC_FS.key) || '')}" alt="">`;
   else { const st = mementoStyleOf(id); inn.innerHTML = PIC_ED && PIC_ED.id === id ? picSVG(picModel(id), st === 'art' ? 'schem' : st, {}) : currentMementoSVG(id); }
   inn.style.transform = `translate(${PIC_FS.x}px, ${PIC_FS.y}px) scale(${PIC_FS.k})`; }
 function closePhotoView(fromPop) {
   if (!PIC_FS.open) return; PIC_FS.open = false; const el = document.getElementById('tpFsv'); if (el) el.remove();
   if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
-  layerDone('picFs', fromPop); // 5.4.0
+  layerDone('picFs', fromPop); if (PIC_FS.id != null) memPicSync(); // 5.4.0; round6-behaviour (G122): the memory screen's picture, if its background came meanwhile
 }
 act('photo.cover', c => { const k = c.v, id = photoTripOf(k), ks = tripPhotoKeys(id); closePhotoView(); if (ks[0] !== k) photoOrderSet(id, [k, ...ks.filter(x => x !== k)], '🖼️ תמונת השער הוחלפה'); });
 act('photo.frame', c => { const k = c.v, u = photoUrl(k); closePhotoView(); if (u) openPicCrop(null, k, u, 'frame', photoFrame(k)); return 'quiet'; });
@@ -144,7 +209,7 @@ function photoTrashOrphans() { [...MEMO.keys()].filter(k => String(k).startsWith
   [...MEMO.keys()].filter(k => String(k).startsWith(PHOTO_FRAME_PRE) && !MEMO.has(String(k).slice(PHOTO_FRAME_PRE.length))).forEach(photoDel); } // 11.31.0: a framing whose photo is gone
 // ---- the hotel's photo (ר5: keyed by the place relative to its destination - hotelRef); the pair, and the Google Maps link ----
 function hotelPhotoHTML(p, ro) { const k = 'hotel:' + hotelRef(p.id);
-  return `${photoThumbHTML(k, { cls: 'hc-photo', label: 'תמונת המלון - הגדלה', data: `data-name="${fmEsc(p.name)}"` })}${ro ? '' : `<div class="brow tight hc-ph">${photoAddHTML('hotel.photo')}<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([p.name, p.address].filter(Boolean).join(' '))}" target="_blank" rel="noopener">${msi('photo_library', { size: 18 })} תמונות ב-Google Maps</a></div>`}`; }
+  return `${photoThumbHTML(k, { cls: 'hc-photo', label: 'תמונת המלון - הגדלה', data: `data-name="${escH(p.name)}"` })}${ro ? '' : `<div class="brow tight hc-ph">${photoAddHTML('hotel.photo')}<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([p.name, p.address].filter(Boolean).join(' '))}" target="_blank" rel="noopener">${msi('photo_library', { size: 18 })} תמונות ב-Google Maps</a></div>`}`; }
 act('hotel.photo', async c => { const x = c.ref && c.ref.obj; if (!x || !x.place) return; const [url] = await photoRead(c.el, PHOTO_PLACES.hotel.px); if (!url) return;
   const k = 'hotel:' + hotelRef(Number(x.place.id)), old = photoUrl(k); if (!(await photoPut(k, url))) return; if (photoFrame(k)) await photoDel(PHOTO_FRAME_PRE + k); // a new image starts at the centre
   showUndoToast(old ? 'התמונה של המלון הוחלפה' : 'התמונה נשמרה במכשיר'); });
@@ -164,7 +229,7 @@ async function memoAddPhotos(id, urls) { const added = [];
   if (added.length) { const td = tdOf(id); td.photoOrder = tripPhotoKeys(id).filter(k => !added.includes(k)).concat(added); tdSave(id); }
   return added; }
 function photosBoxHTML(id) { const ks = tripPhotoKeys(id), n = ks.length;
-  return `<div class="ph-box"><div class="ph-grid" data-phtrip="${fmEsc(id)}">${ks.map((k, i) => `<div class="ph-cell${i ? '' : ' cover'}" data-phk="${fmEsc(k)}">${photoThumbHTML(k, { badge: i ? '' : 'שער', label: i ? 'הגדלה' : 'תמונת השער - הגדלה' })}</div>`).join('')}
+  return `<div class="ph-box"><div class="ph-grid" data-phtrip="${escH(id)}">${ks.map((k, i) => `<div class="ph-cell${i ? '' : ' cover'}" data-phk="${escH(k)}">${photoThumbHTML(k, { badge: i ? '' : 'שער', label: i ? 'הגדלה' : 'תמונת השער - הגדלה' })}</div>`).join('')}
     ${n < MEMO_PHOTO_MAX ? photoAddHTML('photos.phadd', { multi: true }) : ''}</div>
     <small class="sh-hint">${n}/${MEMO_PHOTO_MAX}</small></div>`; }
 function photosBoxCtl(root, id, redraw) { const ctl = ctlNS('photos');
@@ -180,12 +245,14 @@ gestureOn('drag', '.ph-grid[data-phtrip] .ph-cell', { hold: true, grid: true, it
     photoOrderSet(id, ks, ks[0] !== tripPhotoKeys(id)[0] ? '🖼️ תמונת השער הוחלפה' : '📷 סדר התמונות שונה'); } });
 function photoOrderSet(id, ks, msg) { const td = tdOf(id); td.photoOrder = ks; tdSave(id); showUndoToast(msg); }
 // pick from the existing photos (a highlight): the same thumbnails in one row, with "בלי"
-function hlPhotoPickHTML(id, h) { const ks = tripPhotoKeys(id); if (!ks.length) return ''; const hd = `data-hlpick="${fmEsc(h.id)}"`;
+function hlPhotoPickHTML(id, h) { const ks = tripPhotoKeys(id); if (!ks.length) return ''; const hd = `data-hlpick="${escH(h.id)}"`;
   return `<div class="ph-row" role="group" aria-label="תמונה לרגע השיא"><button type="button" class="ph-img ph-none" data-act="hlPick.hlpick" data-v="" ${hd} aria-pressed="${!h.photo}">בלי</button>${ks.map(k => photoThumbHTML(k, { act: 'hlPick.hlpick', on: h.photo === k, label: 'בחירת התמונה', data: hd })).join('')}</div>`; }
 function hlPickCtl(root, id, redraw) { const ctl = ctlNS('hlPick'); ctl.hlpick = b => { const td = tdOf(id), hid = b.dataset.hlpick, k = b.dataset.v || undefined;
   const prev = JSON.stringify(td.highlights || []); td.highlights = (td.highlights || []).map(h => h.id === hid ? { ...h, photo: k } : h); tdSave(id);
-  if (JSON.stringify(td.highlights) !== prev) showUndoToast(k ? '📷 נבחרה תמונה לרגע השיא' : 'רגע השיא בלי תמונה'); redraw(); }; } // undo-history: a change of data is a row
-ctlActs('hlPick', ['hlpick']);
+  if (JSON.stringify(td.highlights) !== prev) showUndoToast(k ? '📷 נבחרה תמונה לרגע השיא' : 'רגע השיא בלי תמונה'); redraw(); }; // undo-history: a change of data is a row
+  ctl.hlwhere = b => { const td = tdOf(id), hid = b.dataset.hlwhere, v = b.value ? Number(b.value) : null; if (v == null) return 'quiet'; // memory-photos (Q4): a place for a highlight that had none
+    td.highlights = (td.highlights || []).map(h => h.id === hid ? { ...h, placeId: v } : h); tdSave(id); const M = tripMemoryData(id), p = M && M.pmap.get(v); showUndoToast(`✨ רגע השיא במקום${p ? ': ' + p.name : ''}`); redraw(); }; }
+ctlActs('hlPick', ['hlpick', 'hlwhere']);
 function memoryPhotoHTML(h) { return h.photo ? photoThumbHTML(h.photo, { cls: 'mh-photo' }) : ''; }
 // ---- photos sent to Claude: one path - the stored point images by their placeholder key (standard: href="pimg:KEY" + an images map) ----
 function photoImagesOut(id, keys) { const o = {}; keys.forEach(k => { const u = k && photoUrl(`pimg:${id}:${k}`); if (u) o[k] = u; }); return o; }
@@ -221,7 +288,7 @@ async function openPicCrop(id, key, url, kind, prev) { const ctl = {}, fr = kind
   picGesture(el.querySelector('#tcView'), { max: 4, k: () => C.k, zoom: k => { C.k = k; Z.value = k; draw(); }, reset: () => { C.k = 1; Z.value = 1; draw(); }, // TOUCH 'pic'
     pan: (dx, dy) => { if (fr) { const b = fbox(), sx = b.fw - b.iw, sy = b.fh - b.ih, u = V / (cv.clientWidth || V); dx *= u; dy *= u; if (sx < -.5) C.cx = cl(C.cx + dx / sx); if (sy < -.5) C.cy = cl(C.cy + dy / sy); draw(); return; }
       const s = Math.max(260 / w, 260 / h) * C.k; C.cx -= dx / s / w; C.cy -= dy / s / h; draw(); } });
-  Z.addEventListener('input', () => { C.k = Number(Z.value); draw(); });
+  fmOnInput(Z, () => { C.k = Number(Z.value); draw(); });
   ctl.tcX = () => closePicCrop();
   ctl.tcAuto = () => { C.cx = .5; C.cy = fr ? .5 : .45; C.k = 1; Z.value = 1; draw(); };
   ctl.tcShape = b => { P0.shape = b.dataset.v; el.querySelectorAll('#tcShape button').forEach(x => { const on = x === b; x.dataset.active = String(on); x.setAttribute('aria-pressed', String(on)); }); draw(); return 'quiet'; };
@@ -233,4 +300,9 @@ ctlActs('picCrop', ['tcAuto', 'tcOk', 'tcX', 'tcShape'], ['tcShape']);
 function closePicCrop(fromPop) { if (!PIC_CROP) return; PIC_CROP = null; const el = document.getElementById('tpCrop'); if (el) el.remove();
   layerDone('picCrop', fromPop === true); }
 
+// memory-photos (Q4-Q5): a page's photos on its map - each spot's photos as small square JPEGs cut around their framing (photoFrame), made when the page is made
+function memPhotoThumb(k, px) { return photoCut(k, 1, 1, px); } // hidden-data (H3): the one cutter's square
+async function memPagePhotos(M) { if (DEV.memPhotosOff) return []; const out = [];
+  for (const s of memPhotoSpots(M)) { const u = []; for (const k of s.ks) { const t = await memPhotoThumb(k, 240); if (t) u.push(t); } if (u.length) out.push({ c: s.c, name: s.name, u }); }
+  return out; }
 // ================= END PHOTOS =================

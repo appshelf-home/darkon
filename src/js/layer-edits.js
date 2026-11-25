@@ -1,7 +1,7 @@
 // ================= LAYER EDITS (3.1.0) =================
 // Layers belong to a destination. This device's changes live in STATE.edits.layers ({op:'add'|'edit'|'del', data})
 // and STATE.edits.layerOrder ({destId: [layer ids]}), layered over the destination like place edits.
-function ensureEditsShape() { const e = STATE.edits; e.places = e.places || {}; e.status = e.status || {}; e.layers = e.layers || {}; e.layerOrder = e.layerOrder || {}; e.infoNA = e.infoNA || {}; } // 11.43.0 (info-complete): infoNA - the user's "not relevant" general info sections, { destId: [{ icon, why, by: 'user' }] }
+function ensureEditsShape() { const e = STATE.edits; e.places = e.places || {}; e.status = e.status || {}; e.layers = e.layers || {}; e.layerOrder = e.layerOrder || {}; }
 function destLayersEff(d) {
   const L = STATE.edits.layers || {};
   let out = destLayers(d).filter(l => !(L[l.id] && L[l.id].op === 'del'))
@@ -85,11 +85,11 @@ function openLayerEditor(id, o) { layerNote(openLayerEditor, arguments); o = o |
   const F = fmNew({ id, o, d, cur, others: list.filter(l => !cur || l.id !== cur.id), n: cur ? POINTS.filter(p => p.layer === cur.id).length : 0 }); // every place that moves on a delete, closed ones too
   const color0 = cur ? cur.color : layerColorPick(list);
   const sheet = document.getElementById('sheet');
-  sheet.innerHTML = `${fmHead(`${cur ? '✏️ עריכת שכבה' : '＋ שכבה חדשה'}${SEP}${fmEsc(d.meta.name)}`)}
+  sheet.innerHTML = `${fmHead(`${cur ? '✏️ עריכת שכבה' : '＋ שכבה חדשה'}${SEP}${escH(d.meta.name)}`)}
     ${fmText(F, 'name', { label: 'שם', req: true, value: cur ? cur.name : '', placeholder: 'למשל: גלריות ואמנות', dup: true, on: () => leDup(F) })}
     ${fmColor(F, 'color', { label: 'צבע', value: color0, palette: LAYER_PALETTE })}
     ${fmIcon(F, 'icon', { label: 'אייקון', hint: 'לכל מקום בשכבה שאין לו אייקון משלו, ולמקומות שיתווספו', value: cur ? cur.icon : 'tourist_attraction', icons: Object.entries(ICON_EMOJI).filter(([k]) => k !== 'note'), on: () => leIconDup(F) })}
-    ${fmSec(F, 'more', { title: 'עוד', sum: F2 => [fmGet(F2, 'label') && fmEsc(fmGet(F2, 'label')), (BASE_TYPES[fmGet(F2, 'type')] || {}).name, fmGet(F2, 'coll') && 'שכבת אוסף', fmGet(F2, 'hide') && 'מוסתרת'].filter(Boolean).join(SEP) },
+    ${fmSec(F, 'more', { title: 'עוד', sum: F2 => [fmGet(F2, 'label') && escH(fmGet(F2, 'label')), (BASE_TYPES[fmGet(F2, 'type')] || {}).name, fmGet(F2, 'coll') && 'שכבת אוסף', fmGet(F2, 'hide') && 'מוסתרת'].filter(Boolean).join(SEP) },
       fmText(F, 'label', { label: 'שם קצר לשבב (רשות)', value: cur && cur.label !== cur.name ? cur.label : '', placeholder: 'אם ריק - השם המלא' })
       + fmChips(F, 'type', { label: 'סוג ' + tipI('layer.type'), value: cur ? (cur.type || '') : '', // 10.15.0 (design-review Q5, Q6): ⓘ for the type; a unique layer is pin_drop (✨ is Claude's)
         options: [...Object.entries(BASE_TYPES).map(([k, b]) => [k, `${typeIcon(b.icon, { size: 18 })} ${b.name}`]), ['', `${msi('pin_drop', { size: 18 })} ייחודית ליעד`]], on: () => leIconDup(F) })
@@ -100,15 +100,15 @@ function openLayerEditor(id, o) { layerNote(openLayerEditor, arguments); o = o |
   showSheetBackdrop('openLayerEditor'); fmAttach(F); leIconDup(F);
 }
 function leDup(F) { const v = fmGet(F, 'name').toLowerCase(), sim = v ? F.opts.others.filter(l => String(l.name).trim().toLowerCase() === v || String(l.label).trim().toLowerCase() === v) : [];
-  fmDup(F, 'name', sim.length ? 'יש כבר במאגר: ' + sim.map(l => `<b>${fmEsc(l.name)}</b>`).join(', ') : ''); }
+  fmDup(F, 'name', sim.length ? 'יש כבר במאגר: ' + sim.map(l => `<b>${escH(l.name)}</b>`).join(', ') : ''); }
 // 4.3.0: layer chips show the icon only, so two separate chips with the same icon can't be told apart
 function leIconDup(F) { const icon = F.vals.icon, ltype = F.vals.type, d = F.opts.d;
   const same = F.opts.others.filter(l => l.icon === icon).concat(F.opts.o.draft ? [] : LAYER_DEFS.filter(l => l.dest !== d.id && l.icon === icon && !(ltype && l.type === ltype)));
-  fmDup(F, 'icon', same.length ? `האייקון כבר בשימוש בשכבה <b>${same.map(l => fmEsc(l.name)).filter((v, i, a) => a.indexOf(v) === i).join(', ')}</b>. בשבבים רואים רק אייקון, אז עדיף אייקון אחר.` : ''); }
+  fmDup(F, 'icon', same.length ? `האייקון כבר בשימוש בשכבה <b>${same.map(l => escH(l.name)).filter((v, i, a) => a.indexOf(v) === i).join(', ')}</b>. בשבבים רואים רק אייקון, אז עדיף אייקון אחר.` : ''); }
 act('le.del', c => { const F = fmOf(c.el); if (!F) return; const cur = F.opts.cur, n = F.opts.n;
   if (!n) { closeSheet(); deleteLayer(cur, null); return; }
   F.delTo = null; fmQ(F, '#leDelBox').innerHTML = `<div class="bk-restore"><p>בשכבה יש <b>${n} מקומות</b>. לאן להעביר אותם? (ביטול מחזיר הכל.) כדי לשמור אותם כמו שהם, אפשר במקום זה ${msi('visibility_off', { cls: 'msi-in' })} הסתרה (ב"עוד").</p>
-    <div class="chips-row wrap">${F.opts.others.map(l => `<button type="button" class="chip" data-act="le.delTo" data-v="${l.id}" data-active="false"><span class="dd-dot" style="background:${l.color}"></span>${fmEsc(l.label || l.name)}</button>`).join('')}</div>
+    <div class="chips-row wrap">${F.opts.others.map(l => `<button type="button" class="chip" data-act="le.delTo" data-v="${l.id}" data-active="false"><span class="dd-dot" style="background:${l.color}"></span>${escH(l.label || l.name)}</button>`).join('')}</div>
     <div class="brow export-actions"><button class="sh-secondary" data-act="le.delGo" disabled>${msi('delete', { size: 18 })} מחיקה והעברה</button></div></div>`;
   reveal(fmQ(F, '#leDelBox')); return 'quiet'; });
 act('le.delTo', c => { const F = fmOf(c.el); if (!F) return; F.delTo = Number(c.v); fmRoot(F).querySelectorAll('[data-act="le.delTo"]').forEach(x => x.dataset.active = String(x === c.el)); fmQ(F, '[data-act="le.delGo"]').disabled = false; return 'quiet'; });
@@ -134,7 +134,7 @@ act('le.save', c => { const F = fmOf(c.el); if (!F) return; const { cur, d, o } 
 });
 
 function statusBadgesHTML(p) { // 10.2.0 (design-2): marks as tags with their icons; "רק בטיול הזה" lives only in the edit window
-  const t = (ic, txt, cls) => `<span class="tl-tag${cls ? ' ' + cls : ''}">${tagIc(ic)}${txt}</span>`, esc = _escH;
+  const t = (ic, txt, cls) => `<span class="tl-tag${cls ? ' ' + cls : ''}">${tagIc(ic)}${txt}</span>`, esc = escH;
   return (p.access === 'limited' ? t('warning', 'גישה מוגבלת' + (p.accessNote ? SEP + esc(p.accessNote) : ''), 'must') : '')
     + (isGoneStatus(p.status) ? t(STATUS_MS[p.status], esc(STATUS_LABEL[p.status]) + (p.statusNote ? SEP + esc(p.statusNote) : ''), 'must st-why') : '')
     + (p.tripOnly ? '' : p.userAdded ? t('edit_note', 'הוספתי' + (p.completed ? (SEP + 'הושלם מהקובץ') : '')) : p.edited ? t('edit', 'ערכתי') : '');
@@ -176,7 +176,8 @@ function activeTripObj() { return STATE.trips[STATE.activeTrip] || NO_TRIP; }
 function hasTrip() { return !!STATE.trips[STATE.activeTrip]; }
 STATE.trips = STATE.trips || {};
 STATE.tripData = STATE.tripData || {};
-Object.values(STATE.tripData).forEach(planItemsUp); // 10.0.0: the stored key renamed once
+migRun('planItems', () => Object.values(STATE.tripData).forEach(planItemsUp)); // 10.0.0: the stored key renamed once
+migrate('state');
 STATE.destBases = STATE.destBases || {}; // 4.2.1: destination id -> its numbering on this device, reused if it comes back
 Object.values(DESTS).forEach(d => { STATE.destBases[d.id] = d.idBase || 0; });
 // 4.0.0: trips built into this copy. A new one is added once (a deleted one doesn't come back);
@@ -244,7 +245,7 @@ function loadPersonal(id) {
 // 4.1.0: several destinations in one trip. Points, map, regions and reservations show the destinations in
 // FP.dest (multi-select chips, empty = all). The general-info and layers screens show one destination (oneDest).
 // Defaults: on trip days the destination(s) of today (both on a transfer day); before and after the trip - all.
-// A manual pick is kept until the end of the day (settings.destPick / settings.oneDestPick).
+// A manual pick is kept until the end of the day (the device store DEV: DEV.destPick / DEV.oneDestPick).
 let oneDestId = null;
 let _destTrip = null;
 function segsOn(t, iso) { return (t.segments || []).filter(s => DESTS[s.dest] && s.from <= iso && iso <= s.to); }

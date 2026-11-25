@@ -1,16 +1,22 @@
 // ---- the memory screen's picture block ----
 function picMemBlockHTML(M) {
-  // 4.46.5: simpler - the picture as it is (the background is chosen in the editor), ⛶ on its corner, and one row:
+  // 4.46.5: simpler - the picture as it is (the background is chosen in the editor), ⛶ at the end of its head (review-fixes-11471 item 2:
+  // on the picture's corner it covered a long title), and one row:
   // ✏️ עריכה, 📤 ייצוא (PNG / PDF / print in a dialog) and ✳ שליחה ל-AI לאיור
   const id = M.t.id, D = mementoData(id); if (!D || (!D.visited.length && !D.stops.length)) return '';
   const art = MEMO.get('art:' + id), style = mementoStyleOf(id), svg = currentMementoSVG(id), ready = picBgReady(id);
   if (!ready && svcNetDown() && !MEM_ST.bg) MEM_ST.bg = { svc: style === 'map' ? 'picTiles' : 'schem', n: 0, of: 1, what: 'רקע המפה' }; const stLine = memStLine('memBgSt');
-  return `<div class="mem-block memento"><h3>${msi('image', { size: 20 })} תמונת הטיול${style === 'art' && art ? ' <small class="mem-artmark">' + claudeMark() + ' מאוירת</small>' : ''}</h3>
-    <div class="mem-picwrap"><div class="memento-img" id="memPicImg" data-act="memSec.memPicFs">${svg}</div><button type="button" class="mem-picfs" id="memPicFs" data-act="memSec.memPicFs" aria-label="הגדלה" title="הגדלה">${msi('fullscreen')}</button></div>
-    <small class="sh-hint mem-bgst" id="memBgSt"${stLine ? '' : ' hidden'}>${stLine}</small>${!ready && !svcNetDown() && SCHEM_FAILED.size ? '<div class="brow"><button type="button" class="icon-btn btn-copy" id="memBgRetry" data-act="memSec.memBgRetry" style="width:auto;padding:0 12px;">' + msi('refresh', { size: 18 }) + ' לנסות שוב לטעון את רקע המפה</button></div>' : ''}
-    <div class="brow export-actions mem-picacts"><button class="btn-nav" id="memPicEdit" data-act="memSec.memPicEdit">${msi('edit', { size: 18 })} עריכה</button><button class="icon-btn btn-copy" id="memExport" data-act="memSec.memExport" style="width:auto;padding:0 14px;">${msi('ios_share', { size: 18 })} ייצוא</button><button class="claude-btn" id="memArt" data-act="memSec.memArt">${claudeH(TX.claude.memento.btn)}</button>${tipI('claude.memento')}</div></div>`; // 5.15.0 (ד6)
+  return `<div class="mem-block memento"><h3>${msi('image', { size: 20 })} תמונת הטיול${style === 'art' && art ? ' <small class="mem-artmark">' + claudeMark() + ' מאוירת</small>' : ''}<button type="button" class="mem-picfs" id="memPicFs" data-act="memSec.memPicFs" aria-label="הגדלה" title="הגדלה">${msi('fullscreen')}</button></h3>
+    <div class="mem-picwrap"><div class="memento-img" id="memPicImg" data-act="memSec.memPicFs" data-bg="${ready ? 1 : 0}">${svg}</div></div>
+    <small class="sh-hint mem-bgst" id="memBgSt"${stLine ? '' : ' hidden'}>${stLine}</small>${!ready && !svcNetDown() && SCHEM_FAILED.size ? '<div class="brow"><button type="button" class="btn-sec" id="memBgRetry" data-act="memSec.memBgRetry">' + msi('refresh', { size: 18 }) + ' לנסות שוב לטעון את רקע המפה</button></div>' : ''}
+    <div class="brow export-actions mem-picacts"><button class="btn-nav" id="memPicEdit" data-act="memSec.memPicEdit">${msi('edit', { size: 18 })} עריכה</button><button type="button" class="btn-sec" id="memExport" data-act="memSec.memExport">${msi('ios_share', { size: 18 })} ייצוא</button><button class="claude-btn" id="memArt" data-act="memSec.memArt">${claudeH(TX.claude.memento.btn)}</button>${tipI('claude.memento')}</div></div>`; // 5.15.0 (ד6)
 }
 
+// round6-behaviour (G122): the memory screen drawn while its picture's background was not in yet (data-bg="0") is drawn again as soon as the
+// background is ready, whatever brought it (the screen's own request, the full screen, the editor, a kept piece read from the phone) - on every
+// status change of the background (memStDraw) and when the full screen closes; once (the new drawing has it: data-bg="1")
+function memPicSync() { const el = document.getElementById('memPicImg'); if (!el || el.dataset.bg !== '0' || activeTab !== 'memory' || memoryTrip == null || PIC_ED || !mementoBgReady(memoryTrip)) return;
+  el.dataset.bg = '1'; renderMemoryScreen(); }
 // 4.46.5: 📤 ייצוא - every way out of the trip picture in one dialog
 function openMemExport(id) { const ctl = {};
   const sheet = document.getElementById('sheet'), style = mementoStyleOf(id);
@@ -30,7 +36,7 @@ function picArrangement(id, request) {
     textEdited: !!((((m.P.ov || {}).pts || {})[q.key] || {}).text), members: q.members ? q.members.map(z => z.key) : undefined, rating: q.rt || undefined }));
   return { svg, images, arrangement: { locked: true, kind: m.kind, preset: m.preset, orient: m.orient, lang: m.lang, look: m.look, background: st === 'map' ? 'map' : 'schematic', request: String(request || '').trim(),
     mapBox: L.B.map, frame: { none: f.none, smallTitle: f.none ? f.small : undefined, band: !f.none && f.band, title: f.title || String(m.D.t.name).split(' · ')[0], subtitle: f.sub || '', dates: f.dates, flags: f.flags,
-      numbers: f.none ? [] : f.nums.map(k => ({ key: k, label: PIC_NUMS[k][m.lang === 'en' ? 1 : 0], value: picNumVal(k, m.D, M2) })), highlights: !f.none && f.hl, collection: !f.none && f.col, elevation: f.elev, footer: !f.none && f.foot },
+      numbers: f.none ? [] : f.nums.map(k => ({ key: k, label: picNumLabel(k, m.D, m.lang === 'en'), value: picNumVal(k, m.D, M2) })), highlights: !f.none && f.hl, collection: !f.none && f.col, elevation: f.elev, footer: !f.none && f.foot },
     points: pts, route: m.kind === 'route' ? picSkeleton(m).map(x => ({ key: x.key, mode: x.mode || null, passed: !!x.passed })) : [] } };
 }
 function buildMementoFile(id, request) {
@@ -40,27 +46,34 @@ function buildMementoFile(id, request) {
       theme: { primary: D.th.primary || '#1C2B33', accent: D.th.accent || '#C08A2E', headingFont: D.th.headingFont || 'Rubik' },
       destinations: D.dests.map(d => ({ name: d.name, center: d.center, flag: destFlagMeta(d) })),
       highlights: D.hs.map(h => ({ place: h.name, text: h.text || '' })),
-      stats: { days: D.days, places: D.visited.length, km: D.totalKm, walkKm: D.walk, loved: Object.values(D.rate).filter(r => r.r === 'love').length },
+      stats: { days: D.days, places: D.visited.length, km: D.totalKm, walkKm: D.walk, rideKm: D.ride.km, ...(D.ride.est ? { rideEst: true } : {}), loved: Object.values(D.rate).filter(r => r.r === 'love').length }, // ride-km (Q2): always carried
       records: D.records.map(r => ({ icon: r[0], value: r[1], label: r[2] })),
       collections: D.cols.map(x => ({ name: x.name, found: (x.found || []).length, total: x.total })),
       arrangement: A.arrangement, images: A.images,
       base: { svg: A.svg, note: 'The app\'s own picture of this trip, arranged by the user: real geography (Web Mercator) and every point where the user put it. Draw on top of it. Locked: never move, add or remove a point, never change a point\'s size or a text the user edited. Images are "pimg:KEY" placeholders - keep them as they are (the app puts the real image back).' } } }, 'memento');
 }
-async function readySchemFor(id) { return navigator.onLine ? picEnsureBg(id, 'schem') : null; }
+async function readySchemFor(id) { return svcOnline() ? picEnsureBg(id, 'schem') : null; }
 function openArtSheet(id) { layerNote(openArtSheet, arguments); // 8.0.0 (ק17): the Claude skeleton
   const m = picModel(id), n = m.pts.filter(x => x.lv !== 'out').length, artNow = MEMO.get('art:' + id), F = fmNew({ id });
   partsWin(F, { key: 'openArtSheet', title: claudeH(TX.claude.memento.btn) + ' ' + tipI('art.locked'),
     body: [`<p class="sh-hint">תמונת הטיול כפי שסידרתם: ${m.kind === 'city' ? 'עירוני' : 'מסלול'}, ${n} מיקומים, ${m.lang === 'en' ? 'באנגלית' : 'בעברית'}, ${m.look === 'drawn' ? 'מצויר' : 'צילומים אמיתיים'}.</p>`,
       `<div class="cl-lock">${msi('lock', { size: 18 })} ה-${AI} לא משנה את הסידור, הגדלים והשמות. רק את הציור.</div>`, // 10.5.0 (design-4 part 2): a locked promise - a tinted line with a lock
-      fmText(F, 'req', { label: 'הבקשה לאיור (רשות)', para: true, rows: 2, placeholder: "למשל: וינטג', צבעי מים, שמות באנגלית", value: picOf(id).request || '', on: v => artReqSet(id, v) }),
+      fmText(F, 'req', { label: 'הבקשה לאיור (רשות)', para: true, rows: 2, placeholder: "למשל: וינטג', צבעי מים, שמות באנגלית", value: picOf(id).request || '', on: v => artReqSoon(id, v) }),
 ],
     end: artNow ? fmEndActs([{ act: 'art.del', label: 'מחיקת הגרסה המאוירת', del: true }]) : '', // end-actions-followups (miss a): at the window's end
     goal: 'memento', send: { act: 'art.send', label: '📤 שליחת תמונת הטיול ל-' + AI } });
 }
 // undo-history: the request to Claude is a draft of what is sent, not an action - it is kept for the next sending but never lands
 // in a row (absorbed into the history's base), and an undo of an earlier change of the picture keeps the request as it is now
-function artReqSet(id, v) { const td = tdOf(id), p = { ...(td.pic || {}) }; if ((p.request || '') === (v || '')) return; picBurstEnd();
-  if (v) p.request = v; else delete p.request; td.pic = p; tdSave(id); hAbsorb(hKey(['d', id, 'pic'])); }
+// ride-no-home item 3 (G133): saved quietly - the request is shown only in its own field, so nothing is redrawn (a redraw replaced the field
+// on every letter and closed the keyboard); typing holds the save to a pause (ART_REQ_PAUSE, also after the window closed); sending it, an undo or the
+// app going to the background saves it at once (artReqFlush)
+function artReqSet(id, v, hold) { const td = tdOf(id), p = { ...(td.pic || {}) }; if ((p.request || '') === (v || '')) { if (!hold) artReqFlush(); return false; } picBurstEnd();
+  if (v) p.request = v; else delete p.request; td.pic = p; hAbsorb(hKey(['d', id, 'pic'])); if (!hold) { artReqFlush(true); tdSave(id, true); } return true; }
+const ART_REQ_PAUSE = 700, ART_REQ_WAIT = { t: 0, id: null }; // the typed request is in the data at once; its save waits for a pause (filled in place)
+function artReqSoon(id, v) { if (!artReqSet(id, v, true)) return; clearTimeout(ART_REQ_WAIT.t); Object.assign(ART_REQ_WAIT, { id, t: setTimeout(() => artReqFlush(), ART_REQ_PAUSE) }); }
+function artReqFlush(drop) { const W = ART_REQ_WAIT; if (!W.t) return; clearTimeout(W.t); W.t = 0; if (!drop) tdSave(W.id, true); }
+sysOn(document, 'visibilitychange', () => { if (document.hidden) artReqFlush(); }); undoBefore(() => artReqFlush()); // the app may close in the background; an undo sees the request as typed
 let ART_REQ = null;
 undoBefore(() => { ART_REQ = {}; Object.entries(STATE.tripData).forEach(([t, d]) => { const r = ((d || {}).pic || {}).request; if (r) ART_REQ[t] = r; }); });
 undoAfter(keys => { const R = ART_REQ || {}; ART_REQ = null;
@@ -100,7 +113,10 @@ async function receiveMementoArt(data) {
     if (want.length && miss.length && /data-pt="/.test(svg)) setTimeout(() => showToast(`${SY.warn} בגרסה המאוירת חסרות ${miss.length} מיקומים מהסידור שלכם. אפשר לשלוח שוב ל-${AI}`), 1800); }
   // undo-history (Q3): a new version sends the one before it to the trash, like a delete - the row keeps a reference, its undo restores it
   const had = MEMO.has('art:' + id); if (had) { await photoToTrash('art:' + id, '', true); if (MEMO.has('art:' + id)) return; } // no room for it in the trash: the old one stays
-  await photoPut('art:' + id, { svg, at: Date.now(), by: 'Claude' });
+  // trip-picture-credits (C15): the base's map credit and the look it was drawn with are kept beside it, for the app's own stamp when the
+  // map data is not on hand (picArtCredits); never a credit text from the returned picture
+  const m0 = picModel(id), L0 = m0 && picLayout(m0); await picLoadGeo(id); const cr = picBaseCredit(id, L0);
+  await photoPut('art:' + id, { svg, at: Date.now(), by: 'Claude', look: m0 ? m0.look : 'real', ...(cr ? { cr } : {}) });
   MEMO_VIEW[id] = { ...(MEMO_VIEW[id] || {}), style: 'art' }; tdOf(id).mementoStyle = 'art'; tdSave(id);
   showUndoToast(SY.claude + ' ' + fileDroppedNote('התקבלה גרסה מאוירת של תמונת הטיול: ' + t.name + (had ? (SEP + 'הקודמת עברה לסל') : ''), data._dropped)); // item 7: one report per receipt // Q6: one toast = one row
   closeSheet(); memoryTrip = id; goTab('memory');

@@ -47,11 +47,20 @@
   --elev-1: 0 1px 4px rgba(0,0,0,.25); --elev-2: 0 2px 8px rgba(0,0,0,.2); --elev-lift: 0 10px 26px rgba(0,0,0,.28); --elev-sheet: 0 -6px 24px rgba(0,0,0,.25);
   /* design-tokens: the route's numbers (stops, past stops, the current stop and the key point) and the self-location dot */
   --route-stop: #534AB7; --route-past: #736EB3; --route-now: #C08A2E; --on-route: #FFFFFF; --on-route-now: #24180A; /* final review (family E): a past stop is a lighter tone, not faded, and the gold stop carries dark digits - 4.5:1 */ --self-loc: #1E88E5;
+  --walk-10: rgba(13, 148, 136, .34); --walk-20: rgba(13, 148, 136, .22); --walk-30: rgba(13, 148, 136, .12); --walk-line: #0F766E; --walk-pt: #0F766E; --on-walk-pt: #FFFFFF; /* walk-time: the walking rings - shades of one colour, nested */
   --hotel-pin: #1C2B33; --hotel-ring: #C08A2E; --on-hotel-ring: #24180A; /* 10.10.0 (design-maps): the hotel's pin (the same in dark - it stands out on both maps) */
   --icon-xl: 40px; /* 10.1.0 (design-1): the empty state's quiet icon */
   /* 10.2.0 (design-2): a layer's tones from its own color - the soft circle (tone ≈92), the icon and badge (tone ≈30), the badge's digits */
   --tint-mix: 16%; --tone-mix: 62%; --tone-ink: #000; --on-badge: #FFFFFF;
   /* motion */
+  /* hebrew-map: the colours of the app's own map drawing ("מפה בעברית"; the offline map's OFF_STYLE is the light set) and the dark filter of "מפה" (none in light) */
+  --vmap-land: #F2EFE9; --vmap-wood: #D3E5C2; --vmap-grass: #E3EDD3; --vmap-sand: #F3E7C3; --vmap-ice: #F4F8FB; --vmap-cemetery: #D6E3CF; --vmap-civic: #F0E6E0; --vmap-pitch: #D9EBC9; --vmap-residential: #EDE8E0;
+  --vmap-park: #CDE6B8; --vmap-water: #AAD3DF; --vmap-aeroway: #E4E0EA; --vmap-building: #E2DDD5; --vmap-boundary: #9E85B8; --vmap-casing: #C9C0B1; --vmap-tunnel: #EEEAE2; --vmap-rail: #8E8E8E;
+  --vmap-road-motorway: #E892A2; --vmap-road-trunk: #F9B29C; --vmap-road-primary: #FCD6A4; --vmap-road-secondary: #F7FABF; --vmap-road-minor: #FFFFFF; --vmap-road-path: #C8A97E;
+  --vmap-label: #4A4A4A; --vmap-halo: rgba(255,255,255,.9); --vmap-water-label: #3F6F86; --vmap-poi: #6B5A48; --map-dark-filter: none;
+  /* passport-book (Q2, Q5): the book's paper, its lines and text, the dark-blue cover with its gold, and the stamps' four inks (blue, violet, red, dark green) */
+  --pp-paper: #F6F1E4; --pp-line: #D9CFB6; --pp-text: #3B3426; --pp-cover: #1D2C4F; --pp-cover-ink: #D9B868;
+  --pp-ink0: #1F4E9C; --pp-ink1: #5B3A9E; --pp-ink2: #A8322D; --pp-ink3: #2F6B45;
   --motion-fast: 150ms; --motion: 200ms; --motion-slow: 250ms; --ease: cubic-bezier(.2, 0, 0, 1);
 }
 @media (prefers-color-scheme: dark) {
@@ -78,7 +87,14 @@
     --elev-float: 0 4px 18px rgba(0,0,0,.5);
     --elev-1: 0 1px 4px rgba(0,0,0,.5); --elev-2: 0 2px 8px rgba(0,0,0,.45); --elev-lift: 0 10px 26px rgba(0,0,0,.6); --elev-sheet: 0 -6px 24px rgba(0,0,0,.55);
     --route-stop: #B9B2F2; --route-past: #8F8BB8; --route-now: #E8B562; --on-route: #1B1C20; --on-route-now: #1B1C20; /* 10.15.0 (F28): the past stop lighter, not faded */ --self-loc: #64B5F6;
+    --walk-10: rgba(94, 234, 212, .34); --walk-20: rgba(94, 234, 212, .22); --walk-30: rgba(94, 234, 212, .12); --walk-line: #5EEAD4; --walk-pt: #5EEAD4; --on-walk-pt: #0B2B28; /* walk-time */
     --tint-mix: 30%; --tone-mix: 45%; --tone-ink: #FFFFFF; --on-badge: #111318;
+    --vmap-land: #1A1D22; --vmap-wood: #1F2A21; --vmap-grass: #212823; --vmap-sand: #2B2820; --vmap-ice: #262B31; --vmap-cemetery: #212A22; --vmap-civic: #2A2426; --vmap-pitch: #1F2B21; --vmap-residential: #1E2126;
+    --vmap-park: #1E2B20; --vmap-water: #1B3247; --vmap-aeroway: #24222B; --vmap-building: #2A2D33; --vmap-boundary: #7A6A92; --vmap-casing: #0F1114; --vmap-tunnel: #2A2D33; --vmap-rail: #5E636D;
+    --vmap-road-motorway: #8C5560; --vmap-road-trunk: #8A6352; --vmap-road-primary: #7A6545; --vmap-road-secondary: #5E5E45; --vmap-road-minor: #3B4049; --vmap-road-path: #6E5E48;
+    --pp-paper: #26241F; --pp-line: #45413A; --pp-text: #E6DFCF; --pp-cover: #16213B; --pp-cover-ink: #D9B868; /* passport-book: dark paper, lighter inks */
+    --pp-ink0: #8FB4F2; --pp-ink1: #BFA6F0; --pp-ink2: #F29A93; --pp-ink3: #8CCF9F;
+    --vmap-label: #D7DAE0; --vmap-halo: rgba(17,19,24,.85); --vmap-water-label: #7FB0CC; --vmap-poi: #C9B8A3; --map-dark-filter: invert(.9) hue-rotate(180deg) saturate(.6) brightness(.95) contrast(.9);
   }
 }
 :root[data-theme="dark"] {
@@ -104,5 +120,12 @@
     --elev-float: 0 4px 18px rgba(0,0,0,.5);
     --elev-1: 0 1px 4px rgba(0,0,0,.5); --elev-2: 0 2px 8px rgba(0,0,0,.45); --elev-lift: 0 10px 26px rgba(0,0,0,.6); --elev-sheet: 0 -6px 24px rgba(0,0,0,.55);
     --route-stop: #B9B2F2; --route-past: #8F8BB8; --route-now: #E8B562; --on-route: #1B1C20; --on-route-now: #1B1C20; /* 10.15.0 (F28): the past stop lighter, not faded */ --self-loc: #64B5F6;
+    --walk-10: rgba(94, 234, 212, .34); --walk-20: rgba(94, 234, 212, .22); --walk-30: rgba(94, 234, 212, .12); --walk-line: #5EEAD4; --walk-pt: #5EEAD4; --on-walk-pt: #0B2B28; /* walk-time */
     --tint-mix: 30%; --tone-mix: 45%; --tone-ink: #FFFFFF; --on-badge: #111318;
+    --vmap-land: #1A1D22; --vmap-wood: #1F2A21; --vmap-grass: #212823; --vmap-sand: #2B2820; --vmap-ice: #262B31; --vmap-cemetery: #212A22; --vmap-civic: #2A2426; --vmap-pitch: #1F2B21; --vmap-residential: #1E2126;
+    --vmap-park: #1E2B20; --vmap-water: #1B3247; --vmap-aeroway: #24222B; --vmap-building: #2A2D33; --vmap-boundary: #7A6A92; --vmap-casing: #0F1114; --vmap-tunnel: #2A2D33; --vmap-rail: #5E636D;
+    --vmap-road-motorway: #8C5560; --vmap-road-trunk: #8A6352; --vmap-road-primary: #7A6545; --vmap-road-secondary: #5E5E45; --vmap-road-minor: #3B4049; --vmap-road-path: #6E5E48;
+    --pp-paper: #26241F; --pp-line: #45413A; --pp-text: #E6DFCF; --pp-cover: #16213B; --pp-cover-ink: #D9B868; /* passport-book: dark paper, lighter inks */
+    --pp-ink0: #8FB4F2; --pp-ink1: #BFA6F0; --pp-ink2: #F29A93; --pp-ink3: #8CCF9F;
+    --vmap-label: #D7DAE0; --vmap-halo: rgba(17,19,24,.85); --vmap-water-label: #7FB0CC; --vmap-poi: #C9B8A3; --map-dark-filter: invert(.9) hue-rotate(180deg) saturate(.6) brightness(.95) contrast(.9);
 }

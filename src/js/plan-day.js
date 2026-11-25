@@ -74,9 +74,9 @@ function dayTimelineHTML(d) { // parts of the day as thin lines; my items and th
       if (e.p && e.p.address && !hIds.includes(e.p.id) && !un.has(e.p.id) && !num.has(e.p.id)) num.set(e.p.id, ++n); }); });
     DAY_NUM[d.key] = num; }
   const swAfter = CK && CK.sw ? (CK.sw.leg.arriveDay ? 'land:' + CK.sw.leg.id : String(CK.sw.leg.id)) : null;
-  const landRow = f => cdCard({ cls: 'itin-card tl-entry timed tl-travel tl-land', body: ` data-act="plan.land" data-v="${_escH(f.id)}"`, lead: leadHTML('travel', msi('flight_land', { size: 18 }), ''),
-    name: `נחיתה ב${_escH(f.to || '')}`, tags: [travelTimeChip(f.id, _escH(f.arrive))], acts: travelEditBtn(f.id) });
-  const clockDiv = txt => `<div class="tl-div tl-clock">${_escH(txt)}</div>`; // a zone label is plain text (a destination's name)
+  const landRow = f => cdCard({ cls: 'itin-card tl-entry timed tl-travel tl-land', body: ` data-act="plan.land" data-v="${escH(f.id)}"`, lead: leadHTML('travel', msi('flight_land', { size: 18 }), ''),
+    name: `נחיתה ב${escH(f.to || '')}`, tags: [travelTimeChip(f.id, escH(f.arrive))], acts: travelEditBtn(f.id) });
+  const clockDiv = txt => `<div class="tl-div tl-clock">${escH(txt)}</div>`; // a zone label is plain text (a destination's name)
   if (CK) h += clockDiv(CK.startLabel);
   parts.forEach((k, pi) => {
     const out = seqs[pi];
@@ -106,9 +106,12 @@ function openAddChoice(day, slot) { const ctl = {}; layerNote(openAddChoice, arg
   ctl.ac = b => { const k = b.dataset.ac; closeSheet(); setTimeout(() => k === 'place' ? openAddPlaceSheet(day, slot || 'unassigned') : k === 'travel' ? openTravelEditor(null, { pre: { date: d.date } }) : openNewNoteSheet(day), 60); };
   showSheetBackdrop('openAddChoice'); layerTop().ctl = ctl; }
 ctlActs('addChoice', ['ac']);
+// round6-behaviour (G119): the day's title names its city - by wxDayLocs' names, the one rule (a destination's only stop by the destination,
+// several stops each by its own; kit-install item 6); a day that moves reads "A ← B", a name said once
+function dayPlaceNames(d) { return [...new Set(wxDayLocs(d).map(l => l.name))]; }
 function dayHeadInfo(d) {
   const iso = todayStr(), dayData = ensureDay(d.key), n = mergedIds(d.key).length, schedN = scheduleOf(d.date).length;
-  let city = ''; try { city = wxDayLocs(d).map(l => l.name).join(' ← '); } catch (e) {} if (!city) city = destsOfDay(d.key).map(destName).join(' ← ');
+  let city = ''; try { city = dayPlaceNames(d).join(' ← '); } catch (e) {} if (!city) city = destsOfDay(d.key).map(destName).join(' ← ');
   const tr = travelsOf().filter(f => f.date === d.date).sort((a, b) => String(a.depart || '').localeCompare(String(b.depart || '')))[0];
   const sum = [n + schedN ? `${n + schedN} בתוכנית` : 'עוד ריק', legsDaySummary(d.key), /* 5.15.0 (ד2): the group's items count too, and no group label on every day */ tr ? `${msi(TRAVEL_MS[tr.mode] || 'flight', { cls: 'msi-in' })}\u00a0${tr.depart ? tr.depart + ' ' : ''}${(TRAVEL_MODES[tr.mode] || TRAVEL_MODES.flight)[1]}` : ''].filter(Boolean).join(SEP);
   return { title: `${d.date === iso ? ('היום' + SEP) : ''}${tmFmt('day', d.date)}${city ? SEP + city : ''}`, sum, past: d.date < iso, today: d.date === iso };
@@ -152,13 +155,14 @@ function renderItineraryTab() {
   TRIP_DAYS.forEach(d => {
     const _tl = dayTimelineHTML(d), dayOpen = openDays.has(d.key), info = dayHeadInfo(d), total = mergedIds(d.key).length, schedN = scheduleOf(d.date).length;
     html += `<div class="accordion-item day-item${info.past ? ' past' : ''}${info.today ? ' today' : ''}" data-day-item="${d.key}" data-ref="day:${d.key}" data-open="${dayOpen}">
-      <button class="accordion-header day-head t-wrap" data-act="day.toggle"><span class="dh-t"><b>${info.past ? msi('check', { cls: 'msi-in dh-past' }) + '\u00a0' : ''}${glueText(_escH(info.title))}</b><small>${glueText(info.sum)}</small></span><span class="dh-wx" data-dwx="${d.date}"></span><span class="dh-more" role="button" tabindex="0" data-act="day.menu" aria-label="פעולות על היום">${msi('more_horiz')}</span><span class="accordion-arrow">${msi('expand_more')}</span></button>
+      <button class="accordion-header day-head t-wrap" data-act="day.toggle"><span class="dh-t"><b>${info.past ? msi('check', { cls: 'msi-in dh-past' }) + '\u00a0' : ''}${glueText(escH(info.title))}</b><small>${glueText(info.sum)}</small></span><span class="dh-wx" data-dwx="${d.date}"></span><span class="dh-more" role="button" tabindex="0" data-act="day.menu" aria-label="פעולות על היום">${msi('more_horiz')}</span><span class="accordion-arrow">${msi('expand_more')}</span></button>
       <div class="accordion-body">`; // 4.23.0: the favorites of the day moved into ＋ מקום
     if (!total && !schedN) html += noPlan ? '' : emptyHTML(msi('event_note'), `＋ מקום למטה, או ${msi('calendar_month', { cls: 'msi-in' })} בכרטיס של כל מקום.`, '', 'היום ריק');
     else {
       const dayViewKey = 'day_' + d.key, dayMode = getViewMode(dayViewKey);
       const mapN = total + scheduleOf(d.date).filter(x => x.placeId != null && x.placeId !== '').length; // 4.46.3: a day with only the organized schedule has a map too
       if (mapN) html += viewToggleHTML(dayViewKey);
+      html += svDayRowHTML(d.key); // map-side-view: "גובה" for the day's walking and driving legs, in the list and on the day map
       if (mapN && dayMode === 'map') html += `<div class="map-container" id="mapView_${dayViewKey}"></div>`;
       else html += `<div class="tl">${_tl}</div>`;
     }
@@ -205,7 +209,7 @@ act('place.toDay', c => toggleDay(c.v, pid(c.ref.id))); // the plan's side panel
 // 3.1.0: desktop planning panel beside the plan - favorites not yet in any day, with day buttons
 function planSideHTML() {
   const favs = POINTS.filter(p => STATE.favorites.has(p.id) && !TRIP_DAYS.some(d => isInDay(d.key, p.id)));
-  return `<aside class="plan-side"><h3>${msi('star', { size: 18, cls: 'msi-in' })} מועדפים שעוד לא בתוכנית (${favs.length})</h3>` + (favs.length ? favs.map(p => `<div class="ps-row" data-ref="place:${p.id}"><b>${msiTie(itemIcon(p, { size: 18, cls: 'msi-in' }), _escH(p.name))}</b>
+  return `<aside class="plan-side"><h3>${msi('star', { size: 18, cls: 'msi-in' })} מועדפים שעוד לא בתוכנית (${favs.length})</h3>` + (favs.length ? favs.map(p => `<div class="ps-row" data-ref="place:${p.id}"><b>${msiTie(itemIcon(p, { size: 18, cls: 'msi-in' }), escH(p.name))}</b>
     <div class="add-to-day-row">${TRIP_DAYS.filter(d => dayOk(d.key, p)).map(d => `<button data-act="place.toDay" data-v="${d.key}" data-in="false">${d.label}</button>`).join('')}</div></div>`).join('')
     : '<p class="sh-hint">כל המועדפים כבר בתוכנית. ' + msi('star', { cls: 'msi-in' }) + ' בכרטיס של מקום מוסיף אותו לכאן.</p>') + `</aside>`;
 }

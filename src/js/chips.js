@@ -7,7 +7,7 @@ function setViewMode(key, mode) { try { if (mode !== 'map' && TV_MARK && key ===
 // o.list: rows instead (icon, name, its line, the chosen one tinted with a check - the map type, whose four options each carry a line, as in the map's own menu)
 function choiceHTML(o) { const cur = String(o.cur), c = o.opts.find(x => String(x[0]) === cur), lbl = o.label ? `<span class="ch-lbl">${o.label}</span>` : '';
   if (o.list) return `<div class="sh-field ch-f"${o.id ? ` id="${o.id}"` : ''}>${lbl}<div class="opt-list" role="radiogroup">${o.opts.map(([v, t, sub, ic]) => { const on = String(v) === cur; return `<button type="button" role="radio" aria-checked="${on}" data-act="${o.act}"${o.attrs(v)} data-active="${on}">${ic ? msi(ic, { cls: 'ol-ic' }) : ''}<span class="ol-t"><b>${t}</b>${sub ? `<small>${sub}</small>` : ''}</span>${on ? msi('check', { cls: 'ol-ck' }) : ''}</button>`; }).join('')}</div></div>`;
-  return `<div class="sh-field ch-f"${o.id ? ` id="${o.id}"` : ''}>${lbl}<div class="view-toggle seg ch-seg" role="group">${o.opts.map(([v, t, sub, ic]) => { const on = String(v) === cur; return `<button type="button" data-act="${o.act}"${o.attrs(v)} data-active="${on}" aria-pressed="${on}"${sub ? ` aria-label="${fmEsc(htmlText(sub, { noHidden: true }).replace(/\s+/g, ' ').trim())}"` : ''}>${ic ? msi(ic, { size: 18 }) : ''}${t}</button>`; }).join('')}</div>${c && c[2] ? `<small class="ch-sub">${c[2]}</small>` : ''}</div>`; }
+  return `<div class="sh-field ch-f"${o.id ? ` id="${o.id}"` : ''}>${lbl}<div class="view-toggle seg ch-seg" role="group">${o.opts.map(([v, t, sub, ic]) => { const on = String(v) === cur; return `<button type="button" data-act="${o.act}"${o.attrs(v)} data-active="${on}" aria-pressed="${on}"${sub ? ` aria-label="${escH(htmlText(sub, { noHidden: true }).replace(/\s+/g, ' ').trim())}"` : ''}>${ic ? msi(ic, { size: 18 }) : ''}${t}</button>`; }).join('')}</div>${c && c[2] ? `<small class="ch-sub">${c[2]}</small>` : ''}</div>`; }
 // a yes/no setting on a screen: the switch row of the forms (title, supporting line)
 function setSwitchHTML(act, attrs, on, title, sub) { return `<div class="fm-togrow"><button type="button" class="fm-tog t-wrap" role="switch" aria-checked="${on}" data-act="${act}"${attrs}><span class="fm-sw" aria-hidden="true"></span><span class="fm-togl">${title}${sub ? `<small class="fm-togs">${sub}</small>` : ''}</span></button></div>`; }
 function segHTML(act, opts, cur, ex) { return `<div class="view-toggle seg" role="group">${opts.map(([v, h]) => `<button type="button" data-act="${act}" data-v="${v}"${ex || ''} data-active="${v === cur}" aria-pressed="${v === cur}">${h}</button>`).join('')}</div>`; }
@@ -94,7 +94,7 @@ function tipDismiss(e) { if (e.type === 'scroll' && _introWait) { const w = _int
 function tipRelease() { const b = document.getElementById('chipBubble'); if (!b || !b._left || !b.classList.contains('show')) return;
   clearTimeout(_bubbleT); b._end = performance.now() + b._left; _bubbleT = setTimeout(hideChipBubble, b._left); b._left = 0; }
 touchAny('down', tipDismiss); touchAny('end', tipRelease);
-document.addEventListener('scroll', tipDismiss, true);
+sysOn(document, 'scroll', tipDismiss, true);
 // 9.6.0 (12ו): a long press on an icon-only button shows its name (aria-label or title) in the bubble, and that press does not act
 // (TOUCH 'press'). Layer chips have their own name (wireLayerChips); a press on a plan card's body is its drag
 function lpName(b) { if (!b || b.closest('.lchips')) return ''; const s = b.textContent.replace(/\s+/g, '');
@@ -154,7 +154,7 @@ function fitChipRows(el) {
     last.classList.add('lc-hidden'); hidden.push(last);
   }
 }
-window.addEventListener('resize', () => { document.querySelectorAll('.lchips').forEach(fitChipRows); document.querySelectorAll('.src-fit').forEach(fitSrcRow); });
+sysOn(window, 'resize', () => { document.querySelectorAll('.lchips').forEach(fitChipRows); document.querySelectorAll('.src-fit').forEach(fitSrcRow); });
 // 4.37.0: a row of source chips (destinations of a trip, sources of a draft) never scrolls sideways. It shows full names
 // when they fit the real width, short names when only those fit, and otherwise one picker button that opens all of them.
 function shortSrcName(name) { // 4.38.1: a leading icon ("📍 ארגנטינה (דמו)") is kept aside, so the short name is never the icon alone
@@ -194,13 +194,13 @@ function openSrcPicker(rowSel, title, single) { const btns = () => { const r = d
 }
 // 5.12.0: the country of a destination - a long list with search (full screen over the editor); the currency's country first
 // 7.2.0: the country and the clock of a destination are lists of the one choice window (openFmChoice), not windows of their own
-function openCountryPicker(cur, sug, onPick) { const all = countryList(), row = (c, g) => ({ v: c.cc, group: g, text: c.n + ' ' + c.cc, html: withFlag(flagOfCountry(c.cc), _escH(c.n)) });
+function openCountryPicker(cur, sug, onPick) { const all = countryList(), row = (c, g) => ({ v: c.cc, group: g, text: c.n + ' ' + c.cc, html: withFlag(flagOfCountry(c.cc), escH(c.n)) });
   const top = [cur && all.find(c => c.cc === cur), sug && sug !== cur && all.find(c => c.cc === sug)].filter(Boolean);
   openFmChoice({ title: 'מדינה', hint: 'הדגל של היעד בא מהמדינה. בלי מדינה - מהמטבע (חוץ מיורו).', search: true, searchHint: 'חיפוש מדינה', value: cur,
     options: [...top.map(c => row(c, c.cc === cur ? 'נבחרה' : 'לפי המטבע')), ...(cur ? [{ v: '', group: 'בלי מדינה', text: 'בלי מדינה', html: 'בלי מדינה (הדגל לפי המטבע)' }] : []), ...all.map(c => row(c, 'כל המדינות'))] }, onPick); }
 // 7.0.0 (ז11): a destination's clock, by hand: the zones of its country with the time now in each, and all zones (search)
 function openZonePicker(country, cur, onPick) { const mine = tmZonesOf(country).map(x => x.z), all = [...new Set(TM_ZONES.map(x => x.z))].filter(tmZoneOk);
-  const row = (z, g) => ({ v: z, group: g, text: z + ' ' + tmZoneName(z) + ' ' + tmCity(z), html: `<span class="fm-ch-t">${_escH(tmZoneName(z))}<small dir="ltr">${_escH(tmCity(z))}</small></span><span class="fm-ch-end"><bdi>${tmWall(z).hm}</bdi></span>` }); // 10.9.0 (design-forms, gap 39): the city as a supporting line, the time at the end
+  const row = (z, g) => ({ v: z, group: g, text: z + ' ' + tmZoneName(z) + ' ' + tmCity(z), html: `<span class="fm-ch-t">${escH(tmZoneName(z))}<small dir="ltr">${escH(tmCity(z))}</small></span><span class="fm-ch-end"><bdi>${tmWall(z).hm}</bdi></span>` }); // 10.9.0 (design-forms, gap 39): the city as a supporting line, the time at the end
   openFmChoice({ title: '🕐 השעון של היעד', hint: 'השעות בטיול נקראות בשעון של היעד. בדרך כלל הוא נקבע לבד מהמדינה וממרכז המפה.', search: true, searchHint: 'חיפוש אזור או עיר', value: cur,
     options: [...mine.map(z => row(z, 'במדינה')), ...all.filter(z => !mine.includes(z)).map(z => row(z, 'כל האזורים'))] }, onPick); }
 // opts: { ids, getSel, setSel(newSet), labelOf(id), rerender() }

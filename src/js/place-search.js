@@ -187,13 +187,13 @@ async function psRun(id, q, how) { const H = PS_HOSTS[id]; if (!H) return; q = S
   if (seq === H.seq) { st.busy = false; if (r === null) { st.kind = PS_LAST || 'busy'; st.list = s0 && same ? s0.list : null; } else { st.list = r; st.more = !!r.more; st.kind = r.length ? '' : (st.anywhere ? 'none' : 'area'); } psDraw(H); }
   if (H.next) { const n = H.next; H.next = null; if (n !== q) psRun(id, n, 'typing'); } }
 function psDraw(H) { if (H.draw) return H.draw(H); const b = H.box && H.box(); if (b && b.isConnected) b.innerHTML = psHTML(H); }
-function psRowsHTML(H) { const st = H.st; return (st && st.list || []).map((x, i) => `<button type="button" class="pe-res ps-row" data-act="ps.res" data-v="${H.id}:${i}">${msi(x.ic || 'location_on', { size: 20 })}<span class="ps-t"><b>${fmEsc(x.name)}</b><small>${fmEsc([st.area && x.area ? psAreaLine(x) : x.sub || [x.city, x.country].filter(Boolean).join(', '), x.km != null ? fmtKm(x.km) : ''].filter(Boolean).join(SEP))}</small></span></button>`).join(''); }
+function psRowsHTML(H) { const st = H.st; return (st && st.list || []).map((x, i) => `<button type="button" class="pe-res ps-row" data-act="ps.res" data-v="${H.id}:${i}">${msi(x.ic || 'location_on', { size: 20 })}<span class="ps-t"><b>${escH(x.name)}</b><small>${escH([st.area && x.area ? psAreaLine(x) : x.sub || [x.city, x.country].filter(Boolean).join(', '), x.km != null ? fmtKm(x.km) : ''].filter(Boolean).join(SEP))}</small></span></button>`).join(''); }
 function psGmUrl(q) { return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q); }
 function psBtns(H, ks) { const st = H.st, B = { any: `<button type="button" class="chip" data-act="ps.any" data-v="${H.id}">${msi('travel_explore', { size: 18 })} לחפש בכל מקום</button>`,
     more: `<button type="button" class="chip" data-act="ps.more" data-v="${H.id}">${msi('expand_more', { size: 18 })} עוד תוצאות</button>`,
     places: st.area ? `<button type="button" class="chip ps-places" data-act="ps.places" data-v="${H.id}">${msi('location_on', { size: 18 })} לחפש גם מקומות</button>` : '',
     map: H.map ? `<button type="button" class="chip" data-act="ps.map" data-v="${H.id}">${msi('pin_drop', { size: 18 })} לבחור על המפה</button>` : '',
-    gm: H.gm === false ? '' : `<a class="chip" href="${fmEsc(psGmUrl(st.q))}" target="_blank" rel="noopener" data-act="ps.gm" data-v="${H.id}">${msi('map', { size: 18 })} לחפש בגוגל מפות</a>` };
+    gm: H.gm === false ? '' : `<a class="chip" href="${escH(psGmUrl(st.q))}" target="_blank" rel="noopener" data-act="ps.gm" data-v="${H.id}">${msi('map', { size: 18 })} לחפש בגוגל מפות</a>` };
   const h = ks.map(k => B[k]).filter(Boolean).join(''); return h ? `<div class="brow tight ps-end">${h}</div>` : ''; }
 function psFootHTML(H) { const st = H.st; if (!st) return ''; const L = [];
   if (st.busy) L.push(waitLineHTML('מחפשים')); // 11.46.0 (P3): the one stage line of a wait
@@ -208,7 +208,7 @@ function psFootHTML(H) { const st = H.st; if (!st) return ''; const L = [];
 // 11.21.1 (form-keep-everywhere, found 3): inside Claude (no share back) the row leaves out the Google Maps link - the quieter choice;
 // "לבחור על המפה" stays where the host has it
 function psOtherHTML(H) { const st = H.st, L = [];
-  if (H.gm !== false && MAP_AVAILABLE) L.push(`<a class="link-btn" href="${fmEsc(psGmUrl(st.q))}" target="_blank" rel="noopener" data-act="ps.gm" data-v="${H.id}">לחפש בגוגל מפות</a>`);
+  if (H.gm !== false && MAP_AVAILABLE) L.push(`<a class="link-btn" href="${escH(psGmUrl(st.q))}" target="_blank" rel="noopener" data-act="ps.gm" data-v="${H.id}">לחפש בגוגל מפות</a>`);
   if (H.map) L.push(`<button type="button" class="link-btn" data-act="ps.map" data-v="${H.id}">לבחור על המפה</button>`);
   return L.length ? `<p class="ps-other">לא מה שחיפשתם? ${L.join(SEP)}</p>` : ''; }
 function psEndHTML(H) { const st = H.st; return st && !st.busy && st.list && st.list.length && !st.kind ? psBtns(H, [st.more && 'more', !st.anywhere && 'any', 'places'].filter(Boolean)) + psOtherHTML(H) : ''; }
@@ -226,7 +226,6 @@ act('ps.map', c => { const H = PS_HOSTS[c.v]; if (H && H.map) H.map(); return 'q
 act('ps.gm', c => { const H = PS_HOSTS[c.v]; if (!H) return 'quiet'; let f = null; try { f = H.ret ? H.ret() : null; } catch (e) { errNote('ps.gm', e); }
   devSet({ psOpen: { at: Date.now(), q: H.st ? H.st.q : '', ...(f || {}) } }); if (MAP_AVAILABLE) showToast(PS_GM_BACK); return 'quiet'; });
 const PS_GM_BACK = 'בגוגל מפות: שיתוף ← דרכון';
-document.addEventListener('input', e => { const q = e.target; if (q && q.dataset && q.dataset.ps) psTyping(q.dataset.ps, q.value); });
 // ---- "הבאה מגוגל מפות" (Q9): a Google Maps link, shared or pasted - the name, the place's own point (before the view center), Google's id ----
 function psGid(u) { const d = (() => { try { return decodeURIComponent(u || ''); } catch (e) { return u || ''; } })();
   if (gidDirLink(d)) return ''; // 11.23.1 (gid-fixes item 2): a directions link's first id is its origin - the link is kept as it is
@@ -309,7 +308,7 @@ async function psFindByText(tx) { if (!tx || !MAP_AVAILABLE) return null;
     if (st) return { view: { lat: st.coord.lat, lng: st.coord.lng, z: 17 } }; }
   return near ? { view: { lat: near[0], lng: near[1], z: cb ? 14 : 13 } } : null; }
 // the line under a point found by name or address: "נמצא במפה: <name> · <street, city> · כדאי לוודא על המפה"
-function psFoundHTML(f) { return f ? `<small class="ps-line ps-found">נמצא במפה: <b>${fmEsc(f.name || '')}</b>${f.sub ? SEP + fmEsc(f.sub) : ''}${SEP}כדאי לוודא על המפה</small>` : ''; }
+function psFoundHTML(f) { return f ? `<small class="ps-line ps-found">נמצא במפה: <b>${escH(f.name || '')}</b>${f.sub ? SEP + escH(f.sub) : ''}${SEP}כדאי לוודא על המפה</small>` : ''; }
 const PS_NO_POINT = ('לא הצלחנו לקרוא מיקום מהקישור' + SEP + 'לבחור על המפה');
 // 11.22.0 (place-gid-1 item 8, G44; decisions 2026-11-18 · Review of the 11.21.7 summary, Q1): Google's Hebrew shares carry only the name
 // and the ftid (Maps) or the name alone (share.google): the link is read - the name and the id record kept - but Google sends no point,
@@ -368,7 +367,7 @@ async function psFormBack(o, text) { const P = PS_FORMS[o.k]; if (!P || !o.keep 
   if (F.kinds[o.field] === 'loc') { const q = fmQ(F, `[data-fmq="${o.field}"]`); if (q) q.value = o.q || '';
     const b = fmQ(F, `[data-fmlink="${o.field}"]`); if (b) { b.hidden = false; fmQ(F, `[data-fmlinkt="${o.field}"]`).value = text; } await fmLocLinkRead(F, o.field, text); return true; }
   const r = await psReadLink(text), G = fmLive(F); if (!G || !G.kinds[o.field]) return true; if (!r || !r.coord) { showToast(PS_NO_POINT); return true; } // a travel's end
-  fmSet(G, o.field, { name: r.name || (G.vals[o.field] || {}).name || 'מקום מגוגל מפות', loc: { lat: r.coord.lat, lng: r.coord.lng } }); return true; }
+  endFieldSet(G, o.field, { name: r.name || (G.kinds[o.field] === 'end' && (G.vals[o.field] || {}).name) || 'מקום מגוגל מפות', loc: { lat: r.coord.lat, lng: r.coord.lng } }); return true; } // along-drive: a drive's stop comes back the same way
 // a share that is not an app file (startup): it reopens the form left for Google Maps within the last 15 minutes, or opens "מקום חדש" in
 // the active trip
 // a share read in the open editor: a place already in the trip (by Google's id, or the same point with a fitting name) - the editor

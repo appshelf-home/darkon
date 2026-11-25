@@ -13,6 +13,7 @@ const TIPS = Object.freeze({
   'wrong.draft': 'את זה כתב ה-\u2068AI\u2069, והוא יכול לטעות. בודקים לפני שמאשרים.', // under the draft's stat tiles, a file from Claude only (Q6)
   'wrong.claude': 'ה-\u2068AI\u2069 יכול לטעות. בודקים לפני שמאשרים.', // the end of "what Claude will do" in every Claude window (Q7)
   'wrong.pick': 'כדאי לוודא על המפה שזה המקום הנכון.', // beside a form's small map, right after a search result is picked (Q4)
+  'wrong.official': 'את זה כתב ה-\u2068AI\u2069. מספרי חירום, טלפונים ובריאות כדאי לוודא במקור רשמי לפני הנסיעה.', // limits-and-safety (D4; decisions 2026-11-24 · Review of the legal-review-2 report, Q12): at the top of General's safety and embassy sections
   'tour.tripsHere': 'כאן מופיעים כל הטיולים: הטיול הפתוח בכרטיס גדול, הבאים מתחתיו, ובסוף הזיכרונות והיעדים. מכל מסך אחר חוזרים לכאן בכפתור הטיול שבראש המסך.',
   'tour.trips': 'כאן עוברים בין טיולים, פותחים טיול חדש ומגיעים לטיולים שהסתיימו. כל מה שבסרגל התחתון שייך לטיול שכתוב כאן.',
   'tour.start': 'מייבאים קובץ שקיבלתם, או בונים טיול או יעד בשיחה עם \u2068AI\u2069. ' + SY.claude + ' מסמן כל מה שנעשה עם ה-\u2068AI\u2069.',
@@ -39,6 +40,10 @@ const TIPS = Object.freeze({
   'tl.keep': 'ציר הזמן מוחק בדרך כלל כל יום אחרי 3 חודשים. כדאי להאריך את זמן השמירה בהגדרות שלו, או לייבא סמוך לסוף הטיול.', // 11.10.0 (Q3, decisions 2026-11-13)
   'tl.privacy': 'נקראים רק ימי הטיול, והקובץ עצמו לא נשמר. רק מקומות שלא היו ברשימה נשלחים לשירות השמות, כדי לקבל שם. עם הטיול נשמרים המסלול המקוצר, השעות במקומות ש' + TX.visited + ' בהם והק״מ ברגל.', // 11.10.0 (Q2, Q3)
   'tl.late': 'ציר הזמן של גוגל שומר בדרך כלל 3 חודשים · כדאי לייבא לפני שהימים הראשונים יימחקו.', // 11.10.0 (C7, Q3)
+  'ride.tl': 'מציר הזמן של גוגל: המרחק של כל נסיעה כפי שנרשם', // ride-km (Q1, Q4): the breakdown's line
+  'ride.est': 'משוער: קו ישר בין שני הקצוות של כל נסיעה ברשימת הנסיעות. ייבוא מציר הזמן של גוגל נותן את המרחק האמיתי',
+  'ride.mixed': 'חלק מציר הזמן של גוגל, וימים שאין בו - משוער לפי הנסיעות (קו ישר)',
+  'tl.again': 'לייבא שוב את הקובץ כדי לראות הליכה ונסיעה', // tl-paths (Q5): a trip imported before 11.48.0 - its paths have no walk and ride
   'trips.ended': { t: 'סגירה: עוברים בקצרה על איפה היינו, איך היה ורגעי השיא, והטיול עובר לזיכרונות.', more: 'closing' },
   'trips.dests': { t: 'מוחקים יעד רק כשאף טיול פתוח לא משתמש בו.', more: 'trips' }, // 10.14.0 (guide diet, batch 1): what a destination is lives in the guide's lead
   // ✳ buttons - what goes out and what comes back (batch 1.3, 10.2, 11.4)

@@ -30,8 +30,9 @@ function routeWant(mode, a, b, when, cb) {
     routeTick(); });
 }
 function routeGaveUp(mode, a, b, when) { const s = SVC.gaveUp[routeSvc(mode)]; return !!s && s.has(routeKey(mode, a, b, when)); }
-function osrmReq(mode, a, b, full) { const prof = mode === 'walk' ? 'routed-foot' : 'routed-car';
-  return { url: `https://routing.openstreetmap.de/${prof}/route/v1/driving/${(+a.lng).toFixed(6)},${(+a.lat).toFixed(6)};${(+b.lng).toFixed(6)},${(+b.lat).toFixed(6)}?overview=${full ? 'full' : 'simplified'}&geometries=geojson` }; }
+function osrmReq(mode, a, b, full, via) { const prof = mode === 'walk' ? 'routed-foot' : 'routed-car'; // along-drive: via - a drive's stops, passed through in order
+  const pts = [a].concat(via || [], [b]).map(c => `${(+c.lng).toFixed(6)},${(+c.lat).toFixed(6)}`).join(';');
+  return { url: `https://routing.openstreetmap.de/${prof}/route/v1/driving/${pts}?overview=${full ? 'full' : 'simplified'}&geometries=geojson` }; }
 function osrmParse(j) { if (!j || !Array.isArray(j.routes)) { if (j && j.code === 'NoRoute') return SVC_EMPTY; throw new Error('answer'); } const rt = j.routes[0]; if (!rt) return SVC_EMPTY;
   return { d: Math.round(rt.distance), t: Math.round(rt.duration), g: routeLineOf((rt.geometry || {}).coordinates || []) }; }
 // 7.1.0 (ש5): a line is kept by its shape (Douglas-Peucker, like the schematic background) instead of points at equal steps,
@@ -110,6 +111,7 @@ function routeTick() { clearTimeout(_routeTickT); _routeTickT = setTimeout(() =>
   if (activeTab === 'itinerary') { // in place, so nothing jumps or interrupts a drag
     document.querySelectorAll('#main [data-act="leg.open"]').forEach(b => { const L = LEGS[b.dataset.v]; if (!L) return; const t = document.createElement('div'); t.innerHTML = legRowHTML(L); const nb = t.firstElementChild; if (nb.outerHTML !== b.outerHTML) b.replaceWith(nb); });
     const st = document.getElementById('legsStatus'), h = legsStatus(); if (st) { if (h) st.outerHTML = h; else st.remove(); }
+    svDayRowsTick(); // map-side-view: a day's "גובה" once its legs' paths are in
     document.querySelectorAll('#main [data-act="day.toggle"]').forEach(b => { const d = TRIP_DAYS.find(x => x.key === b.closest('[data-day-item]').dataset.dayItem), sm = b.querySelector('.dh-t small'); if (d && sm) sm.innerHTML = glueText(dayHeadInfo(d).sum); }); }
   if (MEAS && MEAS.road) measDraw();
   const sh = document.getElementById('legSheetBody'); if (sh && sh.dataset.leg && LEGS[sh.dataset.leg]) legSheetFill(LEGS[sh.dataset.leg]);
@@ -193,13 +195,13 @@ function legSheetFill(L) {
   const row = m => { const v = legValue(L, m);
     if (m === 'transit' && v.none) return card(m, '<small>לא נמצא קו בין שני המקומות (או שאין לשירות נתונים כאן)</small>', '', ' off'); // 4.37.0: say why, don't just drop the row
     if (m === 'transit' && v.r && v.r.walkOnly) return card(m, `<small>ברגל מהיר יותר מכל קו (${fmtLegMin(v.min)})</small>`, '', ' off');
-    const r = v.r, det = m === 'transit' && r ? `<small>${(r.legs || []).filter(l => l.m !== 'WALK').map(l => `<span class="tr-line" style="${l.c ? `background:${l.c};color:#fff` : ''}">${_escH(l.n || l.m)}</span>${l.h ? ' ל' + _escH(l.h) : ''}`).join(' ← ')}${r.tr ? `${SEP}${r.tr} החלפות` : ''}${r.d ? `${SEP}${msiT('directions_walk', fmtKm(r.d / 1000) + ' ברגל', { size: 16 })}` : ''}${r.dep ? `${SEP}יציאה ${tmFmt('time', r.dep, { zone: dayZone(L.date) })}` : ''}</small>` : '';
-    return card(m, `${v.est ? `<small>${navigator.onLine ? 'מחשב…' : 'הערכה לפי קו אוויר' + SEP + SVC_WAIT_NET}</small>` : ''}${det}`, `<span class="lw-v${v.est ? ' est' : ''}">${v.est ? '≈ ' : ''}${fmtLegMin(v.min)}${SEP}${fmtKm(v.km)}</span>`, m === cur ? ' on' : '', ` data-act="leg.way" data-v="${m}"`); };
+    const r = v.r, det = m === 'transit' && r ? `<small>${(r.legs || []).filter(l => l.m !== 'WALK').map(l => `<span class="tr-line" style="${l.c ? `background:${l.c};color:#fff` : ''}">${escH(l.n || l.m)}</span>${l.h ? ' ל' + escH(l.h) : ''}`).join(' ← ')}${r.tr ? `${SEP}${r.tr} החלפות` : ''}${r.d ? `${SEP}${msiT('directions_walk', fmtKm(r.d / 1000) + ' ברגל', { size: 16 })}` : ''}${r.dep ? `${SEP}יציאה ${tmFmt('time', r.dep, { zone: dayZone(L.date) })}` : ''}</small>` : '';
+    return card(m, `${v.est ? `<small>${svcOnline() ? 'מחשב…' : 'הערכה לפי קו אוויר' + SEP + SVC_WAIT_NET}</small>` : ''}${det}`, `<span class="lw-v${v.est ? ' est' : ''}">${v.est ? '≈ ' : ''}${fmtLegMin(v.min)}${SEP}${fmtKm(v.km)}</span>`, m === cur ? ' on' : '', ` data-act="leg.way" data-v="${m}"`); };
   const gap = legGap(L);
   const by = legLeaveBy(L), tv = L.tv; // travels-2-plan: the leg to a travel - when to leave, and by when to be there ("before" counted)
-  box.innerHTML = `${by ? `<p class="sh-hint">לצאת עד <bdi dir="ltr">${by}</bdi>, כדי להגיע עד <bdi dir="ltr">${tv.by}</bdi>${tv.before ? ` (${marginText(tv.before)} לפני ה${_escH(tv.kind)})` : ''}.</p>` : gap != null ? `<p class="sh-hint">יש ${fmtLegMin(Math.max(0, gap))} בין ${_escH(L.an)} ל${_escH(L.bn)}.</p>` : ''}<div class="leg-ways">${['walk', 'transit', 'car'].map(row).join('')}</div>
+  box.innerHTML = `${by ? `<p class="sh-hint">לצאת עד <bdi dir="ltr">${by}</bdi>, כדי להגיע עד <bdi dir="ltr">${tv.by}</bdi>${tv.before ? ` (${marginText(tv.before)} לפני ה${escH(tv.kind)})` : ''}.</p>` : gap != null ? `<p class="sh-hint">יש ${fmtLegMin(Math.max(0, gap))} בין ${escH(L.an)} ל${escH(L.bn)}.</p>` : ''}<div class="leg-ways">${['walk', 'transit', 'car'].map(row).join('')}</div>
     <div class="lw-auto">${segHTML('leg.way', [['auto', `${msi('autorenew', { size: 18 })} אוטומטי`]], manual ? '' : 'auto')}</div>
-    ${gap != null && legValue(L).min > gap ? `<p class="sh-hint">${warnIc()} אין מספיק זמן. בוחרים דרך מהירה יותר, או מזיזים את ${_escH(tv ? L.an : L.bn)} ב-${msi('schedule', { cls: 'msi-in' })}.</p>` : ''}
+    ${gap != null && legValue(L).min > gap ? `<p class="sh-hint">${warnIc()} אין מספיק זמן. בוחרים דרך מהירה יותר, או מזיזים את ${escH(tv ? L.an : L.bn)} ב-${msi('schedule', { cls: 'msi-in' })}.</p>` : ''}
     <p class="sh-hint">${svcCredit('fossgis', { fix: true })}${['transit'].some(m => legValue(L, m).r) ? SEP + 'תחבורה ציבורית: ' + svcCredit('transitous') : ''}</p>`; // 7.1.0 (ש6): from the providers' rows, with "לתקן את המפה"
   const nav = document.getElementById('legNav'); if (nav) nav.href = `https://www.google.com/maps/dir/?api=1&origin=${L.a.lat},${L.a.lng}&destination=${L.b.lat},${L.b.lng}&travelmode=${LEG_MODES[cur].gm}`;
 }

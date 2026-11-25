@@ -1,6 +1,6 @@
 /* 4.46.5: the memory screen - ⛶ on the picture's corner (like a map), the trip's actions under its title */
 .mem-picwrap { position: relative; }
-.mem-picfs { position: absolute; top: 8px; left: 8px; /* the trip's name sits on the right */ width: 36px; height: 36px; border-radius: var(--r-tile); border: 1px solid var(--outline); background: var(--surface-container); color: var(--on-surface); font-size: var(--fs-title-medium); display: grid; place-items: center; cursor: pointer; box-shadow: var(--elev-1); }
+.mem-picfs { margin-inline-start: auto; flex: none; /* review-fixes-11471 (2): at the end of the picture's head - on its corner it covered a long trip name */ width: 36px; height: 36px; border-radius: var(--r-tile); border: 1px solid var(--outline); background: var(--surface-container); color: var(--on-surface); font-size: var(--fs-title-medium); display: grid; place-items: center; cursor: pointer; box-shadow: var(--elev-1); }
 .mem-artmark { font-weight: 500; color: var(--on-surface-variant); font-size: var(--fs-label); }
 .mem-acts { margin: 10px 0 4px; }
 .mem-picacts { flex-wrap: wrap; }
@@ -9,9 +9,11 @@
 .mem-hero-in { position: relative; width: 100%; padding: 40px 16px 14px; background: linear-gradient(180deg, transparent, rgba(0,0,0,.55)); }
 .mem-hero h2 { margin: 2px 0 2px; font-size: var(--fs-display-large); color: #fff; }
 .mem-kicker { position: absolute; top: 10px; right: 12px; display: inline-flex; align-items: center; gap: var(--icon-gap-sm); padding: 3px 10px; border-radius: var(--r-pill); background: rgba(255,255,255,.88); color: #26344A; font: 600 var(--fs-label-small) 'Rubik', system-ui, sans-serif; }
+.mem-tiles-w { container-type: inline-size; } @container (max-width: 21em) { .mem-tiles.mem-4 { grid-template-columns: repeat(2, 1fr); } } /* ride-km: a fourth tile's number (km in thousands) needs about 5em - narrow or large text, two rows of two */
 .mem-tiles { margin: 10px 0 0; } .mem-tiles .dr-tile { background: var(--surface-container); }
 .mem-acts { display: flex; gap: var(--sp-2); } .mem-acts.brow > * { flex: 1 1 0; min-width: 0; justify-content: center; display: inline-flex; align-items: center; gap: 6px; height: 40px; border-radius: var(--r-pill); white-space: nowrap; }
 .mem-block h3, .mem-fchip { display: flex; align-items: center; gap: var(--icon-gap); } .mem-fchip { flex: 0 0 auto !important; }
+.mem-block > .fbar { margin: 0 0 var(--sp-2); } /* along-time-field item 10 (G123): the filter's row above the map (the places screen's filter bar sits above its map) */
 .mem-sub { font-size: var(--fs-body-small); opacity: .92; }
 
 
@@ -28,6 +30,12 @@
 .mem-tt { font: 700 var(--fs-map-label) Rubik, Arial, sans-serif; background: rgba(255,255,255,.92); color: #1C2B33; border: 0; box-shadow: none; padding: 1px 5px; }
 .mem-mid .mem-tt { font-size: var(--fs-map-label-s); padding: 0 4px; } .mem-far .mem-tt { display: none; } /* 4.38.1 */
 .mem-tt::before { display: none; }
+.mem-ph-ic { background: none; border: 0; } /* memory-photos (Q4): a highlight's photo at its place - a framed thumbnail with a tail; a stack shows its count */
+.mem-ph { position: relative; display: block; width: 48px; height: 48px; box-sizing: border-box; border-radius: var(--r-chip); border: 3px solid #fff; background: var(--surface-container); box-shadow: var(--elev-2); cursor: pointer; }
+.mem-ph > .ph-cut { position: absolute; inset: 0; border-radius: var(--r-xs); } .mem-ph-bg { background-size: cover; background-position: center; } /* a page's map: the thumbnail as a background, cut when the page was made */
+.mem-ph::after { content: ''; position: absolute; left: 50%; bottom: -9px; margin-left: -6px; border: 6px solid transparent; border-top-color: #fff; border-bottom: 0; }
+.mem-ph > b { position: absolute; top: -9px; right: -9px; min-width: 1.25rem; height: 1.25rem; box-sizing: border-box; padding: 0 4px; border-radius: var(--r-pill); background: var(--primary); color: var(--on-primary); font: 700 var(--pin-num-s) Rubik, Arial, sans-serif; display: grid; place-items: center; }
+.mem-ph-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; } .mem-ph-row .ph-img { width: 64px; height: 64px; flex: 0 0 64px; }
 .mem-hotel { width: 24px; height: 24px; border-radius: 50%; background: var(--hotel-pin); border: 2px solid #fff; color: var(--hotel-ring); display: grid; place-items: center; position: relative; box-shadow: var(--elev-1); } .mem-hotel > .msi { font-size: var(--pin-ic); } /* 10.10.0 (design-maps, gap 61) */
 .mem-hotel b { position: absolute; top: -6px; left: -6px; background: var(--hotel-ring); color: var(--on-hotel-ring); border-radius: 50%; min-width: 1rem; height: 1rem; font: 700 var(--pin-num-s) Rubik, Arial, sans-serif; display: grid; place-items: center; }
 .mem-bgst { display: block; margin-top: 4px; }
@@ -41,6 +49,41 @@
 .mem-plan .mp-org { color: var(--on-surface-variant); }
 .mem-plan .mp-vis { font-weight: 600; }
 .mem-acts { margin: 14px 0; }
+/* passport-book (decisions 2026-11-23 · A passport book, Q2-Q5): the line in the "זיכרונות" header, atop "כל הזיכרונות" and on the memory
+   screen; the hero's stamp pressed like a rubber stamp; the book (cover, paper pages, the stamps scattered as if by hand), its arrows and
+   page number; the landing (a short drop, contact, the ink appearing) - in place with "reduce motion" */
+.pp-line.pp-top { margin: 0 0 var(--sp-3); } .pp-line.pp-top > span:not(.msi) { min-width: 0; } /* the line itself: one rule with the countries line (.cv-line, below) */
+.ent-stamp { flex: none; padding: 0; border: none; background: none; color: inherit; cursor: pointer; border-radius: var(--r-card); }
+.ent-stamp.pp-press .logo { animation: pp-press var(--motion) var(--ease); }
+@keyframes pp-press { 0% { transform: none; } 40% { transform: scale(.86) translateY(3px); filter: brightness(.8); } 100% { transform: none; } }
+.pp-book { position: relative; padding: 0 0 var(--sp-2); }
+.pp-sheet { position: relative; margin: 0 32px; }
+.pp-sheet[data-dir="next"] > .pp-page { animation: pp-from-left var(--motion-slow) var(--ease); }
+.pp-sheet[data-dir="prev"] > .pp-page { animation: pp-from-right var(--motion-slow) var(--ease); }
+@keyframes pp-from-left { from { transform: translateX(-24%); opacity: .2; } to { transform: none; opacity: 1; } }
+@keyframes pp-from-right { from { transform: translateX(24%); opacity: .2; } to { transform: none; opacity: 1; } }
+.pp-page { position: relative; min-height: min(70vh, 34em); padding: var(--sp-4) var(--sp-3); border-radius: var(--r-card); box-shadow: var(--elev-2); overflow: hidden; overflow-wrap: anywhere; }
+.pp-paper { background-color: var(--pp-paper); color: var(--pp-text);
+  background-image: repeating-linear-gradient(45deg, transparent 0 10px, color-mix(in srgb, var(--pp-line) 35%, transparent) 10px 11px), repeating-linear-gradient(-45deg, transparent 0 10px, color-mix(in srgb, var(--pp-line) 35%, transparent) 10px 11px);
+  border: 1px solid var(--pp-line); }
+.pp-cover { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-3); background: var(--pp-cover); color: var(--pp-cover-ink); text-align: center; }
+.pp-cover .logo { color: var(--pp-cover-ink); width: min(60%, 14em); filter: drop-shadow(0 1px 0 rgba(255,255,255,.25)) drop-shadow(0 -1px 0 rgba(0,0,0,.45)); } /* the embossed stamp */
+.pp-cv-t { font-size: var(--fs-display); letter-spacing: .04em; } .pp-cv-s { font-size: var(--fs-title-large); letter-spacing: .3em; }
+.pp-open { display: flex; flex-direction: column; justify-content: center; text-align: center; }
+.pp-open h3 { margin: 0 0 var(--sp-2); font-size: var(--fs-display); color: var(--pp-text); } .pp-cnt { font-size: var(--fs-title-large); margin: 0 0 var(--sp-3); } .pp-hint { color: var(--pp-text); margin: 0; }
+.pp-trip { display: block; text-align: center; font-size: var(--fs-label); color: var(--pp-text); margin-bottom: var(--sp-2); }
+.pp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(7.5em, 1fr)); gap: var(--sp-3) var(--sp-2); justify-items: center; }
+.pp-st { display: block; width: min(100%, 11em); aspect-ratio: 1; padding: 0; border: none; background: none; cursor: pointer; transform: translate(var(--dx), var(--dy)) rotate(var(--r)); opacity: .9; }
+.pp-st svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.pp-ink0 { color: var(--pp-ink0); } .pp-ink1 { color: var(--pp-ink1); } .pp-ink2 { color: var(--pp-ink2); } .pp-ink3 { color: var(--pp-ink3); }
+.pp-land { animation: pp-land calc(var(--motion-slow) * 2.4) var(--ease) var(--d) both; }
+@keyframes pp-land { 0% { transform: translate(var(--dx), calc(var(--dy) - 1.6em)) rotate(var(--r)) scale(1.35); opacity: 0; } 55% { transform: translate(var(--dx), var(--dy)) rotate(var(--r)) scale(.94); opacity: .5; } 75% { opacity: .95; } 100% { transform: translate(var(--dx), var(--dy)) rotate(var(--r)); opacity: .9; } }
+.pp-skipped .pp-land { animation: none; }
+.pp-arr { position: absolute; top: calc(50% - 24px); } .pp-prev { inset-inline-start: -6px; } .pp-next { inset-inline-end: -6px; } .pp-prev .msi { transform: rotate(-90deg); } .pp-next .msi { transform: rotate(90deg); } /* expand_more turned: the previous page points right, the next left (a Hebrew book) */ .pp-arr[disabled] { visibility: hidden; }
+.pp-num { margin: var(--sp-2) 0 0; text-align: center; font-size: var(--fs-label); color: var(--on-surface-variant); }
+.pp-landed { margin-top: var(--sp-2); text-align: center; } .pp-landed p { margin: 0 0 var(--sp-2); font-weight: 500; }
+.pp-cd { margin: 0 0 var(--sp-2); }
+@media (prefers-reduced-motion: reduce) { .pp-land, .pp-sheet[data-dir] > .pp-page, .ent-stamp.pp-press .logo { animation: none; } }
 /* 4.29.0: closing a trip */
 .cl-head { margin: -8px -14px 8px; padding: 14px 18px 14px !important; background: linear-gradient(180deg, var(--today-container), var(--surface)); } /* 10.3.0 (design-3): closing - a warm header and a vertical stepper */
 .cl-head h2 { color: var(--on-today); } .cl-head p { margin: 2px 0 0; } .cl-sub { color: var(--on-surface-variant); font-size: var(--fs-body-small); }
@@ -63,6 +106,8 @@
 .cl-row small { display: block; color: var(--on-surface-variant); font-weight: 400; }
 .cl-word { flex: 1 1 100%; padding: 6px 8px; border: 1px solid var(--outline); border-radius: var(--r-chip); background: var(--surface-container); color: var(--on-surface); font-family: 'Rubik', system-ui, sans-serif; }
 .cl-high .fm-sel, .cl-high input[type="text"] { flex: 1 1 140px; padding: 7px 8px; border: 1px solid var(--outline); border-radius: var(--r-chip); background: var(--surface-container); color: var(--on-surface); font-family: 'Rubik', system-ui, sans-serif; }
+.hl-where { display: flex; align-items: center; gap: 6px; flex: 1 1 160px; min-width: 0; } .hl-where > small { flex: 0 0 auto; font-weight: 600; color: var(--on-surface-variant); } .hl-where > .fm-sel { flex: 1 1 auto; min-width: 0; } /* memory-photos (Q4): "איפה", plainly */
+.hl-wnote { flex: 1 1 100%; } .mem-hlp .hl-where .fm-sel { padding: 7px 8px; border: 1px solid var(--outline); border-radius: var(--r-chip); background: var(--surface-container); color: var(--on-surface); }
 .cl-hn { font-weight: 700; color: var(--on-claude); flex: 0 0 auto !important; }
 .cl-nav { margin: 12px 0 24px; }
 .cl-rate .rate-btn[aria-pressed="true"] { background: color-mix(in srgb, var(--primary) 16%, transparent); border-color: color-mix(in srgb, var(--primary) 45%, transparent); } /* 4.34.2: a quiet mark */
@@ -199,9 +244,8 @@ body.tp-on { overflow: hidden; }
 .fm-mark > .cl-vbtn[data-clvis="0"][aria-pressed="true"], .fm-mark > .cl-vbtn[data-clvis="0"].g-prev { background: var(--secondary-container); color: var(--on-secondary-container); }
 .fm-markview { margin: 8px 0 2px; }
 /* 11.34.0 (P15, G72): the view switcher and "✓ היינו בהכל" on one line, the button at the other end; no room - it wraps under, at the far end, whole */
-.cl-viewline { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); margin: 8px 0 2px; }
-.cl-viewline > .fm-markview { margin: 0; flex: 0 0 auto; max-width: 100%; }
-.cl-viewline > .cl-allvis { width: auto; min-height: 40px; padding: 0 12px; margin-inline-start: auto; white-space: nowrap; }
+.cl-view { margin: 8px 0 2px; } /* card-actions (Q3): the switcher takes the whole line; "היינו בהכל" under its first half (halfActionHTML), the whole line when it does not fit */
+.cl-view > .fm-markview { margin: 0; }
 .cl-more { display: flex; align-items: center; gap: 4px; margin-top: 10px; } /* Q6: the action row "＋ עוד מקום שהיינו בו" with its ⓘ */
 .cl-more > .link-btn { display: inline-flex; align-items: center; gap: var(--icon-gap); min-height: 40px; text-decoration: none; text-align: start; } /* 11.44.1 (price-level-note item 7): wrapped at 320 wide ("ענק"), its words start at the icon, not centered away from it */
 .gl-nm { display: inline-flex; align-items: center; gap: var(--icon-gap); min-width: 0; }
@@ -210,5 +254,51 @@ body.tp-on { overflow: hidden; }
 .sh-p { font-size: var(--fs-body); margin: 4px 0 10px; }
 .wb-late { color: var(--on-surface-variant); font-size: var(--fs-label); margin: 0 0 6px; }
 .set-sw-row { padding: 4px 12px; }
-.gl-path { stroke: var(--visited); }
+.gl-path { stroke: var(--visited); stroke-linecap: round; stroke-linejoin: round; } /* tl-paths (Q2): the Timeline's path - walking solid, a ride dashed and lighter, on the memory map and in the picture */
+.gl-walk { stroke-opacity: .8; }
+.gl-ride { stroke-opacity: .5; stroke-dasharray: 6 7; }
+/* trip-replay (Q10): ▶ in the map's column of buttons, under ⛶, the map type and 📏; while it plays the memory's own layers step back and the bar sits under the map's controls */
+.rp-btn { position: absolute; top: 148px; right: 10px; z-index: 1060; width: 38px; height: 38px; border-radius: var(--r-tile); border: none; background: var(--primary); color: var(--on-primary); display: grid; place-items: center; cursor: pointer; padding: 0; box-shadow: var(--elev-1); -webkit-tap-highlight-color: transparent; }
+.map-fs .rp-btn { top: calc(148px + var(--safe-top)); } .meas-host > .rp-btn { transform: translateY(var(--msb, 0px)); } .rp-on .locate-me-btn { display: none; } .rp-on .rp-btn { background: var(--surface-container); color: var(--on-surface); } .rp-btn .rp-x, .rp-on .rp-btn .rp-go { display: none; } .rp-on .rp-btn .rp-x { display: inline-block; }
+.rp-dim { opacity: .28; } .rp-hide { display: none; } [dir="rtl"] .rp-sk { transform: scaleX(-1); }
+.rp-line { stroke: var(--primary); stroke-linecap: round; stroke-linejoin: round; fill: none; } .rp-now { stroke: var(--favorite); stroke-opacity: .95; } .rp-past { stroke-opacity: .6; } .rp-ride { stroke-dasharray: 7 7; }
+.rp-bar { position: absolute; left: 8px; right: 8px; bottom: 26px; z-index: 1070; display: flex; align-items: center; gap: 2px; padding: 4px; border-radius: var(--r-tile); background: var(--surface-container); color: var(--on-surface); box-shadow: var(--elev-2); }
+.map-fs .rp-bar { bottom: calc(30px + env(safe-area-inset-bottom, 0px)); }
+.rp-b { flex: 0 0 auto; min-width: 44px; min-height: 48px; border: none; border-radius: var(--r-pill); background: transparent; color: inherit; display: grid; place-items: center; padding: 0 6px; cursor: pointer; font: 700 var(--fs-title-small) Rubik, system-ui, sans-serif; }
+.rp-b[disabled] { opacity: .38; cursor: default; } .rp-b:first-child { background: var(--primary); color: var(--on-primary); }
+.rp-day { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: stretch; }
+.rp-pick { min-height: 32px; border: 0; background: transparent; color: inherit; font: 700 var(--fs-body-small) Rubik, system-ui, sans-serif; display: inline-flex; align-items: center; gap: var(--icon-gap); padding: 0; justify-content: center; }
+.rp-t { color: var(--on-surface-variant); font-size: var(--fs-label); text-align: center; overflow-wrap: anywhere; }
+.gl-again { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
 #memBgRetry { height: auto; min-height: 32px; white-space: normal; text-align: start; } /* 11.44.1 (price-level-note item 7): the retry button's words wrap at 320 wide ("ענק") instead of spilling out */
+/* ride-km (Q4): the breakdown of "ק״מ בנסיעות" - one row per kind present */
+.ride-rows { display: flex; flex-direction: column; gap: 2px; margin: 4px 0 8px; }
+.ride-row { display: flex; align-items: center; gap: var(--icon-gap); min-height: 44px; padding: 0 4px; border-bottom: 1px solid var(--outline-variant); font-size: var(--fs-body); }
+.ride-row > span { flex: 1; min-width: 0; }
+/* countries-visited: "מדינות שביקרנו" - the line in the trips screen's "זיכרונות" header and atop "כל הזיכרונות", the world map, the list, the card */
+/* along-time-field item 4 (phone round 6, G103): the countries line and the passport's line are one kind - one rule; in the "זיכרונות" header
+   they are one group under the title (.ent-memline): one under the other at the full width - the same size, the same gap, both edges aligned,
+   at every width and text size; round6-behaviour: its own class - .ent-mem is the memory card's (a column, not a row of buttons: a row would be the one button row's - t890) */
+:is(.cv-line, .pp-line) { display: inline-flex; align-items: center; gap: var(--icon-gap); min-height: 44px; padding: 4px 12px; border: none; border-radius: var(--r-pill); background: var(--surface-container); color: var(--on-surface); text-align: start; font: 500 var(--fs-label) 'Rubik', system-ui, sans-serif; cursor: pointer; }
+:is(.cv-line, .pp-line) > .msi:first-child { color: var(--primary); }
+.ent-h:has(> .ent-memline) { flex-wrap: wrap; } .ent-memline { flex: 1 1 100%; display: flex; flex-direction: column; gap: var(--sp-2); } .ent-memline:empty { display: none; }
+.ent-memline > :is(.cv-line, .pp-line) { display: flex; } :is(.ent-memline > *, .cv-top, .pp-top) > span:not(.msi) { flex: 1; }
+:is(.cv-line.cv-top, .pp-line.pp-top) { display: flex; width: 100%; border-radius: var(--r-card); font-size: var(--fs-body); } .cv-line.cv-top { margin-bottom: var(--sp-3); }
+.cv-map { position: relative; overflow: hidden; margin-bottom: var(--sp-3); border-radius: var(--r-card); background: var(--vmap-water); }
+.cv-map svg { display: block; width: 100%; height: auto; }
+.cv-c { fill: var(--vmap-land); stroke: var(--outline); stroke-width: .5px; vector-effect: non-scaling-stroke; cursor: pointer; }
+.cv-c.on { fill: var(--primary); stroke: var(--surface); }
+.cv-dot { fill: var(--outline); stroke: transparent; stroke-width: 14px; vector-effect: non-scaling-stroke; cursor: pointer; } .cv-dot.on { fill: var(--primary); } /* the clear ring: a fingertip's touch target around a small dot */
+.cv-all { position: absolute; inset-block-end: var(--sp-2); inset-inline-start: var(--sp-2); box-shadow: var(--elev-1); } .cv-map:not(.cv-zoomed) > .cv-all { display: none; }
+/* countries-globe (Q1, Q3, Q4): the switch "מפה | גלובוס" at the map's top corner (this screen only; segHTML's segmented buttons); the globe on a
+   canvas of the flat map's height (its viewBox 1000 × 668), on the card's surface so the ball and its water-coloured halo stand out; a list
+   row's country highlighted on the flat map for a moment (the globe draws its own) */
+.cv-sw { position: absolute; inset-block-start: var(--sp-2); inset-inline-end: var(--sp-2); } .cv-sw > .view-toggle { margin: 0; background: var(--surface-container); box-shadow: var(--elev-1); }
+.cv-sw .view-toggle button { flex: none; height: 32px; padding: 0 12px; }
+.cv-globe { background: var(--surface-container); } .cv-globe canvas { display: block; width: 100%; aspect-ratio: 1000 / 668; cursor: grab; }
+.cv-c.cv-hl, .cv-dot.cv-hl { stroke: var(--on-surface); stroke-width: 2.5px; animation: cv-hl var(--motion) var(--ease) 4 alternate; } @keyframes cv-hl { to { stroke-opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .cv-c.cv-hl, .cv-dot.cv-hl { animation: none; } }
+.cv-list { padding: 4px 0; } .cv-row { display: flex; align-items: center; gap: var(--sp-2); width: 100%; min-height: 56px; padding: 8px 12px; border: none; background: none; color: var(--on-surface); text-align: start; cursor: pointer; }
+.cv-row + .cv-row { border-top: 1px solid var(--outline-variant); } .cv-row .ent-rt b { white-space: normal; } .cv-row .cv-y { font-weight: 400; color: var(--on-surface-variant); font-size: var(--fs-body-small); }
+.cv-flag { flex: none; width: 32px; font-size: var(--fs-display); text-align: center; }
+.cv-card .ta-item small { margin-inline-start: auto; } .cv-mine { display: flex; align-items: center; gap: var(--icon-gap); color: var(--on-surface-variant); }

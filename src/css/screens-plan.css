@@ -5,7 +5,7 @@
 .tl-div-add { flex: none; width: 28px; height: 28px; padding: 0; border: none; border-radius: 50%; background: var(--surface-container-high); color: var(--primary); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
 .tl-foot .add-btn + .add-btn { flex: 1; }
 .ap-search { position: relative; margin: 2px 0 8px; }
-.ap-search input { width: 100%; box-sizing: border-box; padding: 9px 34px 9px 10px; border: 1px solid var(--outline); border-radius: var(--r-chip); background: var(--surface); color: var(--on-surface); font: inherit; font-size: var(--fs-title-medium); }
+.ap-search input { width: 100%; box-sizing: border-box; padding: 9px 10px; border: 1px solid var(--outline); border-radius: var(--r-chip); background: var(--surface); color: var(--on-surface); font: inherit; font-size: var(--fs-title-medium); } /* whatsnew-split (5; t1041): no 34px at the start (a leftover - no icon there), so the placeholder fits at 412 */
 
 /* 4.21.0: the plan - one timeline a day */
 .day-head { align-items: center; gap: 8px; }

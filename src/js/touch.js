@@ -1,8 +1,8 @@
 // ================= 9.7.0: TOUCH - one mechanism for every gesture (stage 13 part A, T13א; decisions Q1-Q10) =================
-// Five gesture kinds, one implementation each: 'press' (a long press - a name in the bubble), 'swipe' (sideways on a row - a
+// Six gesture kinds, one implementation each: 'press' (a long press - a name in the bubble), 'swipe' (sideways on a row - a
 // shortcut to a control already on it, which previews the result), 'pull' (a window or the map's floating card follows the
 // finger and completes past a threshold), 'drag' (reorder - from ⠿ at once, or a long press on a card), 'pic' (move and zoom a
-// picture). Screens only declare (gestureOn / picGesture / touchAny); recognition, vibration and what the browser may still do
+// picture), 'scrub' (a finger along a chart - map-side-view). Screens only declare (gestureOn / picGesture / scrubGesture / touchAny); recognition, vibration and what the browser may still do
 // under the finger live here (CSS: the TOUCH section of the style). Outside it: a plain tap (ACTION WIRING), scrolling (the
 // browser), the map's own gestures (the map component). Recognition (Q5): nothing is decided before the finger passes `slop`;
 // then the direction decides - mostly sideways = a swipe if the element has one, mostly vertical = a pull if it has one,
@@ -29,7 +29,8 @@ const GESTURES = [];               // { kind, sel, o } - declared next to each a
 function gestureOn(kind, sel, o) { GESTURES.push({ kind, sel, o: o || {} }); }
 const TOUCH_ANY = { down: new Set(), end: new Set() }; // a touch (or a click) starts / a touch ends anywhere: a tap outside, the first touch
 function touchAny(phase, fn, on) { TOUCH_ANY[phase][on === false ? 'delete' : 'add'](fn); }
-// a picture that moves and zooms: { k() current zoom, max, pan(dx, dy), zoom(k), reset(), settle(), dblIn - zoom of a double tap at 1 }
+// a picture that moves and zooms: { k() current zoom, max, pan(dx, dy), zoom(k), reset(), settle(), dblIn - zoom of a double tap at 1,
+// down() - optional, the first finger down (countries-globe) }
 function picGesture(el, api) { el.classList.add('g-pic'); el._pic = api; }
 let G = null, P = null, _gSwallow = 0, _gTap = null;
 function gFind(t, kind, src) { let best = null;
@@ -144,6 +145,7 @@ function gDragEnd(d, ok) { cancelAnimationFrame(d.raf); if (d.ghost) d.ghost.rem
 // ---- a picture (Q10): one finger moves, two zoom, the wheel zooms, a double tap returns to the original size ----
 function gPicDown(t, id, x, y) { const el = t && t.closest && t.closest('.g-pic'); if (!el || !el._pic || t.closest('button')) return false;
   if (!P || P.el !== el) P = { el, api: el._pic, pts: new Map(), base: null, moved: false };
+  if (!P.pts.size && P.api.down) P.api.down(); // countries-globe: the first finger down (the globe stops turning by itself)
   P.pts.set(id, [x, y]); P.base = null; if (P.pts.size === 1) P.moved = false; return true; }
 function gPicMove(id, x, y) { if (!P || !P.pts.has(id)) return; const a = P.api, prev = P.pts.get(id); P.pts.set(id, [x, y]);
   if (Math.hypot(x - prev[0], y - prev[1]) > 0) P.moved = true;
@@ -155,6 +157,14 @@ function gPicUp(id, x, y) { if (!P || !P.pts.has(id)) return; P.pts.delete(id); 
   if (P.moved) { _gTap = null; return; }
   if (_gTap && now - _gTap.t < TOUCH.dbl && Math.hypot(x - _gTap.x, y - _gTap.y) < 30) { _gTap = null; if (a.k() > 1.02) a.reset(); else if (a.dblIn) a.zoom(a.dblIn); return; }
   _gTap = { t: now, x, y }; }
+// ---- a scrub (map-side-view): a finger along a chart - the point under it follows the finger; nothing scrolls while it moves ----
+// off-frame: fn(x, y, start) - also the finger's height, and true on the first touch; end() when the finger lifts (the offline area editor's
+// frame corners: a corner follows the finger, the size line is counted again when it lifts)
+const SCRUB = { el: null, id: null };
+function scrubGesture(el, fn, end) { el.classList.add('g-scrub'); el._scrub = fn; el._scrubEnd = end || null; }
+function gScrubDown(t, id, x, y) { const el = t && t.closest && t.closest('.g-scrub'); if (!el || !el._scrub) return false; SCRUB.el = el; SCRUB.id = id; el._scrub(x, y, true); return true; }
+function gScrubMove(id, x, y) { if (!SCRUB.el || SCRUB.id !== id) return false; if (!SCRUB.el.isConnected) { SCRUB.el = null; return false; } SCRUB.el._scrub(x, y, false); return true; }
+function gScrubUp(id) { if (SCRUB.id === id) { const el = SCRUB.el; SCRUB.el = null; SCRUB.id = null; if (el && el._scrubEnd) el._scrubEnd(); } }
 // ---- the page under a window does not scroll (4.20.1): a drag outside the window, or inside one that has nothing to scroll, is held ----
 function gUnder(e) { const bd = document.getElementById('sheetBackdrop'); if (!bd || !bd.contains(e.target)) return;
   const sh = e.target.closest && e.target.closest('.sheet'); if (!sh) { if (e.cancelable) e.preventDefault(); return; }
@@ -162,17 +172,17 @@ function gUnder(e) { const bd = document.getElementById('sheetBackdrop'); if (!b
   if (e.cancelable) e.preventDefault(); }
 function touchInit() { // the only touch, pointer, wheel and context-menu listeners of the app (the map component keeps its own)
   document.addEventListener('pointerdown', e => { _gSwallow = 0; TOUCH_ANY.down.forEach(f => f(e)); if (e.target.closest && e.target.closest('[data-keepfocus]')) e.preventDefault(); // ✕ in a field keeps the focus
-    if (e.pointerType === 'touch' || e.button !== 0) return; if (!gPicDown(e.target, 'm', e.clientX, e.clientY)) gDown(e.clientX, e.clientY, e.target, 'mouse', e); }, true);
-  window.addEventListener('pointermove', e => { if (e.pointerType === 'touch') return; gPicMove('m', e.clientX, e.clientY); if (G && G.src === 'mouse') gMove(e.clientX, e.clientY, e); });
-  window.addEventListener('pointerup', e => { if (e.pointerType === 'touch') return; TOUCH_ANY.end.forEach(f => f(e)); gPicUp('m', e.clientX, e.clientY); if (G && G.src === 'mouse') gFinish(true); });
+    if (e.pointerType === 'touch' || e.button !== 0) return; if (gScrubDown(e.target, 'm', e.clientX, e.clientY)) return; if (!gPicDown(e.target, 'm', e.clientX, e.clientY)) gDown(e.clientX, e.clientY, e.target, 'mouse', e); }, true);
+  window.addEventListener('pointermove', e => { if (e.pointerType === 'touch') return; if (gScrubMove('m', e.clientX, e.clientY)) return; gPicMove('m', e.clientX, e.clientY); if (G && G.src === 'mouse') gMove(e.clientX, e.clientY, e); });
+  window.addEventListener('pointerup', e => { if (e.pointerType === 'touch') return; TOUCH_ANY.end.forEach(f => f(e)); gScrubUp('m'); gPicUp('m', e.clientX, e.clientY); if (G && G.src === 'mouse') gFinish(true); });
   window.addEventListener('pointercancel', e => { if (e.pointerType !== 'touch') { if (P) P.pts.delete('m'); gFinish(false); } });
-  document.addEventListener('touchstart', e => { const t = e.changedTouches[0]; let pic = false;
+  document.addEventListener('touchstart', e => { const t = e.changedTouches[0]; let pic = false; if (e.touches.length === 1 && gScrubDown(t.target, t.identifier, t.clientX, t.clientY)) return;
     for (const x of e.changedTouches) pic = gPicDown(x.target, x.identifier, x.clientX, x.clientY) || pic;
     if (pic) return; if (e.touches.length > 1) { gFinish(false); return; } gDown(t.clientX, t.clientY, e.target, 'touch', e); }, { passive: true, capture: true }); // 11.14.0 (P21): capture - the map library stops a touch on its own buttons from bubbling (disableClickPropagation), which hid their long press
-  document.addEventListener('touchmove', e => { gUnder(e);
+  document.addEventListener('touchmove', e => { if (SCRUB.el) { const x = [...e.touches].find(q => q.identifier === SCRUB.id); if (x && gScrubMove(x.identifier, x.clientX, x.clientY)) { if (e.cancelable) e.preventDefault(); return; } } gUnder(e);
     if (P) { let mine = false; for (const x of e.touches) if (P.pts.has(x.identifier)) { mine = true; gPicMove(x.identifier, x.clientX, x.clientY); } if (mine && e.cancelable) e.preventDefault(); }
     const t = e.touches[0]; if (G && G.src === 'touch' && t) gMove(t.clientX, t.clientY, e); }, { passive: false });
-  document.addEventListener('touchend', e => { TOUCH_ANY.end.forEach(f => f(e)); for (const x of e.changedTouches) gPicUp(x.identifier, x.clientX, x.clientY);
+  document.addEventListener('touchend', e => { TOUCH_ANY.end.forEach(f => f(e)); for (const x of e.changedTouches) { gScrubUp(x.identifier); gPicUp(x.identifier, x.clientX, x.clientY); }
     if (G && G.src === 'touch' && !e.touches.length && gFinish(true) && e.cancelable) { e.preventDefault(); _gSwallow = 0; } }, { passive: false }); // no click follows
   document.addEventListener('touchcancel', e => { if (P) for (const x of e.changedTouches) P.pts.delete(x.identifier); gFinish(false); });
   document.addEventListener('wheel', e => { const el = e.target.closest && e.target.closest('.g-pic');

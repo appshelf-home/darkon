@@ -8,7 +8,7 @@
 const APP = { appTitle: 'מחתימים דרכון', appShort: 'דרכון', filePrefix: 'budapest', storeKey: 'budapest_trip_v1', geocodeKey: 'budapest_geocode_cache_v3', fileName: 'darkon', testHost: 'darkon-test--' }; // test-address: the test address's host starts with testHost (the site's branch deploy, <branch>--<site>)
 const PACK = APP;
 // THE ONE ESCAPER (final-review-fixes, family A): data (a name, a note, anything from a file or typed by the user) goes into built HTML -
-// text or an attribute in double quotes - only through escH; every local `esc` / `_escH` / `_qe` / `fmEsc` / `draftEsc` is this function.
+// text or an attribute in double quotes - only through escH; every local `esc` is this function, and it has no other global name (one-way (15)).
 // The rule of the pair: a function that RETURNS plain text (a name, a label, a message for the snackbar) is escaped where it enters
 // HTML, once; a function that returns built HTML (msi(), a card, tripStateLine) is never passed to an escaper, to textContent or to
 // the snackbar. The bubble and the snackbar take plain text and escape it themselves (showChipBubble's text contract, showToast).
@@ -22,6 +22,10 @@ function sepTie(html) { return String(html).replace(/ · /g, SEP); }
 // a value wraps whole - a number stays with its unit and "≈" with its number ("≈ 13 דק׳"); for plain text and simple markup only
 // (an attribute's digits - an SVG's viewBox - must not pass through it). The formatters tie their own (fmtKm, fmtM, tmFmt 'dur').
 function numTie(html) { return String(html).replace(/(\d) (?=[^\s<])/g, '$1\u00A0').replace(/≈ (?=\d)/g, '≈\u00A0'); }
+// THE SCREEN CLASS (one-way (16); standard: one script helper beside the CSS): the script asks the screen's class, never its width.
+// The breakpoints are the CSS's own (@media (min-width: 600px) tablet, (min-width: 1024px) wide - css/screens-tiers.css).
+const SCREEN_AT = { tablet: '(min-width: 600px)', wide: '(min-width: 1024px)' };
+function screenAtLeast(k) { return !!(window.matchMedia && matchMedia(SCREEN_AT[k]).matches); }
 // 4.6.0: the "none chosen" marker of chip sets is defined before startup (a multi-destination trip crashed when opened on a trip day)
 const NONE = '__none';
 // 5.14.0 (cl-filter-impl-plan stage 1, decision ס4): ONE filter state per family of screens - every button on a screen and every

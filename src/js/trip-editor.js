@@ -31,13 +31,13 @@ function openTripEditor(id, opts) { layerNote(openTripEditor, arguments);
   sheet.innerHTML = `${fmHead(cur ? '✏️ עריכת טיול' : base ? '⧉ טיול חדש על בסיס ' + nameB(String(base.name).split(' · ')[0]) : '＋ טיול חדש')}
     ${fmText(F, 'name', { label: 'שם הטיול', req: true, value: cur ? cur.name : base ? String(base.name).split(' · ')[0] + ' (חדש)' : '', placeholder: ('למשל: וינה ובודפשט' + SEP + 'מאי 2027') })}
     <div id="teDates"></div>
-    ${fmSec(F, 'who', { title: 'נוסעים ותנועה', sum: F2 => [fmEsc(fmGet(F2, 'who')), legLab[fmGet(F2, 'leg')]].filter(Boolean).join(SEP) },
+    ${fmSec(F, 'who', { title: 'נוסעים ותנועה', sum: F2 => [escH(fmGet(F2, 'who')), legLab[fmGet(F2, 'leg')]].filter(Boolean).join(SEP) },
       fmText(F, 'who', { label: 'מי נוסע', value: cur ? cur.travelers : '', placeholder: 'למשל: אני, בן הזוג והילדים' })
       + fmChips(F, 'leg', { label: 'דרך התנועה העיקרית ' + tipI('te.leg'), value: cur && cur.legMain === 'car' ? 'car' : 'transit', options: Object.entries(legSeg) }))}
     ${base && basePlan ? fmToggle(F, 'copyPlan', { label: 'להעתיק את התוכנית כמסלול לדוגמה', value: !(base.archived && base.archived.reason === 'ended'), hint: `היום הראשון, השני וכו' - בלי תאריכים, בלי מועדפים, בלי "היינו" ובלי הזמנות${base.archived ? ' (מתמונת המצב של הטיול בזיכרונות)' : ''}${base.archived && base.archived.reason === 'ended' ? '. כבוי כי הטיול כבר נעשה - מה שאהבתם עובר בדירוגים; מסמנים אם חוזרים על אותו מסלול' : ''}` }) : ''}
     ${!cur ? '<div id="teRatingsBox"></div>' : ''}
-    ${!cur && !base && others.length ? fmSec(F, 'marks', { title: 'סימונים מטיול קודם', sum: F2 => { const t = STATE.trips[fmGet(F2, 'from')]; return t ? fmEsc(t.name) : ''; } },
-      fmChips(F, 'from', { label: 'מאיזה טיול (רשות)', value: '', options: [['', '— בלי'], ...others.map(t => [t.id, fmEsc(t.name)])] })
+    ${!cur && !base && others.length ? fmSec(F, 'marks', { title: 'סימונים מטיול קודם', sum: F2 => { const t = STATE.trips[fmGet(F2, 'from')]; return t ? escH(t.name) : ''; } },
+      fmChips(F, 'from', { label: 'מאיזה טיול (רשות)', value: '', options: [['', '— בלי'], ...others.map(t => [t.id, escH(t.name)])] })
       + fmToggle(F, 'fav', { label: TX.fav, value: true }) + fmToggle(F, 'vis', { label: TX.visited, value: false })) : ''}
     ${fmSaveBar({ act: 'te.save', label: cur ? 'שמירה' : 'יצירת הטיול' })}`;
   showSheetBackdrop('openTripEditor'); if (cur) winRef('trip:' + cur.id); fmAttach(F); teDraw(F); teRatings(F); fmRestart(F);
@@ -73,7 +73,7 @@ function teSetDate(F, id, v) { const el = fmIn(F, id); if (!el) return; el.value
   const c = fmW(F, id) && fmW(F, id).querySelector('.date-clr'); if (c) c.hidden = !v; }
 // the rows of the destinations - one UI for the three modes
 function teRows(F) { const st = F.opts.st, box = fmQ(F, '#teRows'); if (!box) return; let rows = '';
-  const destBtn = (k, d) => `<button type="button" class="fm-pickbtn te-dest" data-act="te.dest" data-v="${k}">${ellB(fmEsc(destName(d)))}<span class="fm-caret"> ▾</span></button>`;
+  const destBtn = (k, d) => `<button type="button" class="fm-pickbtn te-dest" data-act="te.dest" data-v="${k}">${ellB(escH(destName(d)))}<span class="fm-caret"> ▾</span></button>`;
   const step = (k, n) => fmCount(null, 'seg' + k, { value: n, v: k, actPlus: 'te.plus', actMinus: 'te.minus', plus: 'יום נוסף', minus: 'יום פחות', plusOff: false, minusOff: n <= 1 });
   const x = k => `<button type="button" class="sheet-x te-x" data-act="te.del" data-v="${k}" aria-label="הסרת היעד" title="הסרת היעד">${msi('close', { size: 18 })}</button>`;
   const fixed = st.mode === 'fixed', S = fixed ? st.start : st.mode === 'est' ? st.estStart : '', off = fixed ? st.lead : 0;
@@ -81,7 +81,7 @@ function teRows(F) { const st = F.opts.st, box = fmQ(F, '#teRows'); if (!box) re
   const fit = fixed && st.start && st.end ? roadFit(st.cur, st.start, st.end) : {};
   // 11.24.0 (small-ui-set B, road-days-wording Q1-Q3): each row is the claim its switch confirms ("<day> כולו בדרך"), its own ⓘ, no supporting line; before dates no rows
   const fly = fmQ(F, '#teFly'); if (fly) fly.innerHTML = !st.start || !st.end ? ''
-    : [['lead', st.start, tipI('te.roadFirst', true)], ['tail', st.end, tipI('te.roadLast', true)]].map(([k, d, tip]) => setSwitchHTML('te.fly', ` data-v="${k}"`, !!st[k], `${glueText(tmFmt('day', d) + ' כולו בדרך')} ${tip}`, !st[k] && fit[k] ? fmEsc(fit[k].text + ', אולי כולו בדרך?') : '')).join(''); // 10.9.0 (design-forms): two yes/no properties - switches, not chips
+    : [['lead', st.start, tipI('te.roadFirst', true)], ['tail', st.end, tipI('te.roadLast', true)]].map(([k, d, tip]) => setSwitchHTML('te.fly', ` data-v="${k}"`, !!st[k], `${glueText(tmFmt('day', d) + ' כולו בדרך')} ${tip}`, !st[k] && fit[k] ? escH(fit[k].text + ', אולי כולו בדרך?') : '')).join(''); // 10.9.0 (design-forms): two yes/no properties - switches, not chips
   let c = 1 + off; const tdate = a => st.cur ? isoAdd(st.cur.start || VDATE, a - 1) : ''; // the transfer day in the stored trip (its travels' dates)
   st.lens.forEach((s, k) => { const a = c, b = c + s.len - 1; c += s.len;
     if (k) rows += `<div class="te-pass">${msi(passIcon(st.cur, tdate(a)), { size: 16 })} מעבר ביום ${a}${S ? SEP + tmFmt('day', isoAdd(S, a - 1)) : ''}</div>`; // 10.5.0 (design-4 part 2): the transfer as a small line; trip-travel-days (Q5): the icon of that day's travel
@@ -112,7 +112,7 @@ function teStartChanged(F, ns) { const st = F.opts.st; ns = ns || '';
 // ---- the taps on the rows ----
 const teF = c => { const F = fmOf(c.el); return F && F.opts.st ? F : null; };
 act('te.dest', c => { const F = teF(c); if (!F) return; const st = F.opts.st, k = +c.v, curD = st.lens[k].dest;
-  openFmChoice({ title: 'יעד', value: curD, options: Object.values(DESTS).filter(d => !d.ghost || d.id === curD).map(d => ({ v: d.id, html: withFlag(destFlag(d.id), fmEsc(d.meta.name)), sub: fmEsc(d.meta.description || '') })) },
+  openFmChoice({ title: 'יעד', value: curD, options: Object.values(DESTS).filter(d => !d.ghost || d.id === curD).map(d => ({ v: d.id, html: withFlag(destFlag(d.id), escH(d.meta.name)), sub: escH(d.meta.description || '') })) },
     v => setTimeout(() => { const F2 = fmOf(); if (!F2 || !F2.opts.st) return; const a2 = F2.opts.st.lens; if (a2[k]) { a2[k].dest = v; teRows(F2); teRatings(F2); fmSums(F2); } }, 0)); return 'quiet'; });
 act('te.plus', c => { const F = teF(c); if (!F) return; const st = F.opts.st, k = +c.v;
   if (teTot(st) >= 60) { showToast('טיול עד 60 יום'); return 'quiet'; } st.lens[k].len++; teRows(F); return 'quiet'; });
@@ -125,7 +125,7 @@ act('te.minus', c => { const F = teF(c); if (!F) return; const st = F.opts.st, s
 act('te.del', c => { const F = teF(c); if (!F) return; const st = F.opts.st, k = +c.v, s = st.lens[k]; if (st.lens.length < 2) return 'quiet';
   let n = 0; if (s.orig >= 0) for (let q = s.a0; q < s.a0 + s.olen; q++) n += teContentAt(st, q) ? 1 : 0;
   const out = () => { st.lens.splice(k, 1); teRows(F); teRatings(F); return 'quiet'; };
-  return n ? askSure({ ic: 'event_busy', title: `להסיר את ${_qe(destName(s.dest))}?`, text: `יש בו ${n === 1 ? 'יום אחד' : n + ' ימים'} עם תוכנית. הם יעברו ל"מחוץ לטיול" (לא נמחקים).`, ok: 'הסרה' }, out) : out(); });
+  return n ? askSure({ ic: 'event_busy', title: `להסיר את ${escH(destName(s.dest))}?`, text: `יש בו ${n === 1 ? 'יום אחד' : n + ' ימים'} עם תוכנית. הם יעברו ל"מחוץ לטיול" (לא נמחקים).`, ok: 'הסרה' }, out) : out(); });
 act('te.add', c => { const F = teF(c); if (!F) return; const st = F.opts.st;
   if (teTot(st) >= 60) { showToast('טיול עד 60 יום'); return 'quiet'; } const used = new Set(st.lens.map(s => s.dest));
   const d = Object.values(DESTS).find(x => !x.ghost && !used.has(x.id)) || Object.values(DESTS).find(x => !x.ghost);
@@ -139,7 +139,7 @@ act('te.shift', c => { const F = teF(c); if (!F) return; F.opts.st.shiftAns = c.
 act('te.rm', c => { const F = teF(c); if (!F) return; if (c.v === 'yes') { F.opts.st.removeOk = true; teAskReset(F); fmQ(F, '#fmSave').click(); } else teAskReset(F); return 'quiet'; });
 // removing the dates of a trip with dates: everything becomes day numbers - told once, in the save row
 function teRemoveNote(st) { const cur = st.cur, nb = Object.values(cur ? ((cur.id === STATE.activeTrip ? STATE.bookings : st.curTd.bookings) || {}) : {}).filter(b => b.date).length;
-  return `<b>התכנון יישמר לפי ימים:</b> יום 1 עד יום ${teTot(st)}, עם היעדים, הלינות, הנסיעות והלו"ז.${nb ? ` הזמנות שכבר נעשו (${nb}) נשארות עם התאריך שלהן.` : ''} כשתזינו תאריכים חדשים - הכל יחזור למקום.<div class="brow export-actions"><button type="button" class="btn-nav" data-act="te.rm" data-v="yes">✓ להמשיך בלי תאריכים</button><button type="button" class="icon-btn btn-copy" data-act="te.rm" data-v="no" style="width:auto;padding:0 12px;">ביטול</button></div>`; }
+  return `<b>התכנון יישמר לפי ימים:</b> יום 1 עד יום ${teTot(st)}, עם היעדים, הלינות, הנסיעות והלו"ז.${nb ? ` הזמנות שכבר נעשו (${nb}) נשארות עם התאריך שלהן.` : ''} כשתזינו תאריכים חדשים - הכל יחזור למקום.${cardActionsHTML({ act: 'te.rm', v: 'yes', label: '✓ להמשיך בלי תאריכים' }, [{ act: 'te.rm', v: 'no', label: 'ביטול' }])}`; }
 // where each old day goes: a plan day of a destination row to the same place in its new days (beyond its new length - out of
 // the trip), a flight-only first/last day to the new first/last day
 function teDayMap(st, total) { const oldN = st.cur ? tripLen(st.cur) : 0; let c = 1 + st.lead; const pos = st.lens.map(s => { const p = c; c += s.len; return p; });
@@ -160,7 +160,7 @@ act('te.save', c => { const F = teF(c); if (!F) return; const st = F.opts.st, cu
     const wasFixed = !!(cur && cur.start && cur.dateMode !== 'est');
     if (wasFixed && st.start !== cur.start && tripHasDated(cur) && st.shiftAns === null) { // 4.28.0: postponed - move the dated things too?
       const dl = daysBetween(cur.start, st.start); st.askDl = dl;
-      teAsk(F, `<b>הטיול זז ב-${Math.abs(dl)} ימים ${dl > 0 ? 'קדימה' : 'אחורה'}.</b> להזיז איתו גם את הנסיעות, הלינות, ${TX.group} וההזמנות? (התוכנית לפי ימים זזה לבד)<div class="brow export-actions"><button type="button" class="btn-nav" data-act="te.shift" data-v="yes">להזיז הכל</button><button type="button" class="icon-btn btn-copy" data-act="te.shift" data-v="no" style="width:auto;padding:0 12px;">להשאיר את התאריכים שלהם</button></div>`); return; } }
+      teAsk(F, `<b>הטיול זז ב-${Math.abs(dl)} ימים ${dl > 0 ? 'קדימה' : 'אחורה'}.</b> להזיז איתו גם את הנסיעות, הלינות, ${TX.group} וההזמנות? (התוכנית לפי ימים זזה לבד)${cardActionsHTML({ act: 'te.shift', v: 'yes', label: 'להזיז הכל' }, [{ act: 'te.shift', v: 'no', label: 'להשאיר את התאריכים שלהם' }])}`); return; } }
   if (st.mode === 'est') { const e = fmGet(F, 'estStart'); if (e) st.estStart = e; if (!st.estStart) return fmFail(F, 'estStart', 'חסר תאריך התחלה משוער'); }
   if (st.removingDates && !st.removeOk && st.mode === 'none') { teAsk(F, teRemoveNote(st)); return; }
   stashActive();

@@ -7,7 +7,7 @@ var TRIP_HIDDEN;   // places hidden only in the active trip (👎 imported from 
 var _pastRateCache = null;
 const RATE = { love: '❤️', like: '👍', dislike: '👎' }, RATE_LABEL = { love: 'אהבתי', like: 'היה טוב', dislike: 'לא שווה' };
 function tdOf(id) { if (id === STATE.activeTrip) stashActive(); return STATE.tripData[id] = STATE.tripData[id] || { favorites: [], visited: [], itinerary: {}, times: {}, planItems: {} }; }
-function tdSave(id) { if (id === STATE.activeTrip) loadPersonal(id); persist(); }
+function tdSave(id, quiet) { if (id === STATE.activeTrip) loadPersonal(id); persist(quiet); } // quiet: saved, nothing redrawn (a draft kept as typed - artReqSet)
 function ratingOf(pid, id) { const td = id ? tdOf(id) : (STATE.tripData[STATE.activeTrip] || {}); return (td.rating || {})[pid] || null; }
 function setRating(id, pid, r, word) {
   const td = tdOf(id);
@@ -20,7 +20,7 @@ function setRating(id, pid, r, word) {
 function rateRowHTML(p) {
   const t = activeTripObj(), st = tripState(t); if (!t.id || ARCHIVE_VIEW || !(st === 'during' || st === 'ended') || !STATE.visited.has(p.id)) return '';
   const cur = ratingOf(p.id) || {};
-  return `<div class="rate-row" data-ref="place:${p.id}"><span>איך היה?</span>${Object.keys(RATE).map(k => `<button type="button" class="rate-btn" data-act="place.rate" data-v="${k}" aria-pressed="${cur.r === k}" title="${RATE_LABEL[k]}">${RATE[k]}</button>`).join('')}${cur.w ? `<small>"${_qe(cur.w)}"</small>` : ''}</div>`;
+  return `<div class="rate-row" data-ref="place:${p.id}"><span>איך היה?</span>${Object.keys(RATE).map(k => `<button type="button" class="rate-btn" data-act="place.rate" data-v="${k}" aria-pressed="${cur.r === k}" title="${RATE_LABEL[k]}">${RATE[k]}</button>`).join('')}${cur.w ? `<small>"${escH(cur.w)}"</small>` : ''}</div>`;
 }
 // what I said about a place in a past trip (archived), shown small on its card in a new trip
 function pastRatingFor(pid) {
@@ -43,11 +43,11 @@ function welcomeBackHTML(t) {
   if (t.archived || ARCHIVE_VIEW) return ''; // 11.37.0 (phone-round-4-fixes P2, G84): a memory is closed - its full view offers no closing
   const td = tdOf(t.id), co = td.closeOffer || {}; if (co.never) return '';
   const now = Date.now(), thin = (co.snoozeUntil && now < co.snoozeUntil) || (co.dismissedAt && !co.snoozeUntil && now - co.dismissedAt < 7 * 864e5);
-  if (thin) return `<button type="button" class="today-card wb-thin" id="wbOpen" data-act="welcome.wbOpen">${msi('cottage', { size: 20 })}<span>${_qe(String(t.name).split(' · ')[0])} הסתיים${SEP}סגירת הטיול</span>${msi('chevron_right', { size: 20 })}</button>`;
+  if (thin) return `<button type="button" class="today-card wb-thin" id="wbOpen" data-act="welcome.wbOpen">${msi('cottage', { size: 20 })}<span>${escH(String(t.name).split(' · ')[0])} הסתיים${SEP}סגירת הטיול</span>${msi('chevron_right', { size: 20 })}</button>`;
   const days = dayList(t.start, t.end).length, vis = (td.visited || []).length, nd = tripDests(t).length, back = co.dismissedAt || co.snoozeUntil;
-  return `<div class="today-card wb-card tcd-after" id="todayCard"><div class="tc-title">${msi('cottage', { size: 20 })}ברוכים השבים מ${_qe(String(t.name).split(' · ')[0])}</div>
+  return `<div class="today-card wb-card tcd-after" id="todayCard"><div class="tc-title">${msi('cottage', { size: 20 })}ברוכים השבים מ${escH(String(t.name).split(' · ')[0])}</div>
     ${tlLateLineHTML(t)}<p class="wb-sum">${days} ימים${nd > 1 ? `${SEP}${nd} יעדים` : ''}${vis ? `${SEP}${vis} מקומות ש${TX.visited}` : ''}. סגירה קצרה (כ-3-5 דקות, כל שלב רשות) שומרת את הטיול כזיכרון: איפה ${TX.visited}, מה אהבתם ורגעי השיא - ומכינה את המזכרות.</p>
-    <div class="brow export-actions"><button class="btn-nav" id="wbClose" data-act="welcome.wbClose">${msi('inventory_2', { size: 18 })} סגירת הטיול</button>${back ? '<button class="icon-btn btn-copy" id="wbSnooze" data-act="welcome.wbSnooze" style="width:auto;padding:0 12px;">דחייה בשבוע</button><button class="icon-btn btn-copy" id="wbNever" data-act="welcome.wbNever" style="width:auto;padding:0 12px;">לא להזכיר יותר</button>' : '<button class="icon-btn btn-copy" id="wbLater" data-act="welcome.wbLater" style="width:auto;padding:0 12px;">לא עכשיו</button>'}</div></div>`;
+    ${cardActionsHTML({ id: 'wbClose', act: 'welcome.wbClose', label: `${msi('inventory_2', { size: 18 })} סגירת הטיול` }, back ? [{ id: 'wbSnooze', act: 'welcome.wbSnooze', label: 'דחייה בשבוע' }, { id: 'wbNever', act: 'welcome.wbNever', label: 'לא להזכיר יותר' }] : [{ id: 'wbLater', act: 'welcome.wbLater', label: 'לא עכשיו' }])}</div>`; // card-actions (Q1): the primary at full width, the rest as text under it
 }
 function welcomeBackCtl() { const ctl = ctlNS('welcome');
   const t = activeTripObj(), g = id => document.getElementById(id); if (!t.id) return;
@@ -117,8 +117,9 @@ function renderClosingScreen() {
   CLOSING.seen = CLOSING.seen || []; if (!CLOSING.seen.includes(s.k)) CLOSING.seen = CLOSING.seen.concat(s.k);
   { const was = (DEV.clSteps || {})[CLOSING.id] || {}; if (was.at !== s.k || (was.seen || []).length !== CLOSING.seen.length) devSet({ clSteps: { ...(DEV.clSteps || {}), [CLOSING.id]: { at: s.k, seen: CLOSING.seen.slice() } } }); }
   let body = '';
-  if (s.k === 'merge') body = `<p>טיילתם עם עוד מישהו שגם סימן באפליקציה? אפשר לצרף את הסימונים שלו: הוא שולח את קובץ הטיול (⋯ ← ${msi('ios_share', { cls: 'msi-in' })} שיתוף ← ${msi('description', { cls: 'msi-in' })} קובץ הטיול, עם ✓ ${TX.visited} ודירוגים), ואתם פותחים אותו כאן. "${TX.visited}" מתאחד, דירוגים נשמרים לפי שם (❤️ ערן${SEP}👍 אירית), ורגעי השיא משתי הרשימות. רשות - אפשר לדלג.</p>
-    ${Object.keys(C.td.companions || {}).length ? `<div class="callout">צורפו: ${Object.entries(C.td.companions).map(([n, x]) => `<b>${_qe(n)}</b> (${(x.visited || []).length} ביקורים, ${Object.keys(x.rating || {}).length} דירוגים)`).join(SEP)}</div>` : ''}
+  // along-time-field (G114): the step says only what it does and what to tap - two short lines at most at 360
+  if (s.k === 'merge') body = `<p>פותחים כאן את קובץ הטיול ששלח, והסימונים שלו מצטרפים לשלך.</p>
+    ${Object.keys(C.td.companions || {}).length ? `<div class="callout">צורפו: ${Object.entries(C.td.companions).map(([n, x]) => `<b>${escH(n)}</b> (${(x.visited || []).length} ביקורים, ${Object.keys(x.rating || {}).length} דירוגים)`).join(SEP)}</div>` : ''}
     <div class="brow export-actions">${importDoorHTML('closing', msi('file_open', { size: 18 }) + ' פתיחת הקובץ')}</div>`;
   // 11.9.0 (timeline-import, Q2): the optional step that fills "where" - the file chooser, "איך מייצאים", the privacy line; skippable
   // 11.10.0 (C8): a trip without dates shows the step too - the line and a button to choose the dates (tlDoorsHTML)
@@ -135,20 +136,20 @@ function renderClosingScreen() {
     if (!CLOSING.whereIds) CLOSING.whereIds = CLOSING.whereView === 'un' ? C.where.map(p => p.id) : C.all.slice();
     const rows = CLOSING.whereIds.map(i => C.pm.get(i)).filter(Boolean), open = rows.filter(p => !mk(p.id)).length;
     body = `<p>מקומות שתכננתם, שיבצתם, שהיו ב${TX.group} או שלנתם בהם. ${TX.visited} שם? (גם החלקה: ימינה = ${TX.visited}, שמאלה = לא הגענו). נגיעה נוספת מבטלת.</p>
-    ${C.all.length ? `<div class="cl-viewline">${fmMarkView({ act: 'closing.clView', view: CLOSING.whereView, nUn: C.where.length, nAll: C.all.length })}${rows.length && open ? `<button type="button" class="icon-btn btn-copy cl-allvis" id="clAllVis" data-act="closing.clAllVis">✓ ${TX.visited} ${open === rows.length ? 'בהכל' : 'בכל השאר'}</button>` : ''}</div>` : ''}
-    ${rows.length ? '' : C.all.length ? `<div class="callout">✓ הכל סומן. ב"הכל" אפשר לתקן.</div>` : `<div class="callout">אין מקומות מתוכננים. מקום ש${TX.visited} בו - ב"＋ עוד מקום" למטה.</div>`}<div class="cl-list">${rows.map(p => `<div class="cl-row g-swipe" data-ref="place:${p.id}"><span>${msiTie(typeIcon(p.icon, { size: 18, cls: 'msi-in' }), _qe(p.name))}</span>${fmMark({ act: 'closing.clvis', on: vs.has(p.id), no: ns.has(p.id) })}</div>`).join('')}</div>
+    ${C.all.length ? `<div class="cl-view">${fmMarkView({ act: 'closing.clView', view: CLOSING.whereView, nUn: C.where.length, nAll: C.all.length })}${rows.length && open ? halfActionHTML({ id: 'clAllVis', act: 'closing.clAllVis', label: `✓ ${TX.visited} ${open === rows.length ? 'בהכל' : 'בכל השאר'}` }) : ''}</div>` : ''}
+    ${rows.length ? '' : C.all.length ? `<div class="callout">✓ הכל סומן. ב"הכל" אפשר לתקן.</div>` : `<div class="callout">אין מקומות מתוכננים. מקום ש${TX.visited} בו - ב"＋ עוד מקום" למטה.</div>`}<div class="cl-list">${rows.map(p => `<div class="cl-row g-swipe" data-ref="place:${p.id}"><span>${msiTie(typeIcon(p.icon, { size: 18, cls: 'msi-in' }), escH(p.name))}</span>${fmMark({ act: 'closing.clvis', on: vs.has(p.id), no: ns.has(p.id) })}</div>`).join('')}</div>
     ${whereMoreRowHTML()}`; }
   if (s.k === 'rate') { CLOSING.rateIds = clRateIds(CLOSING.rateIds, C); // 4.34.2: every place you were at, the unrated first; 11.23.2 (P4): whenever the step shows
     const rl = CLOSING.rateIds.map(i => C.pm.get(i)).filter(Boolean), rt = C.td.rating || {};
     body = `<p>איך היה? כל המקומות ש${TX.visited} בהם - קודם אלה שעוד לא דורגו. הערה - רשות, ונשמרת עם הדירוג. נגיעה נוספת באותו סימן מבטלת.</p>
-    ${rl.length ? '' : '<div class="callout">עוד לא סומן אף מקום. מסמנים בשלב "✓ איפה ' + TX.visited + '".</div>'}<div class="cl-list">${rl.map(p => { const comp = Object.entries(C.td.companions || {}).map(([n, x]) => (x.rating || {})[p.id] ? `${RATE[x.rating[p.id].r]} ${_qe(n)}` : '').filter(Boolean).join(SEP);
+    ${rl.length ? '' : '<div class="callout">עוד לא סומן אף מקום. מסמנים בשלב "✓ איפה ' + TX.visited + '".</div>'}<div class="cl-list">${rl.map(p => { const comp = Object.entries(C.td.companions || {}).map(([n, x]) => (x.rating || {})[p.id] ? `${RATE[x.rating[p.id].r]} ${escH(n)}` : '').filter(Boolean).join(SEP);
       const cr = rt[p.id] || {}, wv = cr.w != null ? cr.w : (CLOSING.words[p.id] || '');
-      return `<div class="cl-row cl-rate" data-ref="place:${p.id}"><span>${msiTie(typeIcon(p.icon, { size: 18, cls: 'msi-in' }), _qe(p.name))}${comp ? `<small>${comp}</small>` : ''}</span><span class="cl-rbtns">${Object.keys(RATE).map(k => `<button type="button" class="rate-btn" data-act="closing.clrate" data-clrate="${k}" aria-pressed="${cr.r === k}" title="${RATE_LABEL[k]}">${RATE[k]}</button>`).join('')}</span>${fmArea({ cls: 'cl-word', rows: 1, max: 400, placeholder: 'הערה (רשות)', value: wv })}</div>`; }).join('')}</div>`; }
+      return `<div class="cl-row cl-rate" data-ref="place:${p.id}"><span>${msiTie(typeIcon(p.icon, { size: 18, cls: 'msi-in' }), escH(p.name))}${comp ? `<small>${comp}</small>` : ''}</span><span class="cl-rbtns">${Object.keys(RATE).map(k => `<button type="button" class="rate-btn" data-act="closing.clrate" data-clrate="${k}" aria-pressed="${cr.r === k}" title="${RATE_LABEL[k]}">${RATE[k]}</button>`).join('')}</span>${fmArea({ cls: 'cl-word', rows: 1, max: 400, placeholder: 'הערה (רשות)', value: wv })}</div>`; }).join('')}</div>`; }
   if (s.k === 'high') { const hs = C.td.highlights || [];
     body = `<p>עד 5 רגעים שהכי זכורים לכם. משפט קצר - רשות. הם יופיעו בזיכרון ובמזכרות.</p><div class="cl-list" id="clHigh">${hs.map((h, j) => highlightRowHTML(C, h, j)).join('')}</div>
-      ${hs.length < 5 ? '<div class="brow export-actions"><button class="icon-btn btn-copy" id="clHighAdd" data-act="closing.clHighAdd" style="width:auto;padding:0 12px;">＋ רגע שיא</button></div>' : ''}${typeof highlightExtrasHTML === 'function' ? highlightExtrasHTML(C) : ''}`; }
-  if (s.k === 'fixes') body = `<p>כל השינויים שלכם ביעדים של הטיול (${tripDests(C.t).map(d => _qe(destName(d))).join(', ')}), מתי שנעשו. הם כבר אצלכם ויישארו גם בטיולים הבאים. כדי שגם אחרים יקבלו אותם - שולחים את קובץ הטיול למי שבנה את היעד, או לשיפור עם ${AI} כדי שיעדכן את קובץ היעד.</p>
-    <div class="cl-list">${C.fixes.map(f => `<div class="cl-row"><span>${_qe(f.name)}${f.at ? ` <small>${tmFmt('date', f.at)}</small>` : ''}</span><small>${f.what}</small></div>`).join('')}</div>
+      ${hs.length < 5 ? '<div class="brow export-actions"><button type="button" class="btn-sec" id="clHighAdd" data-act="closing.clHighAdd">＋ רגע שיא</button></div>' : ''}${typeof highlightExtrasHTML === 'function' ? highlightExtrasHTML(C) : ''}`; }
+  if (s.k === 'fixes') body = `<p>כל השינויים שלכם ביעדים של הטיול (${tripDests(C.t).map(d => escH(destName(d))).join(', ')}), מתי שנעשו. הם כבר אצלכם ויישארו גם בטיולים הבאים. כדי שגם אחרים יקבלו אותם - שולחים את קובץ הטיול למי שבנה את היעד, או לשיפור עם ${AI} כדי שיעדכן את קובץ היעד.</p>
+    <div class="cl-list">${C.fixes.map(f => `<div class="cl-row"><span>${escH(f.name)}${f.at ? ` <small>${tmFmt('date', f.at)}</small>` : ''}</span><small>${f.what}</small></div>`).join('')}</div>
     <div class="brow export-actions"><button class="btn-nav" id="clSendFix" data-act="closing.clSendFix">${msi('description', { size: 18 })} קובץ הטיול ${claudeMark()} לשיפור</button></div>`;
   if (s.k === 'done') { const r = Object.values(C.td.rating || {});
     body = `<p><b>מה נשמר:</b> ${C.visited.length} מקומות ש${TX.visited}${r.length ? `, ${r.length} דירוגים (${['love', 'like', 'dislike'].map(k => r.filter(x => x.r === k).length + ' ' + RATE[k]).join(' ')})` : ''}${(C.td.highlights || []).length ? `, ${C.td.highlights.length} רגעי שיא` : ''}, התוכנית כפי שהייתה, ותמונת מצב של כל המקומות שהטיול נגע בהם. הטיול עובר לזיכרונות, לקריאה בלבד, ונפתח במסך זיכרון; ${msi('undo', { cls: 'msi-in' })} פתיחה מחדש מחזירה אותו.</p>
@@ -157,18 +158,22 @@ function renderClosingScreen() {
       <div class="brow export-actions"><button class="btn-nav" id="clArchive" data-act="closing.clArchive">${msi('inventory_2', { size: 18 })} סגירת הטיול</button></div>`; }
   // 10.3.0 (design-3, look.md "Full screens, part 2"): a warm header and a vertical stepper showing every step - done ones green with
   // their summary, the current one open, the next ones with a line of what they hold; ✕ in the head = later; "לסגור עכשיו" at the foot
-  const sum = x => { const td = C.td; return x.k === 'merge' ? (Object.keys(td.companions || {}).length ? 'צורפו: ' + Object.keys(td.companions).map(_qe).join(', ') : 'דילגתם')
+  const sum = x => { const td = C.td; return x.k === 'merge' ? (Object.keys(td.companions || {}).length ? 'צורפו: ' + Object.keys(td.companions).map(escH).join(', ') : 'דילגתם')
     : x.k === 'tl' ? (tlOf(C.t.id) ? `${tlOf(C.t.id).n} ימים${SEP}${fmtKm(tlKm(C.t.id))} ברגל` : 'דילגתם') : x.k === 'where' ? `${(td.visited || []).length} מקומות ש${TX.visited} בהם` : x.k === 'rate' ? `${Object.keys(td.rating || {}).length} דירוגים` : x.k === 'high' ? `${(td.highlights || []).length} רגעי שיא` : x.k === 'fixes' ? `${C.fixes.length} שינויים ביעדים` : ''; };
   const seen = x => CLOSING.seen.includes(x.k); // closing-where (Q7): ✓ = a step visited (not "everything marked")
   const step = (x, j) => `<div class="cl-vs" data-st="${j === i ? 'cur' : seen(x) ? 'done' : ''}"><button type="button" class="cl-vh" data-act="closing.clstep" data-clstep="${x.k}"><span class="sb-n">${j !== i && seen(x) ? msi('check', { size: 18 }) : j + 1}</span><span class="cl-vt"><b>${x.label}</b>${j === i ? '' : `<small>${seen(x) ? sum(x) : CL_LINE[x.k] || ''}</small>`}</span></button>${j === i ? `<div class="cl-step">${body}</div>` : ''}</div>`;
-  main.innerHTML = `<div class="section-head cl-head"><h2>סוגרים את הטיול ${tipI('trips.ended')}</h2><p>${_qe(String(C.t.name).split(' · ')[0])}</p><p class="cl-sub">3–5 דקות${SEP}כל שלב רשות${SEP}✕ = ממשיכים אחר כך</p></div>
+  main.innerHTML = `<div class="section-head cl-head"><h2>סוגרים את הטיול ${tipI('trips.ended')}</h2><p>${escH(String(C.t.name).split(' · ')[0])}</p><p class="cl-sub">3–5 דקות${SEP}כל שלב רשות${SEP}✕ = ממשיכים אחר כך</p></div>
     <div class="card cl-stepper">${steps.map(step).join('')}</div>
     <div class="cl-nav"><button type="button" class="link-btn" id="clNow" data-act="closing.clNow">${msi('inventory_2', { size: 18 })} <span class="lk-tx">לסגור עכשיו, בלי שאר השלבים</span></button>${last ? '' : `<button class="btn-nav" id="clNext" data-act="closing.clNext">${s.k === 'merge' || (s.k === 'tl' && !tlOf(C.t.id)) ? 'דילוג' : 'הבא'} ${msi('chevron_right', { size: 18 })}</button>`}</div>`;
-  closingCtl(C, steps, i);
+  closingCtl(C, steps, i); ellFitSoon(); // card-actions: a step is drawn here, not through render() - its "…" boxes and card actions measured
 }
+// memory-photos (Q4): a highlight's place, said plainly - "איפה" with a pick from the trip's places; with a photo and no place, the line says the
+// photo is not on the map (a photo takes its highlight's place, never a place of its own). The closing's row and the memory screen's photos.
+function hlWhereHTML(places, h, data, o) { const act = o && o.act; return `<span class="hl-where"><small>איפה</small>${fmSelect({ data, act, value: h.placeId == null ? '' : h.placeId, options: [['', 'בלי מקום'], ...places.map(p => [p.id, escH(p.name)])] })}</span>`; }
+function hlWhereNote(h) { return h.photo && h.placeId == null ? `<small class="hl-wnote">${msi('info', { size: 16, cls: 'msi-in' })} בלי מקום, התמונה לא מופיעה במפה</small>` : ''; }
 function highlightRowHTML(C, h, j) {
-  return `<div class="cl-row cl-high" data-hi="${j}"><span class="cl-hn">${j + 1}</span>${fmSelect({ data: 'data-hplace', value: h.placeId == null ? '' : h.placeId, options: [['', '— בלי מקום'], ...C.visited.map(p => [p.id, _qe(p.name)])] })}
-    ${fmInput({ data: 'data-htext', max: 120, value: h.text || '', placeholder: 'משפט קצר (רשות)' })}${typeof highlightPhotoHTML === 'function' ? highlightPhotoHTML(h) : ''}<button type="button" class="sheet-x" data-act="closing.hdel" data-hdel aria-label="הסרה">✕</button></div>`;
+  return `<div class="cl-row cl-high" data-hi="${j}"><span class="cl-hn">${j + 1}</span>${hlWhereHTML(C.visited, h, 'data-hplace')}
+    ${fmInput({ data: 'data-htext', max: 120, value: h.text || '', placeholder: 'משפט קצר (רשות)' })}${typeof highlightPhotoHTML === 'function' ? highlightPhotoHTML(h) : ''}<button type="button" class="sheet-x" data-act="closing.hdel" data-hdel aria-label="הסרה">✕</button>${hlWhereNote(h)}</div>`;
 }
 function closingCtl(C, steps, i) { const ctl = ctlNS('closing');
   const id = CLOSING.id, g = q => document.getElementById(q), main = document.getElementById('main');
@@ -177,7 +182,7 @@ function closingCtl(C, steps, i) { const ctl = ctlNS('closing');
   ctl.clView = b => { CLOSING.whereView = b.dataset.v; CLOSING.whereIds = null; return 'redraw'; }; // the other view: its rows fixed anew
   ctl.clstep = b => goStep(b.dataset.clstep);
   if (g('clNext')) ctl.clNext = () => goStep(steps[i + 1].k);
-  ctl.clNow = () => { CLOSING = null; archiveTrip(id, 'ended'); };
+  ctl.clNow = () => { CLOSING = null; archiveTrip(id, 'ended'); ppStampTrip(id); }; // passport-book (Q4): the book opens over the memory screen and the trip's new stamps land
   const mark = (pid, v, off) => { const td = tdOf(id);
     td.visited = (td.visited || []).filter(x => x !== pid); td.notReached = (td.notReached || []).filter(x => x !== pid); // 4.33.1: one state per row, a second tap clears it
     if (!off) { if (v) td.visited = [...td.visited, pid]; else td.notReached = [...td.notReached, pid]; } tdSave(id); };
@@ -190,7 +195,7 @@ function closingCtl(C, steps, i) { const ctl = ctlNS('closing');
     const paint = () => { const cr = ratingOf(pid, id) || {}; row.querySelectorAll('[data-clrate]').forEach(x => x.setAttribute('aria-pressed', String(cr.r === x.dataset.clrate))); };
     // 4.33.1: no re-render - the row stays, the other rows keep what was typed in them
     const grow = () => { w.style.height = 'auto'; w.style.height = w.scrollHeight + 'px'; }; grow(); // 4.34.2: grows with the text
-    w.addEventListener('input', () => { CLOSING.words[pid] = w.value; grow(); });
+    fmOnInput(w, () => { CLOSING.words[pid] = w.value; grow(); });
     w.dataset.act = 'closing.word'; }); // the word is saved on leaving the field
   const rowOf = b => { const row = b.closest('.cl-rate'), pid = Number(refOf(row).id), w = row.querySelector('.cl-word');
     const paint = () => { const cr = ratingOf(pid, id) || {}; row.querySelectorAll('[data-clrate]').forEach(x => x.setAttribute('aria-pressed', String(cr.r === x.dataset.clrate))); }; return { row, pid, w, paint }; };
@@ -213,7 +218,7 @@ function closingCtl(C, steps, i) { const ctl = ctlNS('closing');
   if (g('clArchive')) ctl.clArchive = async () => { const free = g('clFree') && g('clFree').checked; g('clArchive').disabled = true; CLOSING = null;
     if (free) { await regCacheDrop('darkon-tiles'); await regCacheDrop(DISC_IMG_CACHE); DISC.imgs = []; discSave(); }
     if (g('clOffDel') && g('clOffDel').checked) { try { await offDeletePack(id, true); } catch (e) {} } // 4.39.0
-    archiveTrip(id, 'ended'); };
+    archiveTrip(id, 'ended'); ppStampTrip(id); }; // passport-book (Q4): right after "סגירה" - the stamps land on the trip's page
 }
 // 4.33.1 → 9.7.0 (Q9b): a swipe on a "where I was" row is a shortcut to its buttons (TOUCH 'swipe'): right = ✓ היינו, left = ✕ לא הגענו;
 // past the threshold that button looks pressed; toward the state already set nothing moves (clearing stays a tap on the button)
@@ -238,7 +243,7 @@ act('wmore.open', () => { const id = whereCtxId(); if (id) openWhereMore(id); re
 // (its name, point and Google's id when known; no time), marked "היינו". Every chosen place joins the list as a marked row; one undo row each
 function openWhereMore(id, back) { const ctl = {}, sheet = document.getElementById('sheet'), t = STATE.trips[id]; if (!t) return; // back: the window as left before Google Maps, and the shared place (PS_FORMS.where)
   sheet.innerHTML = `${fmHead(`＋ עוד מקום ש${TX.visited} בו`, 'wmX')}
-    <div class="tp-search">${fmSearch({ id: 'wmQ', enter: true, placeholder: 'שם מקום', clear: { id: 'wmQx', act: 'wmore.wmQx' } })}<button type="button" class="btn-nav" id="wmGo" data-act="wmore.wmGo">חיפוש</button></div>
+    <div class="tp-search">${searchFieldHTML('wmQ', 'שם מקום', '')}<button type="button" class="btn-nav" id="wmGo" data-act="wmore.wmGo">חיפוש</button></div>
     <div id="wmIn"></div><div id="wmOut"></div>`;
   const $ = q => sheet.querySelector(q), q = $('#wmQ'), pl = tlPlaceList(id), c0 = (DESTS[tripDests(t)[0]] || { meta: {} }).meta.center;
   const row = pid => { const td = tdOf(id), L = CLOSING && CLOSING.id === id && activeTab === 'closing' ? (tlOf(id) ? (CLOSING.tlV = CLOSING.tlV || {}) : null) : (TL_WIN_V = TL_WIN_V || {});
@@ -254,10 +259,9 @@ function openWhereMore(id, back) { const ctl = {}, sheet = document.getElementBy
     map: () => { const H = PS_HOSTS[ps]; if (H) H.st = null; $('#wmOut').innerHTML = ''; const s0 = c0 || [32, 34.8]; openPick({ how: 'btn', has: false, start: s0, zoom: 13, ret: wmRet, onPick: r => outside({ name: q.value.trim() || r.name, coord: r.coord }) }); } });
   q.dataset.ps = ps;
   const draw = () => { const v = q.value.trim(), vs = new Set(tdOf(id).visited || []), hits = v ? pl.filter(p => searchHit(p, v)).slice(0, 8) : [];
-    $('#wmQx').hidden = !q.value; $('#wmIn').innerHTML = !v ? '' : `<div class="gl-dh">${msi('luggage', { size: 16 })} במקומות של הטיול</div><div class="cl-add-res">${hits.length ? hits.map(p => `<button type="button" class="cl-add-hit" data-act="wmore.pick" data-ref="place:${p.id}">${typeIcon(p.icon, { size: 18 })} ${_qe(p.name)}${vs.has(p.id) ? ' <small>✓ כבר סומן</small>' : ''}</button>`).join('') : '<small class="sh-hint">לא נמצא במקומות של הטיול</small>'}</div>`;
+    $('#wmQX').hidden = !q.value; $('#wmIn').innerHTML = !v ? '' : `<div class="gl-dh">${msi('luggage', { size: 16 })} במקומות של הטיול</div><div class="cl-add-res">${hits.length ? hits.map(p => `<button type="button" class="cl-add-hit" data-act="wmore.pick" data-ref="place:${p.id}">${typeIcon(p.icon, { size: 18 })} ${escH(p.name)}${vs.has(p.id) ? ' <small>✓ כבר סומן</small>' : ''}</button>`).join('') : '<small class="sh-hint">לא נמצא במקומות של הטיול</small>'}</div>`;
     markSearch($('#wmIn'), v); psTyping(ps, v); };
-  q.addEventListener('input', draw);
-  ctl.wmQx = () => { q.value = ''; draw(); q.focus(); };
+  fmOnInput(q, draw);
   ctl.pick = b => { const p = pl.find(x => x.id === Number(refOf(b).id)); if (p) inTrip(p); return 'quiet'; };
   ctl.wmGo = () => { const v = q.value.trim(); if (!v) return 'quiet'; draw(); if (psSpecial(v)) { psReadLink(v).then(r => { if (r && r.coord) outside({ name: r.name || 'מקום מגוגל מפות', coord: r.coord, rec: r.rec }); else showToast(PS_NO_POINT); }); return 'quiet'; } psRun(ps, v, 'explicit'); return 'quiet'; };
   q.dataset.actEnter = 'wmore.wmGo';
@@ -266,7 +270,7 @@ function openWhereMore(id, back) { const ctl = {}, sheet = document.getElementBy
     if (H && back.r) { H.st = { q: back.q || '', list: [{ name: back.r.name, coord: back.r.coord, rec: back.r.rec, sub: 'מגוגל מפות', ic: 'location_on', km: null }], kind: '', more: false, anywhere: true }; psDraw(H); } }
   else setTimeout(() => q.focus(), 60);
 }
-ctlActs('wmore', ['wmQx', 'wmGo', 'pick']);
+ctlActs('wmore', ['wmGo', 'pick']);
 ctlActs('closing', ['clvis', 'word', 'saveHigh', 'clAllVis', 'clArchive', 'clHighAdd', 'clNext', 'clNow', 'clSendFix', 'clView', 'clrate', 'clstep', 'hdel']);
 // 4.41.1: which destination an edit belongs to - a place or layer of a destination by its id range, an added one by its own dest
 function destOfEditId(id, e) {
@@ -287,7 +291,7 @@ function destFixRows(destIds, pm) {
   Object.entries(E.status || {}).forEach(([id, st]) => { const e = (E.places || {})[id]; if (!ds.has(destOfEditId(id, e))) return;
     if (st.s === 'skip') { skip.n++; skip.at = Math.max(skip.at, st.at || 0); return; }
     const r = row(id, st.at); r.name = r.name || nameOf(id, e);
-    r.what.push(STATUS_MS[st.s] ? statusHTML(st.s) : st.s === 'moved' ? fx('luggage', 'עבר לטיול') : st.s === 'active' ? fx('undo', 'פתוח שוב') : _qe(st.s)); if (st.note) r.what.push(_qe('„' + st.note + '"')); });
+    r.what.push(STATUS_MS[st.s] ? statusHTML(st.s) : st.s === 'moved' ? fx('luggage', 'עבר לטיול') : st.s === 'active' ? fx('undo', 'פתוח שוב') : escH(st.s)); if (st.note) r.what.push(escH('„' + st.note + '"')); });
   const layers = Object.entries(E.layers || {}).filter(([id, e]) => ds.has(destOfEditId(id, e))).length + Object.keys(E.layerOrder || {}).filter(d => ds.has(d)).length;
   const out = [...rows.values()].filter(r => r.what.length).sort((a, b) => b.at - a.at).map(r => ({ name: r.name || 'מקום', what: r.what.join(SEP), at: r.at }));
   if (skip.n) out.push({ name: skip.n === 1 ? 'מקום אחד' : `${skip.n} מקומות`, what: fx('visibility_off', skip.n === 1 ? 'לא מעניין' : 'לא מעניינים'), at: skip.at }); // 8.1.0: hidden as not interesting (in the editor or the draft)
@@ -324,11 +328,11 @@ function memoryHighlightsHTML(M) {
   const td = M.td, hs = (td.highlights || []).filter(h => h.text || h.placeId != null || h.photo), rate = td.rating || {};
   const nm = id => { const p = M.pmap.get(id); return p ? p.name : ''; };
   let h = '';
-  if (hs.length) h += `<div class="mem-block"><h3>${msi('kid_star', { size: 20 })} רגעי השיא</h3><div class="mem-high">${hs.map(x => `<div class="mh-item">${typeof memoryPhotoHTML === 'function' ? memoryPhotoHTML(x) : ''}<div><b>${_qe(x.placeId != null ? nm(x.placeId) : (x.text || ''))}</b>${x.placeId != null && x.text ? `<small>${_qe(x.text)}</small>` : ''}${x.by ? `<small>· ${_qe(x.by)}</small>` : ''}</div></div>`).join('')}</div></div>`;
+  if (hs.length) h += `<div class="mem-block"><h3>${msi('kid_star', { size: 20 })} רגעי השיא</h3><div class="mem-high">${hs.map(x => `<div class="mh-item">${typeof memoryPhotoHTML === 'function' ? memoryPhotoHTML(x) : ''}<div><b>${escH(x.placeId != null ? nm(x.placeId) : (x.text || ''))}</b>${x.placeId != null && x.text ? `<small>${escH(x.text)}</small>` : ''}${x.by ? `<small>· ${escH(x.by)}</small>` : ''}</div></div>`).join('')}</div></div>`;
   const by = k => Object.entries(rate).filter(([, v]) => v.r === k).map(([id, v]) => ({ id: Number(id), w: v.w })).filter(x => nm(x.id));
   const comp = Object.entries(td.companions || {});
-  const who = id => comp.map(([n, x]) => (x.rating || {})[id] ? `${RATE[x.rating[id].r]} ${_qe(n)}` : '').filter(Boolean).join(SEP);
-  const list = (k, title) => { const a = by(k); return a.length ? `<div class="mem-rate"><b>${title}</b> ${a.map(x => `<span class="mr-item">${_qe(nm(x.id))}${x.w ? ` <i>"${_qe(x.w)}"</i>` : ''}${who(x.id) ? ` <small>${who(x.id)}</small>` : ''}</span>`).join('')}</div>` : ''; };
+  const who = id => comp.map(([n, x]) => (x.rating || {})[id] ? `${RATE[x.rating[id].r]} ${escH(n)}` : '').filter(Boolean).join(SEP);
+  const list = (k, title) => { const a = by(k); return a.length ? `<div class="mem-rate"><b>${title}</b> ${a.map(x => `<span class="mr-item">${escH(nm(x.id))}${x.w ? ` <i>"${escH(x.w)}"</i>` : ''}${who(x.id) ? ` <small>${who(x.id)}</small>` : ''}</span>`).join('')}</div>` : ''; };
   const lists = list('love', '❤️ אהבנו') + list('like', '👍 היה טוב');
   if (lists) h += `<div class="mem-block"><h3>${msi('favorite', { size: 20 })} מה אהבתם</h3>${lists}</div>`;
   return h;

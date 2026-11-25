@@ -5,7 +5,7 @@ function geocodeDiagnosticHTML() {
   return `<div><p>אילו מקומות לא מופיעים על המפה ולמה. מה שצריך תיקון בתוכן (כתובת שלא נמצאה, או בלי כתובת ובלי מיקום) מועתק לבד, כדי לשלוח ל-${AI} או לתקן בעריכה. מקומות שעוד לא נבדקו, או שהשרת היה עמוס, יימצאו לבד.</p>
     <div class="brow export-actions"><button class="btn-nav" id="diagBtn" data-act="diag.run">${msi('monitor_heart', { size: 18 })} בדיקה</button></div>
     <div class="export-box" id="diagResultBox" style="display:none;margin-top:10px;"><div id="diagSum" class="sh-hint"></div>${fmArea({ id: 'diagBox', readonly: true, style: 'min-height:140px;' })}
-      <div class="brow export-actions"><button class="icon-btn btn-copy" id="copyDiagBtn" data-act="diag.copy" style="width:auto;padding:0 12px;">${msi('content_copy', { size: 18 })} העתקה של מה שצריך תיקון</button></div></div>
+      <div class="brow export-actions"><button type="button" class="btn-sec" id="copyDiagBtn" data-act="diag.copy">${msi('content_copy', { size: 18 })} העתקה של מה שצריך תיקון</button></div></div>
 </div>`;
 }
 // 7.1.0 (cl-services-impl-plan, ה8): the one list of places that are not on the map - per destination, each with its reason and
@@ -49,7 +49,7 @@ act('diag.run', () => {
   const all = diagPlaces(), fix = all.filter(x => x.fix), wait = all.filter(x => !x.fix), dn = p => (DESTS[p.dest] && DESTS[p.dest].meta.name) || (p.trip ? 'הטיול' : '');
   const row = x => [x.p.name, x.p.address || '', dn(x.p), x.why].join(' | ');
   document.getElementById('diagBox').value = fix.length ? 'שם | כתובת | יעד | סיבה\n' + fix.map(row).join('\n') : '';
-  document.getElementById('diagSum').innerHTML = `${DIAG_DEST ? `רק ${_escH(dn({ dest: DIAG_DEST }))}${SEP}` : ''}צריך תיקון: <bdi>${fix.length}</bdi>${wait.length ? `${SEP}ממתינים לשירות: <bdi>${wait.length}</bdi> (${_escH([...new Set(wait.map(x => x.why))].join(', '))})` : ''}${!all.length ? (SEP + 'כל המקומות על המפה ✓') : ''}`;
+  document.getElementById('diagSum').innerHTML = `${DIAG_DEST ? `רק ${escH(dn({ dest: DIAG_DEST }))}${SEP}` : ''}צריך תיקון: <bdi>${fix.length}</bdi>${wait.length ? `${SEP}ממתינים לשירות: <bdi>${wait.length}</bdi> (${escH([...new Set(wait.map(x => x.why))].join(', '))})` : ''}${!all.length ? (SEP + 'כל המקומות על המפה ✓') : ''}`;
   document.getElementById('diagResultBox').style.display = 'block'; return 'quiet'; });
 act('diag.copy', () => { const v = document.getElementById('diagBox').value; if (!v) { showToast('אין מה לתקן'); return; } copyWithFallback(v, 'הועתק'); });
 

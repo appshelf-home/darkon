@@ -1,19 +1,19 @@
 // ✏️ an item of the organized schedule, for me only
 // 4.52.0: one time window for every plan card - my place, a copy, a note, a line of the organized schedule.
 // The day is chosen in 🗓️ (this window never adds the item to another day).
-ctlActs('time', ['save', 'del', 'endClear'], ['endClear']);
+ctlActs('time', ['save', 'del']);
 function entryTime(day, tok) { const e = entryOfTok(tok); if (!e) return null; if (e.sched) return e.sched.start ? { start: e.sched.start, end: e.sched.end || '' } : null; return getTime(day, e.p.id); }
 // sched-draft-all: from the scheduling window (draft = { t, set(start, end) }) the window edits that draft's row, not the plan
 // 11.28.2 (t790 (5)): the value goes into the draft and the window under is drawn again once it is back - a draw after the action, from
 // the time window's close, not in an action's body (draft.back says the scheduling window with that draft is on top again)
 function timeDraftBack(draft, start, end) { winDone(); draft.set(start, end); setTimeout(() => { if (!draft.back || draft.back()) winRedraw(); }, 0); }
 function openTimeSheet(day, tok, draft) {
-  tok = String(tok); const e = entryOfTok(tok); if (!e || !day) return; const sheet = document.getElementById('sheet'), esc = _escH, t = draft ? draft.t : entryTime(day, tok);
+  tok = String(tok); const e = entryOfTok(tok); if (!e || !day) return; const sheet = document.getElementById('sheet'), esc = escH, t = draft ? draft.t : entryTime(day, tok);
   const raw = e.sched ? rawSched(e.sched.id) : null, d = dayByKey(day), travel = !e.sched && isTravelItem(e.p), ctl = {};
   const draw = () => {
   sheet.innerHTML = `${fmHead(`🕐 ${nameB(entryName(e))}${raw ? ' ' + tipI('savedHere') : ''}`, 'ttClose')}
     <div class="sh-hint">${d ? esc(tmFmt('day', d.date)) : ''}${raw && raw.start ? `${SEP}במקור <bdi>${esc(raw.start)}${raw.end ? '–' + esc(raw.end) : ''}</bdi>` : ''}</div>
-    <div class="sh-times"><label class="sh-field fm-f fm-dt"><span class="fm-lbl">התחלה</span>${fmInput({ id: 'ttStart', type: 'time', step: 300, dir: 'ltr', value: t ? t.start : '' })}</label><label class="sh-field fm-f fm-dt"><span class="fm-lbl">סיום <small class="fm-note">(לא חובה)</small></span><span class="fm-inrow">${fmInput({ id: 'ttEnd', type: 'time', step: 300, dir: 'ltr', value: t ? t.end || '' : '' })}<span role="button" tabindex="0" class="date-clr" id="ttEndClr" data-act="time.endClear" aria-label="מחיקת הסיום" title="מחיקת הסיום"${t && t.end ? '' : ' hidden'}>${msi('close', { size: 18 })}</span></span></label></div>
+    <div class="sh-times"><label class="sh-field fm-f fm-dt"><span class="fm-lbl">התחלה</span>${fmInput({ id: 'ttStart', type: 'time', step: 300, dir: 'ltr', value: t ? t.start : '' })}</label><label class="sh-field fm-f fm-dt"><span class="fm-lbl">סיום <small class="fm-note">(לא חובה)</small></span><span class="fm-inrow">${fmInput({ id: 'ttEnd', type: 'time', step: 300, dir: 'ltr', value: t ? t.end || '' : '' })}<span role="button" tabindex="0" class="date-clr" id="ttEndClr" data-act="field.clear" aria-label="מחיקת הסיום" title="מחיקת הסיום"${t && t.end ? '' : ' hidden'}>${msi('close', { size: 18 })}</span></span></label></div>
     ${t ? fmEndActs([{ act: 'time.del', id: 'ttNone', label: 'בלי שעה', ic: 'timer_off' }]) : ''}
     <div class="sh-error" id="ttErr" hidden></div>
     <div class="brow sheet-actions sheet-save-bar"><button class="btn-nav" id="ttSave" data-act="time.save">שמירה</button></div>`; // end-actions-followups (Q2): "בלי שעה" a neutral row of the end group
@@ -25,8 +25,6 @@ function openTimeSheet(day, tok, draft) {
     if (draft) { timeDraftBack(draft, a, en.value || ''); return; }
     planChange(`🕐 ${entryName(e)}: ${a}${en.value ? '–' + en.value : ''}${raw ? ' (רק אצלך)' : ''}`, () => { if (!e.sched && !findSlot(day, e.p.id)) ensureDay(day).unassigned.push(e.p.id); setEntryTime(day, tok, a, en.value || ''); dropAnchor(); }); winDone(); };
   ctl.del = () => { if (draft) { timeDraftBack(draft, '', ''); return; } planChange(`🕐 השעה הוסרה: ${entryName(e)}`, () => setEntryTime(day, tok, '', '')); winDone(); };
-  const ec = $('#ttEndClr'); ctl.endClear = () => { en.value = ''; ec.hidden = true; };
-  en.addEventListener('input', () => { if (ec) ec.hidden = !en.value; });
   };
   winOpen('openTimeSheet', 'שעה', draw); layerTop().ctl = ctl; // 5.1.0
 }
@@ -39,7 +37,7 @@ function schedDaysHTML(days, isOn, isOff, act) { return `<div class="day-grid">$
 function schedRowHTML(dayKey, slot, t, ref, act) { const d = dayByKey(dayKey); // sched-draft-all: every row has 🕐, also a day new in a draft
   return `<div class="sc-row"${ref ? ` data-ref="${ref}"` : ''}><b>${d.date && !isVirt(d.date) ? tmFmt('day', d.date) : d.label}<small>${SEP}יום ${TRIP_DAYS.indexOf(d) + 1}</small></b><div class="view-toggle seg sc-seg" role="group">${[['unassigned', 'בלי', ''], ['morning', 'בוקר', 'wb_sunny'], ['afternoon', 'צהריים', 'partly_cloudy_day'], ['evening', 'ערב', 'dark_mode']].map(([k, l, ic]) => `<button type="button" class="chip" data-act="${act}.slot" data-v="${k}" data-active="${!t && slot === k}" aria-pressed="${!t && slot === k}">${ic ? msi(ic, { size: 16 }) : ''}${l}</button>`).join('')}${`<button type="button" class="chip" data-act="${act}.time" data-active="${!!t}" aria-pressed="${!!t}">${msi('schedule', { size: 16 })}${t ? `<bdi>${t.start + (t.end ? '-' + t.end : '')}</bdi>` : 'שעה'}</button>`}</div><div class="sc-more">`; }
 function openOneSchedSheet(tok) { // a note or a line of the organized schedule
-  tok = String(tok); const sheet = document.getElementById('sheet'), esc = _escH, isS = tok.startsWith('s:'), s = isS ? rawSched(tok.slice(2)) : null; if (isS && !s) return;
+  tok = String(tok); const sheet = document.getElementById('sheet'), esc = escH, isS = tok.startsWith('s:'), s = isS ? rawSched(tok.slice(2)) : null; if (isS && !s) return;
   const draw = () => {
     const e = entryOfTok(tok); if (!e) { closeSheet(); return; }
     const curKey = isS ? (TRIP_DAYS.find(d => d.date === e.sched.date) || {}).key : dayOfItem(e.p.id), movable = isS ? schedMovable(e.sched.kind) : true;
@@ -78,7 +76,7 @@ function hideSched(sid) {
 }
 function openSchedSheet(sid) { layerNote(openSchedSheet, arguments);
   const s = rawSched(sid); if (!s) return; const e = schedEff(s), changed = schedEdChanged(s), sheet = document.getElementById('sheet'), F = fmNew({ s });
-  const src = [s.start ? fmEsc(s.start + (s.end ? '–' + s.end : '')) : 'בלי שעה', schedKindIc(s.kind, fmEsc(s.title)), s.note && fmEsc(s.note)].filter(Boolean).join(SEP); // HTML
+  const src = [s.start ? escH(s.start + (s.end ? '–' + s.end : '')) : 'בלי שעה', schedKindIc(s.kind, escH(s.title)), s.note && escH(s.note)].filter(Boolean).join(SEP); // HTML
   sheet.innerHTML = `${fmHead('✏️ ' + nameB(e.title) + ' ' + tipI('sched.edit'))}
     ${fmText(F, 'title', { label: 'כותרת', req: true, value: e.title })}
     ${fmChips(F, 'kind', { label: 'סוג', value: e.kind, options: Object.keys(SCHED_KIND_NAME).map(k => [k, schedKindIc(k, SCHED_KIND_NAME[k])]) })}
@@ -104,7 +102,7 @@ function schedFieldText(k, v) {
 }
 // 📝 the file changed an item I changed or removed: take the update, or keep mine
 function openSchedUpdSheet(sid) { const ctl = {}; layerNote(openSchedUpdSheet, arguments);
-  const s = rawSched(sid); if (!s) return; const ed = schedEd(s.id) || {}, keys = schedSrcUpdates(s), esc = _escH, sheet = document.getElementById('sheet');
+  const s = rawSched(sid); if (!s) return; const ed = schedEd(s.id) || {}, keys = schedSrcUpdates(s), esc = escH, sheet = document.getElementById('sheet');
   sheet.innerHTML = `${fmHead('📝 עודכן במקור', 'suClose')}
     <p>${ed.hidden ? 'הסרת את הפריט מהתוכנית, ומאז הוא השתנה בקובץ הטיול.' : 'שינית את הפריט, ומאז קובץ הטיול שינה אותו גם.'} <b>${esc(s.title)}</b></p>
     <div class="upd-rows">${keys.map(k => twoCardsHTML(SCHED_FIELD_LABEL[k] || SCHED_FIELD_NAME[k] || k, [{ cap: 'מהמקור', val: `<bdi>${esc(schedFieldText(k, s[k]))}</bdi>` },
@@ -119,7 +117,7 @@ ctlActs('schedUpd', ['suKeep', 'suTake']);
 // ↩️ what was removed from that day - one list for every kind (4.53.0): the organized schedule I hid, and my places,
 // copies and notes that ✕ took off. A tap brings each back to the same part of the day and time.
 function openRestoreSheet(dayKey) { const ctl = {}; layerNote(openRestoreSheet, arguments);
-  const d = dayByKey(dayKey); if (!d) return; const list = hiddenScheduleOf(d.date), mine = removedOf(dayKey), esc = _escH, sheet = document.getElementById('sheet');
+  const d = dayByKey(dayKey); if (!d) return; const list = hiddenScheduleOf(d.date), mine = removedOf(dayKey), esc = escH, sheet = document.getElementById('sheet');
   if (!list.length && !mine.length) { closeSheet(); return; }
   const nameOf = r => { const p = r.item ? { ...r.item } : planItem(r.id); return p ? (r.item ? msi(r.item.ref != null ? 'content_copy' : 'sticky_note_2', { cls: 'msi-in' }) + ' ' + esc(p.name || '') : msiTie(itemIcon(p, { cls: 'msi-in' }), esc(p.name || ''))) : ''; };
   sheet.innerHTML = `${fmHead(`↩️ מה שהוסר${SEP}${d.label}`, 'srClose')}

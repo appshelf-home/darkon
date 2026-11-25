@@ -7,10 +7,10 @@ function rebuildPoints() {
   const out = [];
   const trip = activeTripObj(), tds = tripDests(trip);
   const tripIds = new Set((trip.places || []).map(x => x.id));
-  // 4.26.0: a discovery I added that the destination's file now carries too (same src): shown once - mine, completed by the file
+  // 4.26.0: a place I added that the destination's file carries too (add-key: the same exact identity - addSame): shown once - mine, completed by the file
   const twinOf = new Map(), shadowed = new Set();
-  Object.entries(STATE.edits.places).forEach(([id, e]) => { if (e.op !== 'add' || !e.data || !e.data.src) return; const sr = e.data.src;
-    const b = BASE_PLACES.find(x => x.dest === e.data.dest && x.src && ((sr.key && x.src.key === sr.key) || (sr.url && x.src.url === sr.url)));
+  Object.entries(STATE.edits.places).forEach(([id, e]) => { if (e.op !== 'add' || !e.data) return; const a = { ...e.data, k: id };
+    const b = BASE_PLACES.find(x => x.dest === e.data.dest && !shadowed.has(x.id) && addSame(a, x));
     if (b) { twinOf.set(Number(id), b); shadowed.add(b.id); } });
   BASE_PLACES.forEach(b => {
     if (shadowed.has(b.id)) return;
@@ -30,16 +30,96 @@ function rebuildPoints() {
 }
 // 4.26.0: what the file's twin of my discovery adds: it fills only what I left empty (and a description I never rewrote);
 // my name, layer and point stay
-function completeFromTwin(q, b) {
+function completeFromTwin(q, b, layers) {
   const o = { ...q, completed: true }, empty = v => v == null || v === '';
   ['foreign', 'transit', 'reservation', 'price', 'source', 'checkedAt', 'access', 'accessNote', 'mapsUrl', 'region', 'gid'].forEach(k => { if (empty(o[k]) && !empty(b[k])) o[k] = b[k]; });
   if (!empty(b.description) && (empty(q.description) || (q.src && q.src.dh && textHash(q.description) === q.src.dh))) o.description = b.description;
   if ((empty(q.address) || /^-?\d+(\.\d+)?,\s*-?\d/.test(q.address)) && !empty(b.address)) o.address = b.address;
-  const L = LAYER_DEFS.find(l => l.id === q.layer); if (!empty(b.icon) && (empty(q.icon) || (L && q.icon === L.icon))) o.icon = b.icon;
+  const L = (layers || LAYER_DEFS).find(l => l.id === q.layer); if (!empty(b.icon) && (empty(q.icon) || (L && q.icon === L.icon))) o.icon = b.icon;
   if (o.key == null && b.key) o.key = b.key;
   if (b.status && !o.status) { o.status = b.status; o.statusNote = b.statusNote || ''; }
   return o;
 }
+// ---- add-key (decisions 2026-11-24 · An AI update no longer doubles the places the user added, Q1-Q5) ----
+// A place the user added is (1) a destination's edits record with op 'add' - its key is the record's key - or (2) a trip place added
+// on a phone (trip.places, its own Date.now id) - its key is its id. A place an AI completes for it carries that key in `addKey`
+// (reference/improve.md "Places the user added"). One test of "the same place" (addSame) serves the join of an incoming file
+// (addJoin), its exact fallbacks, the one-time merge of the places already doubled (addMergeStored) and the twin on screen
+// (rebuildPoints): the key first; with no key only an exact identity - the same Google id (gid.id or gid.cid) or the same
+// discovery (src: type + key or url) - never a name or a near point. The user's record survives with its key and takes the
+// completion by completeFromTwin's rule (what the user filled stays theirs; the AI fills only empty fields).
+const addKeyOf = v => (typeof v === 'number' || typeof v === 'string') && /^\d{11,16}$/.test(String(v)) ? String(v) : '';
+function addSame(a, p) { // a: the add's place with its key (k); p: a place written by the AI -> 'key' | 'gid' | 'src' | ''
+  if (!a || !p || p === a) return ''; const pk = addKeyOf(p.addKey); if (pk) return pk === String(a.k) ? 'key' : '';
+  const ga = a.gid || {}, gp = p.gid || {};
+  if ((ga.id && ga.id === gp.id) || (ga.cid && gp.cid && String(ga.cid) === String(gp.cid))) return 'gid';
+  const sa = a.src, sp = p.src; if (sa && sp && (!sa.type || !sp.type || sa.type === sp.type) && ((sa.key && sa.key === sp.key) || (sa.url && sa.url === sp.url))) return 'src';
+  return ''; }
+// the pairs among places: the keyed first (a key that names no add, or an add already taken, is dropped - the place stays new and
+// never falls back), then the unkeyed by an exact identity; each add takes at most one place
+function addPairs(adds, places, fb) { const used = new Set(), out = []; // fb: which adds may take an unkeyed place (default: every add)
+  places.forEach(p => { const pk = addKeyOf(p.addKey); if (p.addKey == null) return; const a = pk && adds.find(x => String(x.k) === pk && !used.has(x.k) && x.p !== p);
+    if (a) { used.add(a.k); out.push([a, p, 'key']); } else { delete p.addKey; p._noAdd = 1; } });
+  places.forEach(p => { if (p._noAdd || p.addKey != null) return; const a = adds.find(x => !used.has(x.k) && x.p !== p && (!fb || fb(x)) && addSame(x, p));
+    if (a) { used.add(a.k); out.push([a, p, addSame(a, p)]); } });
+  places.forEach(p => { delete p._noAdd; }); return out; }
+// the AI's place p joins the add a: a.fill(completed) writes the user's record; the places that pointed at p (when it was on this phone) point at the add
+function addFill(rec, p, layers) { const o = completeFromTwin(rec, p, layers); delete o.completed; delete o.addKey; return o; }
+function addRemap(from, to) { if (from == null || from === to) return; const f = x => x === from ? to : x; stashActive();
+  Object.keys(STATE.tripData || {}).forEach(tid => { const td = STATE.tripData[tid]; if (td) STATE.tripData[tid] = { ...td, ...mapPersonalRefs(td, f) }; });
+  Object.values(STATE.trips || {}).forEach(t => { ['lodging', 'schedule'].forEach(k => (t[k] || []).forEach(x => { if (x && x.placeId === from) x.placeId = to; })); });
+  const E = STATE.edits; if (E.status[from] && !E.status[to]) E.status[to] = E.status[from]; delete E.status[from];
+  const ed = E.places[from], ad = E.places[to]; if (ed && ed.op === 'edit' && ad && ad.data) Object.entries(ed.data || {}).forEach(([k, v]) => { if (k !== 'layer' && (ad.data[k] == null || ad.data[k] === '')) ad.data[k] = v; });
+  if (ed && ed.op !== 'del') delete E.places[from];
+  if (STATE.activeTrip) loadPersonal(STATE.activeTrip); } // the open trip's marks as they are now (a later stashActive writes them back)
+// the adds a destination's places may complete: mine on this phone, those of the file not here, and a trip's own (trip-only) adds
+function addsOf(did, fileEdits, tripPlaces) { const out = [], E = STATE.edits.places;
+  Object.entries(E).forEach(([k, e]) => { if (e && e.op === 'add' && e.data && e.data.dest === did) out.push({ ...e.data, k, set: v => { E[k] = { ...E[k], data: v }; }, rec: () => E[k].data }); });
+  Object.entries((fileEdits && fileEdits.places) || {}).forEach(([k, e]) => { if (!E[k] && e && e.op === 'add' && e.data && addKeyOf(k)) out.push({ ...e.data, k, set: v => { e.data = v; }, rec: () => e.data }); });
+  (tripPlaces || []).forEach(tp => { if (tp && addKeyOf(tp.id)) out.push({ ...tp, k: String(tp.id), p: tp, trip: 1, set: v => { Object.assign(tp, v); }, rec: () => tp }); });
+  return out; }
+// the join (Q3) of one incoming destination (dp, in its file's numbering): every place that completes an add leaves dp.places and
+// fills that add; a trip's adds are joined from a destination only by their key. Returns the names joined.
+function addJoin(dp, tripPlaces, layers) { if (!dp || !Array.isArray(dp.places)) return [];
+  const ex = DESTS[dp.id], here = new Set(ex && Array.isArray(ex.places) ? ex.places.map(q => q.id) : []), names = [];
+  const pairs = addPairs(addsOf(dp.id, dp.edits, tripPlaces), dp.places.filter(p => p && typeof p === 'object'), a => !a.trip);
+  pairs.forEach(([a, p]) => { a.set(addFill(a.rec(), p, layers)); dp.places = dp.places.filter(x => x !== p); names.push(a.name || p.name || '');
+    if (ex && here.has(p.id)) addRemap((ex.idBase || 0) + p.id, a.trip ? a.p.id : Number(a.k)); });
+  return names; }
+// a trip's own places: an AI's place in trip.places that completes one of the trip's adds (its key, or an exact identity)
+function addJoinTrip(t) { if (!t || !Array.isArray(t.places)) return [];
+  const adds = addsOf(null, null, t.places), names = [];
+  addPairs(adds, t.places.filter(p => p && typeof p === 'object' && !addKeyOf(p.id))).forEach(([a, p]) => { a.set(addFill(a.rec(), p)); t.places = t.places.filter(x => x !== p); names.push(a.name || p.name || ''); addRemap(p.id, a.p.id); });
+  t.places.forEach(p => { if (p) delete p.addKey; }); return names; }
+// an incoming trip or destination file, before it is installed (receiveDestination, importTripNow): the one join of every door
+function addJoinFile(data, takeDests, takeTrip) { let n = 0; const t = data.kind === 'trip' && data.trip && typeof data.trip === 'object' ? data.trip : null;
+  const tp = t ? (takeTrip ? t.places : ((STATE.trips[t.id] || {}).places)) : null;
+  (t ? data.destinations || [] : [data.destination]).forEach(dp => { if (takeDests) n += addJoin(dp, tp).length; (dp && Array.isArray(dp.places) ? dp.places : []).forEach(p => { if (p) delete p.addKey; }); });
+  if (t && takeTrip) n += addJoinTrip(t).length;
+  return n; }
+// the one-time merge (Q4): once per phone (upkeep.addKey) every destination and trip, and the snapshots of closed trips, after the
+// undo history's base - one message naming what was merged, with undo; nothing found, nothing shown
+function addMergeStored() { const u = regRead('upkeep'); if (u.addKey) return 0; const said = [];
+  try { stashActive();
+    Object.values(DESTS).forEach(d => { if (!d || d.builtin || d.ghost || !Array.isArray(d.places)) return;
+      const dp = { id: d.id, places: d.places.slice() }, names = addJoin(dp, null, destLayersEff(d));
+      if (names.length) { d.places = dp.places; said.push([names.length, 'ב' + d.meta.name]); } });
+    Object.values(STATE.trips || {}).forEach(t => { const n = addJoinTrip(t).length + addMergeSnap(t); if (n) said.push([n, 'בטיול ' + String(t.name || '').split(' · ')[0]]); });
+  } catch (e) { said.length = 0; }
+  regWrite('upkeep', { ...regRead('upkeep'), addKey: APP_VERSION, addKeyMerged: said.length });
+  if (!said.length) return 0;
+  saveDests(); loadPersonal(STATE.activeTrip); applyActiveTrip(); persist();
+  showUndoToast(addMergedText(said)); return said.length; }
+// [[8, 'בחיפה']] -> "אוחדו 8 מקומות כפולים בחיפה"; one place: "אוחד מקום כפול אחד בחיפה"
+const addMergedText = said => (said.length === 1 && said[0][0] === 1 ? 'אוחד ' : 'אוחדו ') + said.map(([n, w]) => `${n === 1 ? 'מקום כפול אחד' : n + ' מקומות כפולים'} ${w}`).join(SEP);
+// a closed trip's snapshot holds its places as they were: the same merge among them, and the trip's marks follow the add
+function addMergeSnap(t) { const s = t && t.archived && t.archived.snap; if (!s || !Array.isArray(s.places)) return 0;
+  const adds = s.places.filter(q => q && (q.userAdded || (q.tripOnly && addKeyOf(q.id)))).map(q => ({ ...q, k: String(q.id), p: q, set: v => { Object.assign(q, v); }, rec: () => q }));
+  const pairs = addPairs(adds, s.places.filter(q => q && !adds.some(a => a.p === q)));
+  pairs.forEach(([a, p]) => { a.set(addFill(a.rec(), p)); s.places = s.places.filter(x => x !== p);
+    const f = x => x === p.id ? a.p.id : x, td = STATE.tripData[t.id]; if (td) STATE.tripData[t.id] = { ...td, ...mapPersonalRefs(td, f) }; });
+  return pairs.length; }
+migRun('addKey', () => { try { addMergeStored(); } catch (e) {} }); // add-key (Q4): the places an AI update already doubled, merged once
 // a trip place stores its destination's own (unshifted) layer id; falls back to the destination's lodging-type layer
 function tripPlaceLayer(tp, d) {
   if (!d) return tp.layer;

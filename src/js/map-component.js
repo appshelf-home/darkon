@@ -4,7 +4,7 @@
 // not told elsewhere), and pins whose tap opens the floating card. A screen adds only what is its own. Tools (picking a point,
 // the small map in an editor, the areas for offline maps, 🗺️ במפה) use mapTool - the same base map without a view.
 // No screen calls L.map directly (a test scan checks it).
-function mapTool(box, o) { o = o || {}; mapSweep(typeof box === 'string' ? document.getElementById(box) : box); const map = L.map(box, { zoomControl: window.innerWidth >= 1024, ...(o.leaflet || {}) }); /* 5.15.0 (ד3): no ＋/− on a phone (pinch), the scale takes their corner */ addBaseTiles(map); if (o.twoFinger) mapTwoFinger(map, typeof box === 'string' ? document.getElementById(box) : box); return map; }
+function mapTool(box, o) { o = o || {}; mapSweep(typeof box === 'string' ? document.getElementById(box) : box); const map = L.map(box, { zoomControl: screenAtLeast('wide'), ...(o.leaflet || {}) }); /* 5.15.0 (ד3): no ＋/− on a phone (pinch), the scale takes their corner */ addBaseTiles(map); if (o.twoFinger) mapTwoFinger(map, typeof box === 'string' ? document.getElementById(box) : box); return map; }
 // 10.11.0 (task memory-leak, decisions 2026-11-08 Q1): one lifecycle for every map. Every map is born in mapTool and listed in
 // LIVE_MAPS; it is disposed - map.remove() and everything attached to it: its MAPS entry (markers, clusters and their timer), "מה יש כאן"
 // (DISC_MAPS), the measuring's drawing, its ResizeObserver, the tiles' retry timers, the floating card, the legend and a form's
@@ -12,6 +12,7 @@ function mapTool(box, o) { o = o || {}; mapSweep(typeof box === 'string' ? docum
 // window closes and before any new map). A window's content kept aside for a moment (layerStash) is not "left".
 function mapDispose(map) {
   if (!map || map._removed) return; map._removed = true; LIVE_MAPS.delete(map);
+  if (M3.l2 === map) m3Lost(); // map-3d: the 3D view over it goes with it
   Object.keys(MAPS).forEach(id => { const r = MAPS[id]; if (r.map !== map) return; if (r.clu) clearTimeout(r.clu.t); delete MAPS[id];
     const host = document.getElementById(id); if (!host || !host.isConnected) { const lg = document.getElementById(id + '-legend'); if (lg) lg.remove(); } });
   Object.keys(DISC_MAPS).forEach(id => { const d = DISC_MAPS[id]; if (d.map === map) { DISC_LAST[id] = d.last; delete DISC_MAPS[id]; } });
@@ -179,6 +180,9 @@ function fileMapView(F) {
   const all = F.items.map((x, i) => { const p = { id: 'f' + i, color: x.h ? 'var(--hotel-pin)' : x.c, icon: x.i || '', name: x.t };
     const mk = M.pin(p, { lat: x.a, lng: x.o }, x.h ? {} : { numbered: x.n !== '' && x.n != null, number: x.n !== '' && x.n != null ? x.n : (x.l ? '❤️' : null) }, () => card(x)); mk._x = x; M.grow({ lat: x.a, lng: x.o }); return mk; });
   if (F.r && F.r.length > 1) L.polyline(F.r, { color: '#1C2B33', weight: 3, opacity: .55, dashArray: '6 6' }).addTo(map);
+  // memory-photos (Q4-Q5): the memory's photos at their highlights' places, as the phone's choice was when the page was made (F.ph); a tap shows them in the card
+  (F.ph || []).forEach(x => L.marker([x.a, x.o], { keyboard: false, zIndexOffset: 800, icon: L.divIcon({ className: 'mem-ph-ic', html: `<span class="mem-ph${x.u.length > 1 ? ' mem-ph-st' : ''}"><span class="ph-cut mem-ph-bg" style="background-image:url(${x.u[0]})"></span>${x.u.length > 1 ? `<b>${x.u.length}</b>` : ''}</span>`, iconSize: [48, 48], iconAnchor: [24, 54] }) })
+    .on('click', () => openFloatCard('fmapLive', cdCard({ cls: 'mc-card mc-ro', lead: '', name: x.t, tags: [], desc: `<span class="fmap-phs">${x.u.map(u => `<span role="img" aria-label="תמונה" style="background-image:url(${u})"></span>`).join('')}</span>`, acts: '' }), null, null, null)).addTo(map));
   M.finish('');
   let line = null; const fit = b => { if (b && b.length) map.fitBounds(L.latLngBounds(b), { padding: [24, 24], maxZoom: 16 }); };
   return { filter(fn, pts) { all.forEach(mk => { const on = fn(mk._x); if (on && !map.hasLayer(mk)) mk.addTo(map); if (!on && map.hasLayer(mk)) map.removeLayer(mk); });
@@ -187,10 +191,14 @@ function fileMapView(F) {
 }
 const FMAP_WORDS = new Set('setTimeout clearTimeout setInterval clearInterval requestAnimationFrame cancelAnimationFrame Date ClockDate performance true false null undefined this new typeof instanceof return if else for while do const let var function class of in delete void yield await async break continue switch case default try catch finally throw'.split(' '));
 const FMAP_ACTS = ['map.full', 'map.typeMenu', 'map.type', 'map.locate', 'float.close'];
-// the app's own things a page has no use for (ק23: no 📏, no 📚, no offline maps, no windows or saving) - stubs that do nothing
-const FMAP_STUB = ['mapSweep', 'mapDispose', 'measBtn', 'measDraw', 'measOnMapClick', 'measActiveOn', 'measAddMe', 'measAddPoint', 'measFrom', 'discAttach', 'offLayerFor', 'planItem', 'draftItems', 'openPlaceEditor', 'openPlaceSheet',
+// the app's own things a page has no use for (ק23: no 📏, no 📚, no offline maps, no windows or saving) - stubs that do nothing; relief-phone: no relief in a page
+// (reliefLayer, reliefLine - the drawing would pass the packed map's size cap; Esri's relief never drew there, its key is the site's only)
+// merge 11.50.0 (decisions 2026-11-23 · Review of the parallel day's summaries, Q6): introShow too - a page shows no screen intro (only introMaybe
+// starts one), and through tipDismiss (TOUCH_ANY) it carried the whole guide (GUIDE, ~12 KB) past the packed map's cap (t830: 121,769 on the merged build; no function of the pack changed since 11.49.0)
+// map-3d: no 3D in a page (m3Row - 3d-find: the menu's row -, m3Close, m3Again, m3ThemeChanged - its engine is a file of the site, and its code would pass the cap)
+const FMAP_STUB = ['introShow', 'mapSweep', 'm3Row', 'm3Close', 'm3Again', 'm3ThemeChanged', 'mapDispose', 'measBtn', 'measDraw', 'measOnMapClick', 'measActiveOn', 'measAddMe', 'measAddPoint', 'measFrom', 'discAttach', 'offLayerFor', 'planItem', 'draftItems', 'openPlaceEditor', 'openPlaceSheet',
   'layerPush', 'layerPushHistory', 'render', 'persist', 'devSet', 'refreshBaseMaps', 'showUndoToast', 'dataChanged', 'redrawSoon', 'winRedraw', 'refOf', 'svcLine', 'svcGaveUpCount', 'curDest', 'regRead', 'regWrite', 'regChanged', 'filterAct',
-  'showMapCard', 'miniCardHTML', 'itemOf', 'fsFilterHTML', 'filterHiddenCount', 'filterCountText', 'isHiddenPoint', 'routeHiddenCount', 'searchShown', 'tdOf', 'stashActive', 'rerenderKeepingMap', 'layerAppBack', 'hintMark', 'hintSeen', 'applyMapRestore', 'takeMapRestore', 'mapStatusLine', 'pastRatingFor', 'activeTripObj', 'hasTrip'];
+  'showMapCard', 'miniCardHTML', 'itemOf', 'fsFilterHTML', 'filterHiddenCount', 'filterCountText', 'isHiddenPoint', 'routeHiddenCount', 'searchShown', 'tdOf', 'stashActive', 'rerenderKeepingMap', 'layerAppBack', 'hintMark', 'hintSeen', 'applyMapRestore', 'takeMapRestore', 'mapStatusLine', 'pastRatingFor', 'activeTripObj', 'hasTrip', 'heMapLayer', 'heLabelLayer', 'mapLightSync', 'reliefLayer', 'reliefLine']; // hebrew-map: a page has no "מפה בעברית" (its "מפה" is already the vector drawing); relief-phone: no relief in a page
 // what a page starts with (the host): the device's choices are the defaults, nothing is saved
 const FMAP_HOST = `var FMAP_PAGE=1,DESTS={},POINTS=[],FP={},FILTER={points:{},draft:{}},GEOCODE_CACHE={},TRIP_DAYS=[],LAYER_DEFS=[],TRIP_HIDDEN=new Set(),ARCHIVE_VIEW=null,activeTab='map',_SIMULATED_DATE=null,_tmFmtCache={},_sheetFromMap=null,_lastBuild=null;
 var DEV={hints:{}},STATE={settings:{prefs:{cluster:'full',selfLoc:'off'}},visited:new Set(),favorites:new Set(),trips:{},tripData:{}},MAPS={},_mapState={},LIVE_MAPS=new Set(),FS=null,FS_FILTER={},MEAS=null,userPos=null,_selfAt=0,_keepMapView=false,_dataGen=0,_inAct=0,ACT_ERRORS=[],ACTIONS={},WIN_STACK=[],MAP_AVAILABLE=true,DRAFT=null;
@@ -225,7 +233,7 @@ function fmapSer(v, d) { d = d || 0; if (d > 8) return 'null';
 // legal-credits (11.40.0; decisions 2026-11-21 · Review of the map-upgrades report, Q1): the page's icons are its own small subset (FMAP_FONT, made by
 // tests/msfont.py from ICON_MS and this line), never the app's font - the built app's CSS has no copy a page could take (the empty squares)
 // FMAP_MS: fullscreen close layers my_location navigation travel_explore hotel location_on map landscape satellite_alt terrain check
-const FMAP_CSS_KEYS = ['cd-', 'msi', 'pin-marker', 'pin-sel', 'map-float', 'mf-', 'tl-', 'mc-', 'ly-', 'fs-btn', 'fs-on', 'locate-me', 'clu-', 'fanned', 'leaflet', 'map-status', 'map-empty', 'faded', 'mem-tt', 'card'];
+const FMAP_CSS_KEYS = ['mem-ph', 'ph-cut', 'cd-', 'msi', 'pin-marker', 'pin-sel', 'map-float', 'mf-', 'tl-', 'mc-', 'ly-', 'fs-btn', 'fs-on', 'locate-me', 'clu-', 'fanned', 'leaflet', 'map-status', 'map-empty', 'faded', 'mem-tt', 'card'];
 function fmapCSS() {
   const css = [...document.querySelectorAll('style')].map(x => x.textContent).join('\n'), out = [];
   const walk = (txt, wrap) => { let i = 0; while (i < txt.length) { const o = txt.indexOf('{', i); if (o < 0) break; const head = txt.slice(i, o).trim();
@@ -273,7 +281,7 @@ function mapEdgeArrows(map, items, cls) { if (!items.length || map._removed) ret
       [[F.t - p0.y, dy], [F.b - p0.y, dy]].forEach(([n, d]) => { if (d) { const q = n / d; if (q > 0 && q < k) k = q; } });
       let ex = p0.x + dx * k, ey = p0.y + dy * k;
       if (!slide) { const clash = nat.some(([a, b]) => Math.hypot(a - ex, b - ey) < EDGE.apart); if (inView || clash || (!dx && !dy)) { hide(); return; } nat.push([ex, ey]); } // two points the same way are one arrow, as before
-      const lb = `${_escH(it.name)}${SEP}${fmtKm(it.km)}`;
+      const lb = `${escH(it.name)}${SEP}${fmtKm(it.km)}`;
       if (!mk) { mk = mks[i] = L.marker(map.containerPointToLatLng([ex, ey]), { zIndexOffset: 1800, keyboard: false, ...(pane ? { pane } : {}), icon: L.divIcon({ className: '', iconSize: [0, 0], html: `<div class="map-edge ${cls || ''}" role="button" aria-label="${lb}"><span class="map-edge-ar"><svg width="16" height="16" viewBox="-12 -12 24 24" aria-hidden="true"><path d="M10 0 L-6 -8 L-2 0 L-6 8 Z"/></svg></span><span class="map-edge-lb" dir="auto">${lb}</span></div>` }) }).addTo(map);
         mk.on('click', () => { try { map.fitBounds(L.latLngBounds(it.fit), { padding: [40, 40], maxZoom: 14 }); } catch (e) {} }); }
       const lbl = mk._icon && mk._icon.querySelector('.map-edge-lb'); if (lbl && !mk._lw) { mk._lw = lbl.offsetWidth; mk._lh = lbl.offsetHeight; } // the name's size (its text never changes)

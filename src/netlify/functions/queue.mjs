@@ -7,7 +7,9 @@
 //     the cache keeps the address asked and the service's answer only - never who asked (no network address, no device id);
 //   - a proper User-Agent with the app's name and its contact address (a browser cannot set one; the service sees the server, not the phone);
 //   - a daily count for all users where a provider has a daily limit (Transitous: stops before 720 /plan a day - keys "day-<provider>-<UTC date>-<i>").
-// Generic: a provider joins by a row of ROWS (its base address, the paths it may be asked, its pace, how long answers are kept, a daily cap).
+// Generic: a provider joins by a row of ROWS (its base address, the paths it may be asked, its pace, how long answers are kept, a daily cap);
+// a provider with more than one host lists the others in `more` ([{ base, path }]) - the path asked picks the host (limits-and-safety, S7: FOSSGIS's
+// routes on routing.openstreetmap.de and its walking rings on valhalla1.openstreetmap.de, one pace for both).
 //   GET /api/queue?p=<provider>&u=<path and query, as the service takes it>
 //     -> the service's answer as it came (status and body; X-Queue: 1 on every answer of this function, X-Queue-Cache: hit|miss, and on a
 //        miss X-Queue-At: the moment of its slot in ms - legal-server-fixes, read by tests/deployed_check.mjs to see the slots' spacing)
@@ -25,13 +27,21 @@
 import { fromApp, refused } from '../lib/from-app.mjs';
 import { createHash } from 'node:crypto';
 export const config = { path: '/api/queue', rateLimit: { windowLimit: 60, windowSize: 60, aggregateBy: ['ip', 'domain'] } };
-export const UA = 'Darkon trip app (https://darkon-eran.netlify.app; appshelf.home@gmail.com)';
+// legal-credits-2 (S3): Transitous asks the client's name, its version and a contact - the build writes the app's version here (build.py queue_built);
+// the value in the source is only read by the tests
+export const UA = 'Darkon/11.56.0 (https://darkon-eran.netlify.app; appshelf.home@gmail.com)';
 const DAY = 864e5;
 export const ROWS = {
   nominatim: { base: 'https://nominatim.openstreetmap.org/', path: /^(search|reverse)$/, gap: 1050, keep: 30 * DAY },
   transitous: { base: 'https://api.transitous.org/', path: /^api\/v5\/plan$/, gap: 1050, keep: 0, day: 700 }, // 720 /plan a day: stop at 700
+  // limits-and-safety (S7; decisions/2026-11-24-review-legal-review-2.md Q12): FOSSGIS's terms (fossgis.de/arbeitsgruppen/osm-server/nutzungsbedingungen,
+  // read 24.11.2026): "Maximal eine Anfrage pro Sekunde" for both routing servers, a User-Agent naming the app, the Referer where possible; nothing on
+  // keeping answers (the data is OSM's, ODbL) - kept 30 days like Nominatim's: a leg's route and a point's rings asked again come from here
+  fossgis: { base: 'https://routing.openstreetmap.de/', path: /^routed-(car|foot|bike)\/route\/v1\/driving\/[-0-9.,;]+$/, more: [{ base: 'https://valhalla1.openstreetmap.de/', path: /^isochrone$/ }], gap: 1050, keep: 30 * DAY },
 };
-export const HOSTS = Object.values(ROWS).map(r => new URL(r.base).hostname); // the outside hosts it reaches - read by the terms page's host guard (t1135)
+const BASES = row => [{ base: row.base, path: row.path }, ...(row.more || [])];
+export const HOSTS = [...new Set(Object.values(ROWS).flatMap(r => BASES(r).map(b => new URL(b.base).hostname)))]; // the outside hosts it reaches - read by the terms page's host guard (t1135)
+const REF = 'https://darkon-eran.netlify.app/'; // the Referer FOSSGIS asks "where technically possible" - the app's own address (sent to every row)
 const MAX_WAIT = 6000; // a request waits at most this long for its turn; more - "busy" (the phone waits and asks again)
 const FETCH_MS = 7000; // the service's answer within this, or 504 "timeout" (legal-server-fixes, Q3)
 const PASS = ['accept-language']; // the only headers passed on from the phone
@@ -76,11 +86,11 @@ export default async (req, context) => {
   const bg = p => { try { if (context && typeof context.waitUntil === 'function') context.waitUntil(p); } catch (e) {} return p; }; // kept alive past the answer
   const q = new URL(req.url).searchParams, prov = q.get('p'), R = ROWS[prov], u = String(q.get('u') || '');
   if (!R) return json(400, { error: 'provider' });
-  const path = u.split('?')[0];
-  if (!R.path.test(path) || u.length > 2000 || /[\s#]|\/\/|\.\./.test(u)) return json(400, { error: 'input' });
-  const url = R.base + u;
+  const path = u.split('?')[0], B = BASES(R).find(b => b.path.test(path));
+  if (!B || u.length > 2000 || /[\s#]|\/\/|\.\./.test(u)) return json(400, { error: 'input' });
+  const url = B.base + u;
   let st; try { st = await store(); } catch (e) { return json(502, { error: 'store' }); }
-  const hdr = { 'User-Agent': UA }; PASS.forEach(h => { const v = req.headers.get(h); if (v) hdr[h] = v.slice(0, 100); });
+  const hdr = { 'User-Agent': UA, Referer: REF }; PASS.forEach(h => { const v = req.headers.get(h); if (v) hdr[h] = v.slice(0, 100); });
   const ck = 'c-' + prov + '-' + createHash('sha256').update(url + '|' + (hdr['accept-language'] || '')).digest('hex');
   if (R.keep) { try { const c = await st.get(ck, { type: 'json' }); if (c && Date.now() - c.at < R.keep) return new Response(c.body, { status: c.status, headers: { 'Content-Type': c.type || 'application/json', 'Cache-Control': 'no-store', 'X-Queue': '1', 'X-Queue-Cache': 'hit' } });
     if (c) bg(st.delete(ck).catch(() => {})); } catch (e) {} } // an expired entry goes (legal-server-fixes)

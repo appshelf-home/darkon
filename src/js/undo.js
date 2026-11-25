@@ -53,12 +53,12 @@ function toastFree() { try { explainFree(true); } catch (e) {} } // may run befo
 // backup (no `u`), or when it is at or before a change the app made on its own (a barrier, `b`). Rows that are not a change
 // (logEvent(text, true)) are outside the chain and passed over. Guards: t880, t1030, d12/m15.py, crawl_undo.py.
 const UNDO_DAYS = 3, UNDO_CAP = 20 * 1024 * 1024, UNDO_REF_MIN = 1500;
-const UNDO_DEV = ['baseMap', 'esriKey', 'esriKeyOk', 'esriKeyAt']; // device choices that have an undo toast
+const UNDO_DEV = ['baseMap', 'mapLight', 'esriKey', 'esriKeyOk', 'esriKeyAt', 'kitDismiss']; // device choices that have an undo toast
 const H_ROOTS = { // json slots: the root, how deep it is split into slots, and (s, v) which keys of it count
   t: { get: () => STATE.trips, depth: 1 },
   d: { get: () => STATE.tripData, depth: 2 },
   e: { get: () => STATE.edits, depth: 2 },
-  s: { get: () => STATE, keys: ['settings', 'theme', 'chipOrder', 'activeTrip'], depth: 2 },
+  s: { get: () => STATE, keys: ['settings', 'theme', 'chipOrder', 'activeTrip', 'countries'], depth: 2 }, // countries-visited: a country marked by hand
   D: { get: () => DESTS, skip: d => !d || d.builtin || d.ghost, depth: 1 },
   r: { get: () => DRAFT, set: v => { DRAFT = v; }, depth: 1, own: true },
   v: { get: () => DEV, keys: UNDO_DEV, depth: 1 },
@@ -199,7 +199,7 @@ function hAfter(keys) {
   if (STATE.activeTrip && !STATE.trips[STATE.activeTrip]) STATE.activeTrip = pickRelevantTrip(null);
   loadPersonal(STATE.activeTrip); applyActiveTrip(); refreshLayers();
   if (has('v')) { devSet(Object.fromEntries(UNDO_DEV.map(f => [f, DEV[f]]))); if (keys.some(k => /esriKey"/.test(k))) checkEsriKey(); refreshBaseMaps(); }
-  if (keys.some(k => /"theme"/.test(k))) applyTheme();
+  if (keys.some(k => /"theme"/.test(k))) { applyTheme(); mapThemeChanged(); }
   if (keys.some(k => /"settings"/.test(k))) { FP.sort = prefs().sort; applyPrefs(); }
   if (typeof OFF_PLAN_MEMO !== 'undefined') OFF_PLAN_MEMO.sig = '';
   persist(); updateHeader(); (H_AFTER || []).forEach(f => { try { f(keys); } catch (e) { errNote('undo', e); } });
@@ -255,7 +255,7 @@ function openUndoUpto(id) { const ctl = {}; layerNote(openUndoUpto, arguments); 
   if (i < 0) { closeSheet(); return; } const list = L.slice(0, i + 1), n = list.length;
   const mark = e => e.x ? ` <small class="uu-redo">(${/^הוחזר: /.test(e.text) ? 'ההחזרה תתבטל' : 'הביטול יתבטל'})</small>` : '';
   sheet.innerHTML = `${fmHead(msi('undo') + ' ביטול עד כאן', 'uuClose')}<p class="sh-hint">${n === 1 ? 'תבוטל פעולה אחת:' : `יבוטלו ${n} פעולות, מהאחרונה ועד זו:`}</p>
-    <div class="log-card uu-list">${list.map(e => `<div class="log-row"><span class="log-time">${tmFmt('stamp', e.at)}</span><span>${icText(hPlain(e))}${mark(e)}${e.who ? `<small>${_escH(e.who)}</small>` : ''}</span></div>`).join('')}</div>
+    <div class="log-card uu-list">${list.map(e => `<div class="log-row"><span class="log-time">${tmFmt('stamp', e.at)}</span><span>${icText(hPlain(e))}${mark(e)}${e.who ? `<small>${escH(e.who)}</small>` : ''}</span></div>`).join('')}</div>
     <div class="brow export-actions sheet-save-bar"><button class="btn-nav" id="uuGo" data-act="undoUpto.uu">${msi('undo', { size: 18 })} ${n === 1 ? 'לבטל את הפעולה' : `לבטל ${n} פעולות`}</button></div>`;
   ctl.uu = () => { const M = hChain(), j = M.findIndex(e => e.u === id); if (j !== i || M[0].u !== L[0].u) { openUndoUpto(id); return; } // another action came meanwhile: list again
     closeSheet(); hUndoTo(id); };

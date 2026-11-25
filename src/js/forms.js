@@ -9,7 +9,6 @@
 // (layerTop().form); "יש שינוי שלא נשמר" compares them with the values at opening (מ8). Taps are registered actions (fm.*);
 // typing and value changes in the fields themselves are the module's own (the named exception of the action wiring).
 // Guard test (t820): no <input> / <select> / <textarea> outside this block (and the named exceptions), every editor passes.
-const fmEsc = escH;
 function fmNew(o) { return { vals: {}, kinds: {}, init: null, on: {}, sums: {}, picks: {}, opts: o || {}, req: {}, dups: {}, conf: {} }; }
 const fmRoot = F => (F && F.el) || document.getElementById('sheet');
 const fmQ = (F, q) => fmRoot(F).querySelector(q);
@@ -22,11 +21,11 @@ const fmHint = o => o.hint ? `<small class="sh-hint fm-hint">${o.hint}</small>` 
 const fmErrSlot = id => `<small class="fm-err" data-fmerr="${id}" hidden></small>`;
 // ---- text: a line or a paragraph ----
 function fmText(F, id, o) { o = o || {}; const v = o.value == null ? '' : String(o.value); fmReg(F, id, 'text', v, o);
-  const attrs = `data-fm="${id}"${o.placeholder ? ` placeholder="${fmEsc(o.placeholder)}"` : ''}${o.dir ? ` dir="${o.dir}"` : ''}${o.max ? ` maxlength="${o.max}"` : ''}${o.inputmode ? ` inputmode="${fmEsc(o.inputmode)}"` : ''}${o.req ? ' aria-required="true"' : ''}${o.act ? ` data-act="${o.act}"` : ''}${o.enter ? ` data-act-enter="${o.enter}"` : ''}${o.trap ? ' tabindex="-1" autocomplete="off"' : ''}`; // 10.7.0: o.trap - a honeypot field, off screen (a robot fills it, a person never sees it)
-  const field = o.para ? `<textarea ${attrs} rows="${o.rows || 3}">${fmEsc(v)}</textarea>` : `<input type="${o.type || 'text'}" ${attrs} value="${fmEsc(v)}">`;
+  const attrs = `data-fm="${id}"${o.placeholder ? ` placeholder="${escH(o.placeholder)}"` : ''}${o.dir ? ` dir="${o.dir}"` : ''}${o.max ? ` maxlength="${o.max}"` : ''}${o.inputmode ? ` inputmode="${escH(o.inputmode)}"` : ''}${o.req ? ' aria-required="true"' : ''}${o.act ? ` data-act="${o.act}"` : ''}${o.enter ? ` data-act-enter="${o.enter}"` : ''}${o.trap ? ' tabindex="-1" autocomplete="off"' : ''}`; // 10.7.0: o.trap - a honeypot field, off screen (a robot fills it, a person never sees it)
+  const field = o.para ? `<textarea ${attrs} rows="${o.rows || 3}">${escH(v)}</textarea>` : `<input type="${o.type || 'text'}" ${attrs} value="${escH(v)}">`;
   return `<label class="sh-field fm-f${o.trap ? ' fm-trap' : ''}" data-fmw="${id}"${o.trap ? ' aria-hidden="true"' : ''}>${fmLabel(o)}${field}${fmHint(o)}${o.dup ? `<div class="pe-dup" data-fmdup="${id}" hidden></div>` : ''}${fmErrSlot(id)}</label>`; }
 // ---- choice from chips (מ3: chips when they fit in one row, else a button with the current choice that opens them in a window) ----
-function fmChipsInner(id, o, v) { return o.options.map(([k, l]) => `<button type="button" class="chip" data-act="${o.act || 'fm.chip'}" data-v="${fmEsc(k)}" data-active="${String(k) === String(v)}">${claudeH(l)}</button>`).join(''); } // 10.1.0 (design-1): claudeH - SHARE_TO's ✳ לשיפור
+function fmChipsInner(id, o, v) { return o.options.map(([k, l]) => `<button type="button" class="chip" data-act="${o.act || 'fm.chip'}" data-v="${escH(k)}" data-active="${String(k) === String(v)}">${claudeH(l)}</button>`).join(''); } // 10.1.0 (design-1): claudeH - SHARE_TO's ✳ לשיפור
 function fmChips(F, id, o) { o = o || {}; const v = o.value == null ? '' : String(o.value); fmReg(F, id, 'chips', v, o);
   const cur = o.options.find(([k]) => String(k) === v);
   return `<div class="sh-field fm-f fm-choice" data-fmw="${id}" data-fmfit="1">${fmLabel(o)}<div class="chips-row fm-chips${o.options.length >= 2 && o.options.length <= 4 && !o.noSeg ? ' fm-seg seg" role="group' : ''}" data-fm="${id}">${fmChipsInner(id, o, v)}</div>
@@ -40,7 +39,7 @@ function fmToggle(F, id, o) { o = o || {}; const v = !!o.value; fmReg(F, id, 'to
 // ---- 8.0.0: a list of checks (the parts of a file, what to include): rows that are always in show checked and locked ----
 // o.items: [{ k, label, sub?, count?, always? }]; the value is the list of the checked keys
 // value-no-cut (Q3): the label wraps between its parts (a flex row) - "תמיד בפנים"'s "·" ends the part before it, never opening a line
-function fmChecksInner(id, o, v) { return o.items.map(x => `<button type="button" class="fm-chk t-wrap${x.dim ? ' fm-dim' : ''}" role="checkbox" aria-checked="${!!x.always || v.includes(x.k)}"${x.always ? ' aria-disabled="true"' : ''} data-act="fm.chk" data-v="${fmEsc(id + '|' + x.k)}"><span class="fm-box" aria-hidden="true"></span><span class="fm-chkl">${x.label}${x.always && !x.sub ? '\u00A0·' : ''}${x.sub ? ` <small>${x.sub}${x.always ? '\u00A0·' : ''}</small>` : ''}${x.always ? ' <small>תמיד בפנים</small>' : ''}${x.count ? ` <small class="fm-chkc"><bdi>${x.count}</bdi></small>` : ''}</span></button>`).join(''); }
+function fmChecksInner(id, o, v) { return o.items.map(x => `<button type="button" class="fm-chk t-wrap${x.dim ? ' fm-dim' : ''}" role="checkbox" aria-checked="${!!x.always || v.includes(x.k)}"${x.always ? ' aria-disabled="true"' : ''} data-act="fm.chk" data-v="${escH(id + '|' + x.k)}"><span class="fm-box" aria-hidden="true"></span><span class="fm-chkl">${x.label}${x.always && !x.sub ? '\u00A0·' : ''}${x.sub ? ` <small>${x.sub}${x.always ? '\u00A0·' : ''}</small>` : ''}${x.always ? ' <small>תמיד בפנים</small>' : ''}${x.count ? ` <small class="fm-chkc"><bdi>${x.count}</bdi></small>` : ''}</span></button>`).join(''); }
 function fmChecks(F, id, o) { o = o || {}; const v = (o.value || []).filter(k => o.items.some(x => x.k === k && !x.always)); fmReg(F, id, 'chks', v, o);
   return `<div class="sh-field fm-f fm-checks" data-fmw="${id}">${o.label ? fmLabel(o) : ''}<div class="fm-chks" data-fm="${id}">${fmChecksInner(id, o, v)}</div>${fmHint(o)}${fmErrSlot(id)}</div>`; }
 // ---- counter: ＋ on the right, − on the left ----
@@ -50,23 +49,23 @@ function fmCount(F, id, o) { o = o || {}; const v = Number(o.value) || 0; fmReg(
   return `<span class="te-step fm-cnt" data-fmw="${id}" data-fm="${id}">${fmCountInner(id, o, v)}</span>`; }
 // ---- color: a palette and "אחר" ----
 function fmColor(F, id, o) { o = o || {}; const v = o.value || o.palette[0]; fmReg(F, id, 'color', v, o);
-  return `<div class="sh-field fm-f" data-fmw="${id}">${fmLabel(o)}<div class="le-swatches">${o.palette.map(c => `<button type="button" class="le-sw" data-act="fm.color" data-v="${c}" style="background:${c}" aria-label="צבע ${c}" data-active="${String(v).toLowerCase() === c.toLowerCase()}"></button>`).join('')}<label class="le-custom">אחר <input type="color" data-fm="${id}" data-fmcolor="1" value="${fmEsc(v)}"></label></div>${fmHint(o)}</div>`; }
+  return `<div class="sh-field fm-f" data-fmw="${id}">${fmLabel(o)}<div class="le-swatches">${o.palette.map(c => `<button type="button" class="le-sw" data-act="fm.color" data-v="${c}" style="background:${c}" aria-label="צבע ${c}" data-active="${String(v).toLowerCase() === c.toLowerCase()}"></button>`).join('')}<label class="le-custom">אחר <input type="color" data-fm="${id}" data-fmcolor="1" value="${escH(v)}"></label></div>${fmHint(o)}</div>`; }
 // ---- icon from the app's icon set, with a warning when another one uses it (10.1.0, design-1: each cell shows the type's line icon) ----
 function fmIcon(F, id, o) { o = o || {}; const v = o.value || ''; fmReg(F, id, 'icon', v, o);
   return `<div class="sh-field fm-f" data-fmw="${id}">${fmLabel(o)}${fmHint(o)}<div class="le-icons">${o.icons.map(([k, e]) => `<button type="button" class="le-ic" data-act="fm.icon" data-v="${k}" data-active="${k === v}" aria-label="${k}">${typeIcon(k, { size: 24 })}</button>`).join('')}</div><div class="pe-dup" data-fmdup="${id}" hidden></div></div>`; }
 // ---- date / time (the texts from the TIME block) ----
 function fmDate(F, id, o) { o = o || {}; const v = o.value || ''; fmReg(F, id, 'date', v, o);
   const clr = o.clear ? `<span role="button" tabindex="0" class="date-clr" data-act="fm.clear" data-v="${id}" aria-label="מחיקת התאריך" title="מחיקת התאריך"${v ? '' : ' hidden'}>${msi('close', { size: 18 })}</span>` : ''; // 10.4.0 (design-4): the clear ✕ sits inside the field
-  return `<label class="sh-field fm-f fm-dt" data-fmw="${id}">${fmLabel(o)}<span class="fm-inrow"><input type="date" dir="ltr" data-fm="${id}" value="${fmEsc(v)}"${o.min ? ` min="${o.min}"` : ''}${o.max ? ` max="${o.max}"` : ''}${o.act ? ` data-act="${o.act}"` : ''}>${clr}</span><small class="wd-auto" data-fmwd="${id}">${isIso(v) ? tmFmt('wd', v) : ''}</small>${fmHint(o)}${fmErrSlot(id)}</label>`; }
+  return `<label class="sh-field fm-f fm-dt" data-fmw="${id}">${fmLabel(o)}<span class="fm-inrow"><input type="date" dir="ltr" data-fm="${id}" value="${escH(v)}"${o.min ? ` min="${o.min}"` : ''}${o.max ? ` max="${o.max}"` : ''}${o.act ? ` data-act="${o.act}"` : ''}>${clr}</span><small class="wd-auto" data-fmwd="${id}">${isIso(v) ? tmFmt('wd', v) : ''}</small>${fmHint(o)}${fmErrSlot(id)}</label>`; }
 function fmDateInput(o) { return fmInput({ ...o, type: 'date', dir: 'ltr' }) + `<small class="wd-auto">${isIso(o.value) ? tmFmt('wd', o.value) : ''}</small>`; } // a date that acts at once (not a form's value)
 function fmTime(F, id, o) { o = o || {}; const v = o.value || ''; fmReg(F, id, 'time', v, o);
   const clr = o.clear ? `<span role="button" tabindex="0" class="date-clr" data-act="fm.clear" data-v="${id}" aria-label="מחיקת השעה" title="מחיקת השעה"${v ? '' : ' hidden'}>${msi('close', { size: 18 })}</span>` : '';
-  return `<label class="sh-field fm-f fm-dt" data-fmw="${id}">${fmLabel(o)}<span class="fm-inrow"><input type="time" dir="ltr" step="${o.step || 300}" data-fm="${id}" value="${fmEsc(v)}"${o.act ? ` data-act="${o.act}"` : ''}>${clr}</span>${fmHint(o)}${fmErrSlot(id)}</label>`; }
+  return `<label class="sh-field fm-f fm-dt" data-fmw="${id}">${fmLabel(o)}<span class="fm-inrow"><input type="time" dir="ltr" step="${o.step || 300}" data-fm="${id}" value="${escH(v)}"${o.act ? ` data-act="${o.act}"` : ''}>${clr}</span>${fmHint(o)}${fmErrSlot(id)}</label>`; }
 // a pair side by side: "מ" and "עד" (dates: "עד" never before "מ" - setting "מ" fills an empty or earlier "עד", whose picker opens there)
 function fmRange(F, a, b, oa, ob, kind) { if (F) { F.pairs = F.pairs || {}; F.pairs[a] = b; }
   const f = kind === 'time' ? fmTime : fmDate; return `<div class="sh-times fm-range">${f(F, a, oa)}${f(F, b, ob)}</div>`; }
 // ---- file pick (a <label> around a hidden input - the only way that opens the picker on his phone) ----
-function fmFile(o) { return `<label class="${o.cls == null ? 'btn-nav' : o.cls} fm-file"${o.title ? ` title="${o.title}"` : ''}${o.style ? ` style="${o.style}"` : ''}>${o.label}<input type="file"${o.inCls ? ` class="${o.inCls}"` : ' hidden'}${o.accept ? ` accept="${o.accept}"` : ''}${o.multiple ? ' multiple' : ''}${o.capture ? ` capture="${o.capture}"` : ''}${o.id ? ` id="${o.id}"` : ''}${o.act ? ` data-act="${o.act}"` : ''}${o.v != null ? ` data-v="${fmEsc(o.v)}"` : ''}${o.data ? ' ' + o.data : ''}></label>`; }
+function fmFile(o) { return `<label class="${o.cls == null ? 'btn-nav' : o.cls} fm-file"${o.title ? ` title="${o.title}"` : ''}${o.style ? ` style="${o.style}"` : ''}>${o.label}<input type="file"${o.inCls ? ` class="${o.inCls}"` : ' hidden'}${o.accept ? ` accept="${o.accept}"` : ''}${o.multiple ? ' multiple' : ''}${o.capture ? ` capture="${o.capture}"` : ''}${o.id ? ` id="${o.id}"` : ''}${o.act ? ` data-act="${o.act}"` : ''}${o.v != null ? ` data-v="${escH(o.v)}"` : ''}${o.data ? ' ' + o.data : ''}></label>`; }
 // phone-round-1-fixes P12 (G13): a file door says at once that its file is being read - a line with the spinner under the door's row
 // (the door's button is marked busy) until the reading ends; the caller awaits the promise first, so the line is painted before a long
 // read or parse holds the page (a large Timeline export: seconds). Returns the function that takes the line away.
@@ -78,24 +77,31 @@ async function fmReading(input) {
   await new Promise(r => { let done = false; const go = () => { if (!done) { done = true; setTimeout(r, 0); } }; requestAnimationFrame(go); setTimeout(go, 150); });
   return () => { p.remove(); lab.removeAttribute('aria-busy'); };
 }
+// ONE SEARCH FIELD (ס6; one-way (1): the one search kind - over my data, an address, the location field; moved here from filter-search.js):
+// text with enterkeyhint "search", ✕ that clears it, keeps the focus and shows only while there is text (one delegated pair: fmFieldEvents
+// shows or hides it, field.clear clears), the mark data-sfield (the layer manager reads "a search field" by it). o: { enter: the action of
+// Enter, attrs: more attributes of the input (the location field's data-fmq / data-ps) }. A typing reaction: fmOnInput. The placeholder is
+// text, escaped here as the value is (review-fixes-11471, 3: the guide's placeholder was cut at its quote) - a caller passes it unescaped.
+function searchFieldHTML(id, placeholder, value, o) { o = o || {}; return `<span class="clear-wrap"><input${id ? ` id="${id}"` : ''} type="text" data-sfield="1" enterkeyhint="search" autocomplete="off" placeholder="${escH(placeholder)}" value="${escH(value || '')}"${o.enter ? ` data-act-enter="${escH(o.enter)}"` : ''}${o.attrs || ''}><button type="button" class="field-clear"${id ? ` id="${id}X"` : ''} data-act="field.clear" data-keepfocus aria-label="ניקוי"${value ? '' : ' hidden'}>✕</button></span>`; }
+// a field's typing reaction (one-way (4): no input listener of its own - fmFieldEvents calls it); a search field's is its query
+function fmOnInput(el, f) { if (el) el._onInput = f; }
 // a plain field that acts at once (settings, filters of a screen): a select-like choice, a checkbox-like toggle, a number
-function fmSearch(o) { return `<span class="clear-wrap"><input id="${o.id}" type="text"${o.enter ? ' enterkeyhint="search"' : ''} placeholder="${fmEsc(o.placeholder || '')}" autocomplete="off"${o.dir ? ` dir="${o.dir}"` : ''}>${o.clear ? `<button type="button" class="field-clear" id="${o.clear.id}" data-act="${o.clear.act}" data-keepfocus aria-label="ניקוי" hidden>✕</button>` : ''}</span>`; } // a search that filters a list or finds an address (typing in search: the named exception)
 // 11.4.0 (small-fixes item 14; the 11.0.0 review's Q2): a choice from a list is an outlined field with its arrow that opens the app's anchored
 // menu (the map type's: rows, ✓ on the current value) - never the platform's select, whose system dialog does not follow the app's look.
 // The field keeps a select's contract: .value is the chosen key, and its action (o.act, kept as data-sact) runs with the field once a row is chosen.
 function fmSelect(o) { const cur = o.options.find(([k]) => String(k) === String(o.value)) || o.options[0] || ['', ''];
-  return `<button type="button" class="fm-sel${o.cls ? ' ' + o.cls : ''}"${o.id ? ` id="${o.id}"` : ''} data-act="fm.sel"${o.act ? ` data-sact="${o.act}"` : ''}${o.data ? ' ' + o.data : ''}${o.dir ? ` dir="${o.dir}"` : ''} value="${fmEsc(cur[0])}" data-opts="${fmEsc(JSON.stringify(o.options))}" aria-haspopup="menu"><span class="fm-sel-v">${cur[1]}</span>${msi('arrow_drop_down', { size: 20, cls: 'fm-sel-ar' })}</button>`; }
+  return `<button type="button" class="fm-sel${o.cls ? ' ' + o.cls : ''}"${o.id ? ` id="${o.id}"` : ''} data-act="fm.sel"${o.act ? ` data-sact="${o.act}"` : ''}${o.data ? ' ' + o.data : ''}${o.dir ? ` dir="${o.dir}"` : ''} value="${escH(cur[0])}" data-opts="${escH(JSON.stringify(o.options))}" aria-haspopup="menu"><span class="fm-sel-v">${cur[1]}</span>${msi('arrow_drop_down', { size: 20, cls: 'fm-sel-ar' })}</button>`; }
 act('fm.sel', c => { const b = c.el, open = document.getElementById('fmSelMenu'); if (open) { const was = open._for; open.remove(); if (was === b) return 'quiet'; }
   const opts = JSON.parse(b.dataset.opts || '[]'), m = document.createElement('div'); m.id = 'fmSelMenu'; m.className = 'ly-menu fm-menu'; m.setAttribute('role', 'menu'); m._for = b;
-  m.innerHTML = opts.map(([k, l]) => { const on = String(k) === String(b.value); return `<button type="button" role="menuitemradio" aria-checked="${on}" data-act="fm.selPick" data-v="${fmEsc(String(k))}" data-active="${on}"><span class="ly-t"><b>${l}</b></span>${on ? msi('check', { cls: 'ly-ck' }) : ''}</button>`; }).join('');
+  m.innerHTML = opts.map(([k, l]) => { const on = String(k) === String(b.value); return `<button type="button" role="menuitemradio" aria-checked="${on}" data-act="fm.selPick" data-v="${escH(String(k))}" data-active="${on}"><span class="ly-t"><b>${l}</b></span>${on ? msi('check', { cls: 'ly-ck' }) : ''}</button>`; }).join('');
   document.body.appendChild(m);
-  let ro = null; const place = () => { if (!m.isConnected) { window.removeEventListener('scroll', place, true); window.removeEventListener('resize', place); if (ro) ro.disconnect(); return; }
+  let ro = null; const place = () => { if (!m.isConnected) { sysOff(window, 'scroll', place, true); sysOff(window, 'resize', place); if (ro) ro.disconnect(); return; }
     const r = b.getBoundingClientRect(), vh = window.innerHeight, vw = document.documentElement.clientWidth, w = Math.max(m.offsetWidth, r.width);
     const nat = Math.min(m.scrollHeight + m.offsetHeight - m.clientHeight, vh * 0.6), below = vh - 8 - (r.bottom + 4), above = r.top - 4 - 8, down = nat <= below || (nat > above && below >= above);
     const mh = Math.round(Math.min(vh * 0.6, Math.max(120, down ? below : above))) + 'px'; if (m.style.maxHeight !== mh) m.style.maxHeight = mh; const h = m.offsetHeight; // 11.4.0: no room on either side - the roomier one, the menu scrolls; it never covers its field
     m.style.minWidth = r.width + 'px'; m.style.top = (down ? r.bottom + 4 : r.top - 4 - h) + 'px'; // below the field, above it when there is no room
     m.style.left = Math.max(8, Math.min(r.right - w, vw - 8 - w)) + 'px'; }; // its start edge at the field's start (RTL: the right)
-  place(); window.addEventListener('scroll', place, true); window.addEventListener('resize', place); // 11.4.0: it follows its field while the screen scrolls
+  place(); sysOn(window, 'scroll', place, true); sysOn(window, 'resize', place); // 11.4.0: it follows its field while the screen scrolls
   if (window.ResizeObserver) { ro = new ResizeObserver(place); ro.observe(m); ro.observe(document.body); } // and when its own height or the page settles (fonts, icons, an opening section) - above the field its bottom stays at the field
   setTimeout(() => touchAny('down', function off(ev) { if (!m.contains(ev.target) && ev.target !== b && !b.contains(ev.target)) { m.remove(); touchAny('down', off, false); } }), 0); // a tap elsewhere closes it
   const sel = m.querySelector('[data-active="true"]'); if (sel) sel.focus({ preventScroll: true }); return 'quiet'; });
@@ -106,14 +112,14 @@ act('fm.selPick', c => { const m = c.el.closest('.fm-menu'), b = m && m._for; if
 // one mark of a row - a segmented pair "✓ <yes>" | "<no>"; neither selected = not marked yet; a tap on the selected segment clears it.
 // The row's swipe (right = yes, left = no; .cl-row.g-swipe) fills the matching segment as its preview (.g-prev). Green only on the
 // selected yes (Q5). o: { act, acts: [noAct, yesAct], on, no, v, yes, noTx }; the row wraps it under the name when they do not fit
-function fmMark(o) { const a = k => (o.acts ? o.acts[k] : o.act), b = (k, p, tx) => `<button type="button" class="cl-vbtn" data-act="${fmEsc(a(k))}" data-clvis="${fmEsc(k)}" aria-pressed="${fmEsc(!!p)}"${o.v != null ? ` data-v="${fmEsc(o.v)}"` : ''}>${tx}</button>`;
-  return `<span class="fm-mark" role="group" aria-label="${fmEsc(o.label || 'סימון')}">${b(1, o.on, '✓ ' + (o.yes || TX.visited))}${b(0, o.no, o.noTx || 'לא הגענו')}</span>`; }
+function fmMark(o) { const a = k => (o.acts ? o.acts[k] : o.act), b = (k, p, tx) => `<button type="button" class="cl-vbtn" data-act="${escH(a(k))}" data-clvis="${escH(k)}" aria-pressed="${escH(!!p)}"${o.v != null ? ` data-v="${escH(o.v)}"` : ''}>${tx}</button>`;
+  return `<span class="fm-mark" role="group" aria-label="${escH(o.label || 'סימון')}">${b(1, o.on, '✓ ' + (o.yes || TX.visited))}${b(0, o.no, o.noTx || 'לא הגענו')}</span>`; }
 // (Q3) which of such rows a list shows: "עוד לא סומנו · N" | "הכל · N" (segmented; the counts follow the marks). o: { act, view: 'un' | 'all', nUn, nAll }
-function fmMarkView(o) { const c = (v, tx, n) => `<button type="button" class="chip" data-act="${fmEsc(o.act)}" data-v="${fmEsc(v)}" data-active="${fmEsc(o.view === v)}" aria-pressed="${fmEsc(o.view === v)}">${tx}${SEP}<bdi>${n}</bdi></button>`;
+function fmMarkView(o) { const c = (v, tx, n) => `<button type="button" class="chip" data-act="${escH(o.act)}" data-v="${escH(v)}" data-active="${escH(o.view === v)}" aria-pressed="${escH(o.view === v)}">${tx}${SEP}<bdi>${n}</bdi></button>`;
   return `<div class="chips-row fm-chips fm-seg seg fm-markview" role="group" aria-label="אילו מקומות">${c('un', 'עוד לא סומנו', o.nUn)}${c('all', 'הכל', o.nAll)}</div>`; }
-function fmCheck(o) { return `<input type="checkbox"${o.id ? ` id="${o.id}"` : ''}${o.act ? ` data-act="${o.act}"` : ''}${o.v != null ? ` data-v="${fmEsc(o.v)}"` : ''}${o.checked ? ' checked' : ''}${o.disabled ? ' disabled' : ''}${o.cls ? ` class="${o.cls}"` : ''}${o.data ? ' ' + o.data : ''}>`; }
-function fmInput(o) { return `<input type="${o.type || 'text'}"${o.id ? ` id="${o.id}"` : ''}${o.cls ? ` class="${o.cls}"` : ''}${o.act ? ` data-act="${o.act}"` : ''}${o.enter ? ` data-act-enter="${o.enter}"` : ''}${o.dir ? ` dir="${o.dir}"` : ''}${o.placeholder ? ` placeholder="${fmEsc(o.placeholder)}"` : ''}${o.value != null ? ` value="${fmEsc(o.value)}"` : ''}${o.min != null ? ` min="${o.min}"` : ''}${o.max != null ? ` max="${o.max}"` : ''}${o.step ? ` step="${o.step}"` : ''}${o.max ? ` maxlength="${o.max}"` : ''}${o.data ? ' ' + o.data : ''}${o.style ? ` style="${o.style}"` : ''}>`; }
-function fmArea(o) { return `<textarea${o.id ? ` id="${o.id}"` : ''}${o.cls ? ` class="${o.cls}"` : ''}${o.max ? ` maxlength="${o.max}"` : ''}${o.readonly ? ' readonly' : ''} rows="${o.rows || 3}"${o.placeholder ? ` placeholder="${fmEsc(o.placeholder)}"` : ''}${o.dir ? ` dir="${o.dir}"` : ''}${o.data ? ' ' + o.data : ''}${o.style ? ` style="${o.style}"` : ''}>${fmEsc(o.value || '')}</textarea>`; }
+function fmCheck(o) { return `<input type="checkbox"${o.id ? ` id="${o.id}"` : ''}${o.act ? ` data-act="${o.act}"` : ''}${o.v != null ? ` data-v="${escH(o.v)}"` : ''}${o.checked ? ' checked' : ''}${o.disabled ? ' disabled' : ''}${o.cls ? ` class="${o.cls}"` : ''}${o.data ? ' ' + o.data : ''}>`; }
+function fmInput(o) { return `<input type="${o.type || 'text'}"${o.id ? ` id="${o.id}"` : ''}${o.cls ? ` class="${o.cls}"` : ''}${o.act ? ` data-act="${o.act}"` : ''}${o.enter ? ` data-act-enter="${o.enter}"` : ''}${o.dir ? ` dir="${o.dir}"` : ''}${o.placeholder ? ` placeholder="${escH(o.placeholder)}"` : ''}${o.value != null ? ` value="${escH(o.value)}"` : ''}${o.min != null ? ` min="${o.min}"` : ''}${o.max != null ? ` max="${o.max}"` : ''}${o.step ? ` step="${o.step}"` : ''}${o.max ? ` maxlength="${o.max}"` : ''}${o.data ? ' ' + o.data : ''}${o.style ? ` style="${o.style}"` : ''}>`; }
+function fmArea(o) { return `<textarea${o.id ? ` id="${o.id}"` : ''}${o.cls ? ` class="${o.cls}"` : ''}${o.max ? ` maxlength="${o.max}"` : ''}${o.readonly ? ' readonly' : ''} rows="${o.rows || 3}"${o.placeholder ? ` placeholder="${escH(o.placeholder)}"` : ''}${o.dir ? ` dir="${o.dir}"` : ''}${o.data ? ' ' + o.data : ''}${o.style ? ` style="${o.style}"` : ''}>${escH(o.value || '')}</textarea>`; }
 // ---- a collapsed part with a summary of its values in its title (one line, cut with … - never grows) ----
 function fmSec(F, id, o, inner) { if (F) F.sums[id] = o.sum || null;
   return `<details class="fm-sec pe-more${o.ic ? ' has-ic' : ''}" data-fmsec="${id}"${o.open ? ' open' : ''}><summary>${o.ic ? msi(o.ic, { cls: 'fm-secic' }) : ''}<span class="fm-sect">${o.title}</span><span class="fm-sum" data-fmsum="${id}"></span></summary><div class="fm-sec-in">${inner}</div></details>`; }
@@ -124,10 +130,23 @@ function fmSec(F, id, o, inner) { if (F) F.sums[id] = o.sum || null;
 // of its own. Until it is marked (one frame), or without the lh unit, the line limit's own "…" shows - never a cut without one.
 // The direction of the box is its text's: <bdi> or dir="auto" (a Latin name in a Hebrew line is cut at its end, on the right).
 function ellFit(root) { const els = [...(root || document).querySelectorAll('.t-ell')].filter(e => e.clientWidth);
-  els.forEach(e => e.classList.remove('cut')); const cut = els.map(e => e.scrollHeight > e.clientHeight + 2); els.forEach((e, i) => { if (cut[i]) e.classList.add('cut'); }); }
+  els.forEach(e => e.classList.remove('cut')); const cut = els.map(e => e.scrollHeight > e.clientHeight + 2); els.forEach((e, i) => { if (cut[i]) e.classList.add('cut'); }); cardActsFit(root); }
 let _ellT = 0;
 function ellFitSoon() { if (_ellT) return; _ellT = requestAnimationFrame(() => { _ellT = 0; ellFit(); }); }
-window.addEventListener('resize', ellFitSoon); if (document.fonts && document.fonts.ready) document.fonts.ready.then(ellFitSoon);
+// ---- card-actions (41b; decisions 2026-11-23 · A card's actions on a phone): a card's or a question's actions, one component ----
+// primary: { act, label, id?, v?, data?, cls?, hidden? } - the filled button at full width; secs: the same shape, as quiet text buttons in equal parts
+// under it (a falsy entry is skipped). o.cls: a class of the whole block. No place writes this markup by hand (t890's guard and ui_lint's check 15).
+function caBtn(b, cls) { return `<button type="button" class="${escH(cls + (b.cls ? ' ' + b.cls : ''))}"${b.id ? ` id="${escH(b.id)}"` : ''} data-act="${escH(b.act)}"${b.v != null ? ` data-v="${escH(b.v)}"` : ''}${b.data ? ' ' + b.data : ''}${b.hidden ? ' hidden' : ''}>${b.label}</button>`; }
+function cardActionsHTML(primary, secs, o) { const s = (secs || []).filter(Boolean);
+  return `<div class="card-acts${o && o.cls ? ' ' + o.cls : ''}">${primary ? caBtn(primary, 'btn-nav ca-main') : ''}${s.length ? `<div class="ca-sec">${s.map(b => caBtn(b, 'btn-text')).join('')}</div>` : ''}</div>`; }
+// one quiet action in the start half of a line (the closing step's "היינו בהכל" under the switcher's first half)
+function halfActionHTML(b) { return `<div class="ca-sec ca-half">${caBtn(b, 'btn-text')}</div>`; }
+// the measure (run by ellFit, after every draw, a window's frame and a resize): a part whose text does not fit stacks them all, one per line
+function cardActsFit(root) { const rows = [...(root || document).querySelectorAll('.ca-sec')];
+  rows.filter(r => r.matches('.ca-half')).forEach(r => { const v = r.previousElementSibling, u = v && v.matches('.fm-markview') && v.firstElementChild, one = u && v.getBoundingClientRect().height < 2 * u.getBoundingClientRect().height - 2; // a half under a switcher: as wide as its first segment
+    if (one) r.style.setProperty('--ca-start', u.getBoundingClientRect().width + 'px'); else r.style.removeProperty('--ca-start'); });
+  rows.forEach(r => r.classList.remove('ca-stack')); const tight = rows.map(r => [...r.children].some(b => b.clientWidth && b.scrollWidth > b.clientWidth + 1)); rows.forEach((r, i) => { if (tight[i]) r.classList.add('ca-stack'); }); }
+sysOn(window, 'resize', ellFitSoon); if (document.fonts && document.fonts.ready) document.fonts.ready.then(ellFitSoon);
 // the direction of a text by its first letter (a flag or another sign before it does not count - dir="auto" reads a flag as a Latin letter)
 function txtDir(t) { return /^[^A-Za-z\u0590-\u05FF\u0600-\u06FF]*[A-Za-z]/.test(String(t)) ? 'ltr' : 'rtl'; } // plain text: its first letter, "<...>" counted as typed (10.17.2)
 // built HTML -> the text it shows. 11.8.1 (timeline-import step 0b, the 11.8.0 review's miss a): parsed in an inert template (no script runs,
@@ -137,7 +156,7 @@ function htmlText(h, o) { const f = htmlFrag(h); if (o && o.noHidden) f.querySel
 function ellTail(html) { html = String(html); const i = html.lastIndexOf('>') + 1, t = html.slice(i); return t.trim() ? html.slice(0, i) + ellB(t.trim()) : html; } // a flex row's label: its words (after its dot and icon) in the box
 function ellB(html, cls) { return `<bdi class="${cls ? cls + ' ' : ''}t-ell" dir="${txtDir(htmlText(html))}">${html}</bdi>`; } // a label in its own one-line "…" box
 // a name inside a title or a line that can be cut: isolated, in its own direction, and the part that gives way first (see headFit)
-function nameB(v) { return ellB(fmEsc(v), 'nm'); }
+function nameB(v) { return ellB(escH(v), 'nm'); }
 // SEP, sepTie and numTie (the value and separator ties) live in js/app-basics.js since value-tie-source (defined before every part)
 function fmHead(title, id) { return `<div class="sheet-head"><b>${title}</b><button class="sheet-x" data-act="win.close"${id ? ` id="${id}"` : ''} aria-label="סגירה">✕</button></div>`; }
 // 9.1.1 (12ג-8): one list of actions in a menu window (trip actions, share, add, export): [value, label, small line, extra class]
@@ -173,16 +192,20 @@ function fmPaint(F, id) { const k = F.kinds[id], o = F.conf[id] || {}, v = F.val
   else if (k === 'color') { w.querySelectorAll('.le-sw').forEach(b => { b.dataset.active = String(b.dataset.v.toLowerCase() === String(v).toLowerCase()); }); const c = w.querySelector('input[type=color]'); if (c && c.value.toLowerCase() !== String(v).toLowerCase() && /^#[0-9a-f]{6}$/i.test(v)) c.value = v; }
   else if (k === 'icon') { w.querySelectorAll('.le-ic').forEach(b => { b.dataset.active = String(b.dataset.v === v); }); }
   else if (k === 'loc') fmLocShow(F, id);
-  else if (k === 'end') fmEndShow(F, id); }
+  else if (k === 'end') fmEndShow(F, id);
+  else if (k === 'stops') { const l = w.querySelector('.fm-stopl'); if (l) l.innerHTML = fmStopsHTML(id, v); } }
 // after any change of a field: its own callback, its error goes away, the summaries of the collapsed parts
-function fmFieldChanged(F, id) { fmErrClear(F, id); if (F.on[id]) { try { F.on[id](fmGet(F, id), F); } catch (e) { console.error(e); errNote('fm:' + id, e); } } fmSums(F); }
+function fmFieldChanged(F, id, typing) { fmErrClear(F, id); if (F.on[id]) { if (typing) DATA_TYPING.n++; try { F.on[id](fmGet(F, id), F); } catch (e) { console.error(e); errNote('fm:' + id, e); } finally { if (typing) DATA_TYPING.n--; } } fmSums(F); }
+// ride-no-home item 3 (phone round 6, P17 step 1, G133; the owner 25.11.2026): a field's typing reaction never redraws its window - while
+// it runs (a letter typed into a text field) a change of the data redraws the screen behind only (dataChanged), so the field keeps the focus,
+// the keyboard and the scroll; a reaction that saves on each letter holds its save to a pause (artReqSet). Guard: t1234. The count (DATA_TYPING) is kept by dataChanged's part.
 function fmSums(F) { Object.entries(F.sums).forEach(([id, f]) => { const el = fmQ(F, `[data-fmsum="${id}"]`); if (!el || !f) return; let s = ''; try { s = f(F) || ''; } catch (e) {} el.innerHTML = s || ''; }); } // 10.4.0: the summary on its own line under the group's name (no ' · ')
 // ---- errors by the field (מ6): red under it, red frame, scrolled to (no caret - no keyboard), a short line in the save row ----
 function fmFail(F, id, msg) { const w = fmW(F, id), e = fmQ(F, `[data-fmerr="${id}"]`);
-  if (e) { e.innerHTML = msi('error', { size: 16 }) + fmEsc(msg); e.hidden = false; } if (w) { w.classList.add('fm-bad'); const sec = w.closest('details'); if (sec && !sec.open) sec.open = true; } // 10.1.0 (design-1): the message under the field, with the error icon
-  const line = fmQ(F, '.fm-errline'); if (line) { line.innerHTML = `<button type="button" class="fm-toerr fm-err" data-act="fm.toErr" data-v="${id}">${msi('error', { size: 16 })}${e ? 'יש שדה לתקן' + msi('arrow_upward', { size: 16 }) : fmEsc(msg)}</button>`; line.hidden = false; } // 10.8.0 (design-icons, gap 66): the field-error look
+  if (e) { e.innerHTML = msi('error', { size: 16 }) + escH(msg); e.hidden = false; } if (w) { w.classList.add('fm-bad'); const sec = w.closest('details'); if (sec && !sec.open) sec.open = true; } // 10.1.0 (design-1): the message under the field, with the error icon
+  const line = fmQ(F, '.fm-errline'); if (line) { line.innerHTML = `<button type="button" class="fm-toerr fm-err" data-act="fm.toErr" data-v="${id}">${msi('error', { size: 16 })}${e ? 'יש שדה לתקן' + msi('arrow_upward', { size: 16 }) : escH(msg)}</button>`; line.hidden = false; } // 10.8.0 (design-icons, gap 66): the field-error look
   if (w) fmScrollTo(w); return null; }
-function fmFailLine(F, msg) { const line = fmQ(F, '.fm-errline'); if (line) { line.innerHTML = `<span class="fm-err">${msi('error', { size: 16 })}${fmEsc(msg)}</span>`; line.hidden = false; } return null; } // an error that belongs to no single field
+function fmFailLine(F, msg) { const line = fmQ(F, '.fm-errline'); if (line) { line.innerHTML = `<span class="fm-err">${msi('error', { size: 16 })}${escH(msg)}</span>`; line.hidden = false; } return null; } // an error that belongs to no single field
 function fmErrClear(F, id) { const w = fmW(F, id), e = fmQ(F, `[data-fmerr="${id}"]`); if (e) e.hidden = true; if (w) w.classList.remove('fm-bad');
   if (!fmQ(F, '.fm-bad')) { const line = fmQ(F, '.fm-errline'); if (line) line.hidden = true; } }
 function fmScrollTo(w) { const sc = w.closest('#sheet') || document.getElementById('sheet'); const r = w.getBoundingClientRect(), s = sc.getBoundingClientRect();
@@ -203,7 +226,7 @@ function fmFit(root) { (root || document).querySelectorAll('[data-fmfit]').forEa
   row.hidden = false; b.hidden = true; if (!row.offsetParent && !row.getClientRects().length) return; // not on screen: keep the chips
   row.classList.add('fm-measure'); const over = row.scrollWidth > row.clientWidth + 1; row.classList.remove('fm-measure');
   row.hidden = over; b.hidden = !over; }); }
-window.addEventListener('resize', () => { clearTimeout(window._fmFitT); window._fmFitT = setTimeout(() => fmFit(document.getElementById('sheet')), 120); });
+sysOn(window, 'resize', () => { clearTimeout(window._fmFitT); window._fmFitT = setTimeout(() => fmFit(document.getElementById('sheet')), 120); });
 // ---- the field's own typing and value changes (the named exception of the action wiring) ----
 function fmFieldEvents() { // the named exception of the action wiring: typing and value changes in the fields themselves
 document.addEventListener('change', e => { const el = e.target; if (!el || el.type !== 'date' || el.dataset.fm != null) return; const w = el.nextElementSibling; if (w && w.classList.contains('wd-auto')) w.textContent = isIso(el.value) ? tmFmt('wd', el.value) : ''; }, true);
@@ -214,9 +237,19 @@ document.addEventListener('change', e => { const el = e.target; if (!el || el.ty
       const clr = fmW(F, id) && fmW(F, id).querySelector('.date-clr'); if (clr) clr.hidden = !el.value;
       const to = F.pairs && F.pairs[id]; if (to) { const t = fmIn(F, to); if (t) { if (el.value && (!t.value || t.value < el.value)) { t.value = el.value; const tw = fmQ(F, `[data-fmwd="${to}"]`); if (tw) tw.textContent = tmFmt('wd', el.value); const c2 = fmW(F, to) && fmW(F, to).querySelector('.date-clr'); if (c2) c2.hidden = false; } t.min = el.value || ''; } } }
     if (k === 'time' && ev === 'change') { const clr = fmW(F, id) && fmW(F, id).querySelector('.date-clr'); if (clr) clr.hidden = !el.value; }
-    if (ev === 'input' || k !== 'text') fmFieldChanged(F, id); }));
+    if (ev === 'input' || k !== 'text') fmFieldChanged(F, id, ev === 'input' && k === 'text'); }));
+  // one-way (1, 4): typing outside a form's values - a field's ✕ beside it shows while it has text (.clear-wrap / .fm-inrow), its own
+  // reaction (fmOnInput: a search's query, a word that grows its box, a zoom slider), and a place search's typing (data-ps)
+  document.addEventListener('input', e => { const el = e.target; if (!el || !el.dataset || el.dataset.fm != null) return; const w = el.parentElement;
+    if (w && w.matches('.clear-wrap, .fm-inrow')) { const x = w.querySelector(':scope > .field-clear, :scope > .date-clr'); if (x) x.hidden = !el.value; }
+    if (el._onInput) el._onInput(el.value); if (el.dataset.ps) psTyping(el.dataset.ps, el.value); });
 }
 fmFieldEvents();
+// one-way (1): the ✕ of a field outside a form's values (the search kind's .field-clear, a time that acts at once's .date-clr in its row):
+// cleared here, for every field - its typing reaction runs (an 'input' event), a place search drops its results, a search keeps the focus
+act('field.clear', c => { const input = c.el.parentElement.querySelector('input'); if (!input) return 'quiet'; input.value = ''; c.el.hidden = true;
+  const H = input.dataset.ps && PS_HOSTS[input.dataset.ps]; if (H) { clearTimeout(H.t); H.st = null; psDraw(H); }
+  input.dispatchEvent(new Event('input', { bubbles: true })); if (input.dataset.sfield) input.focus(); return 'quiet'; });
 // ---- the taps of the fields (registered actions) ----
 act('fm.chip', c => { const F = fmOf(c.el), w = c.el.closest('[data-fmw]'); if (!F || !w) return; fmSet(F, w.dataset.fmw, c.v); return 'quiet'; });
 act('fm.tog', c => { const F = fmOf(c.el); if (!F) return; fmSet(F, c.v, !F.vals[c.v]); return 'quiet'; });
@@ -249,20 +282,20 @@ function openFmChoice(o, onPick) { layerNote(openFmChoice, arguments);
     return choiceSetHTML(opts, { as, act: 'fm.choice', isOn, rowAttr: o.rowAttr }) || (as === 'list' ? '<p class="sh-hint">אין תוצאות</p>' : ''); };
   const draw = () => { const hs = V(o.hints) || (o.hint ? [o.hint] : []);
     sheet.innerHTML = `${fmHead(V(o.title) || 'בחירה', o.closeId)}${hs.map(h => `<${o.hintTag || 'p'} class="sh-hint">${h}</${o.hintTag || 'p'}>`).join('')}${long ? `<div class="ap-search">${searchFieldHTML('fmChQ', o.searchHint || 'חיפוש', ch.q)}</div>` : ''}${o.why ? `<div class="sh-why" hidden>${V(o.why)}</div>` : ''}${o.quick ? choiceSetHTML(V(o.quick), { as: o.quickAs || 'chips', act: 'fm.choice', isOn }) : ''}${as === 'list' ? `<div class="fm-choice-list" id="fmChList">${list()}</div>` : list()}${o.foot || ''}${multi === 'draft' ? '<div class="brow sheet-actions sheet-save-bar fm-ch-done"><button type="button" class="btn-nav" data-act="fm.chDone">✓ סיום</button></div>' : ''}`;
-    if (long) wireSearchField(sheet.querySelector('#fmChQ'), v => { ch.q = v; ch.found = null; document.getElementById('fmChList').innerHTML = list(); if (o.ps) fmChFind(ch); });
+    if (long) fmOnInput(sheet.querySelector('#fmChQ'), v => { ch.q = v; ch.found = null; document.getElementById('fmChList').innerHTML = list(); if (o.ps) fmChFind(ch); });
     if (long && o.ps) sheet.querySelector('#fmChQ').dataset.actEnter = 'fm.chGo';
     if (ch.shown) sheetFrame(sheet, layerTop()); }; // a redraw keeps the frame (the handle of a bottom sheet)
   draw(); showSheetBackdrop(o.key || (long ? 'openFmChoiceFull' : 'openFmChoice'), { draw }); const t = layerTop(); t.choice = ch; t.multi = multi; ch.shown = true;
 }
 // 9.4.0 (ס15 family 2): one builder for a set of choices - rows (the choice window, the reasons to hide), chips (the choice window's
 // multi-select sets, the filter's sets) or a grid of days. Each option: { v, html, sub?, group?, on?, mark?, attr?, act?, disabled? }.
-function choiceSetHTML(opts, c) { const on = x => !!(c.isOn ? c.isOn(x) : x.on), A = x => `data-act="${x.act || c.act}"${c.attr ? c.attr(x) : ''}${x.attr || ''}${x.v != null ? ` data-v="${fmEsc(x.v)}"` : ''}`;
+function choiceSetHTML(opts, c) { const on = x => !!(c.isOn ? c.isOn(x) : x.on), A = x => `data-act="${x.act || c.act}"${c.attr ? c.attr(x) : ''}${x.attr || ''}${x.v != null ? ` data-v="${escH(x.v)}"` : ''}`;
   if (c.as === 'seg') return `<div class="view-toggle seg"${c.rowAttr || ''} role="group">${opts.map(x => `<button type="button" ${A(x)} data-active="${on(x)}" aria-pressed="${on(x)}">${x.html}</button>`).join('')}</div>`; // 10.9.0 (design-forms): an exclusive quick choice - segmented
   if (c.as === 'chips') return `<div class="chips-row wrap"${c.rowAttr || ''}>${opts.map(x => `<button type="button" class="chip" ${A(x)} data-active="${on(x)}">${ellTail(x.html)}</button>`).join('')}</div>`; // a plain label (a name) in its own "…" box: a chip is a flex row, where "…" does not work on bare text
   if (c.as === 'grid') return `<div class="day-grid">${opts.map(x => `<button type="button" class="day-cell t-wrap" ${A(x)} data-active="${on(x)}"${x.mark != null ? ` data-anchor="${!!x.mark}"` : ''}${x.band ? ` data-band="${x.band}"` : ''}>${x.html}${x.sub ? `<small>${x.sub}</small>` : ''}</button>`).join('')}</div>`;
   let g = null; return opts.map(x => { let h = '';
-    if (x.group != null && x.group !== g) { g = x.group; h += `<div class="fm-ch-group">${fmEsc(x.group)}</div>` /* a group name is plain text (a destination's name) */; }
-    return h + `<button type="button" class="fm-ch${on(x) ? ' on' : ''}" ${A(x)}${x.disabled ? ' disabled' : ''}>${x.html}${x.sub ? `<small>${x.sub}</small>` : ''}</button>`; }).join('');
+    if (x.group != null && x.group !== g) { g = x.group; h += `<div class="fm-ch-group">${escH(x.group)}</div>` /* a group name is plain text (a destination's name) */; }
+    return h + `<button type="button" class="fm-ch t-wrap${on(x) ? ' on' : ''}" ${A(x)}${x.disabled ? ' disabled' : ''}>${x.html}${x.sub ? `<small>${x.sub}</small>` : ''}</button>`; }).join('');
 }
 act('fm.choice', c => { const t = layerTop(), ch = t && t.choice; if (!ch) return; const V = f => (typeof f === 'function' ? f() : f) || [];
   const x = V(ch.o.quick).concat(V(ch.o.options), ch.found || [], ch.o.lead && ch.q.trim() ? ch.o.lead(ch.q.trim()) : []).find(x => String(x.v) === c.v) || { v: c.v };
@@ -287,8 +320,19 @@ act('fm.chGo', () => { const t = layerTop(), ch = t && t.choice; if (ch && ch.o.
 function fmEnd(F, id, o) { o = o || {}; fmReg(F, id, 'end', o.value || { name: '', loc: null }, o);
   return `<div class="sh-field fm-f fm-end" data-fmw="${id}">${fmLabel(o)}<button type="button" class="fm-pickbtn fm-pick fm-endbtn" data-act="fm.end" data-v="${id}"></button><small class="fm-endprop" data-fmendp="${id}" hidden></small>${fmErrSlot(id)}</div>`; }
 function fmEndShow(F, id) { const v = F.vals[id] || {}, w = fmW(F, id); if (!w) return; const b = w.querySelector('.fm-endbtn'), pl = w.querySelector('.fm-endprop'), o = F.conf[id] || {};
-  if (b) b.innerHTML = `${msi('location_on', { size: 20 })}${ellB(fmEsc(v.name || ''))}<span class="fm-caret"> ▾</span>`;
+  if (b) b.innerHTML = `${msi('location_on', { size: 20 })}${ellB(escH(v.name || ''))}<span class="fm-caret"> ▾</span>`;
   const p = !v.loc && o.travel ? endProposal({ ...o.travel(), [id]: v.name || '', [id + 'Loc']: null }, id) : null;
-  if (pl) { pl.hidden = !p && (v.loc || !v.name); pl.innerHTML = p ? `מוצע לפי ״${fmEsc(p.q)}״${SEP}בחירה מאשרת` : 'חסר מיקום'; pl.classList.toggle('prop', !!p); }
+  if (pl) { pl.hidden = !p && (v.loc || !v.name); pl.innerHTML = p ? `מוצע לפי ״${escH(p.q)}״${SEP}בחירה מאשרת` : 'חסר מיקום'; pl.classList.toggle('prop', !!p); }
   ellFitSoon(); }
 act('fm.end', c => { const F = fmOf(c.el); if (F) openEndChoice(F, c.v); return 'quiet'; });
+// along-drive (a drive's stops): a list of points on the way - each row its name and ✕, then "＋ עצירה", which opens the same end choice
+// (openEndChoice) for one more; o.order puts the list in its order after each change (a drive's: the road's). Value: [{ name, loc }]
+function fmStops(F, id, o) { o = o || {}; fmReg(F, id, 'stops', (o.value || []).slice(), o);
+  return `<div class="sh-field fm-f fm-stops" data-fmw="${escH(id)}">${fmLabel(o)}<div class="dl-list fm-stopl">${fmStopsHTML(id, F ? F.vals[id] : o.value)}</div>${fmHint(o)}${fmErrSlot(id)}</div>`; }
+function fmStopsHTML(id, v) { return (v || []).map((s, i) => stopRowHTML(s, `data-act="fm.stopDel" data-v="${escH(id + '|' + i)}"`)).join('')
+  + `<button type="button" class="link-btn fm-stopadd" data-act="fm.end" data-v="${escH(id)}">${msi('add_location_alt', { size: 18 })} עצירה</button>`; }
+// one stop's row (the editor's list and the card's window): its name, where it is, and ✕
+function stopRowHTML(s, del, sub) { return `<div class="dl-row tv-stoprow"><span class="dl-name">${msi('location_on', { size: 20 })}<span class="dl-tx"><b dir="auto">${escH(s.name || 'מיקום במפה')}</b>${sub ? `<small>${sub}</small>` : ''}</span></span>`
+  + `<button type="button" class="dl-ib" ${del} aria-label="הסרת העצירה" title="הסרת העצירה">${msi('close', { size: 20 })}</button></div>`; }
+function fmStopAdd(F, id, st) { if (!F || F.kinds[id] !== 'stops' || !st || !st.loc) return; const o = F.conf[id] || {}, v = (F.vals[id] || []).concat([st]); fmSet(F, id, o.order ? o.order(v, F) : v); }
+act('fm.stopDel', c => { const F = fmOf(c.el); if (!F) return; const [id, i] = String(c.v).split('|'), v = (F.vals[id] || []).slice(); v.splice(+i, 1); fmSet(F, id, v); return 'quiet'; });

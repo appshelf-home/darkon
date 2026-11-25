@@ -13,7 +13,7 @@ function openDestEditor(id) { layerNote(openDestEditor, arguments);
     ${fmText(F, 'name', { label: 'שם', req: true, value: m.name || '', placeholder: 'למשל: וינה', dup: true, on: () => deDup(F) })}
     ${fmText(F, 'desc', { label: 'בשביל מי ומה', req: true, value: m.description || '', placeholder: 'למשל: 4 ימים בעיר, עם ילדים' })}
     ${fmLoc(F, 'center', { label: 'מרכז המפה', req: true, value: c0, zoom: 'area', kind: 'area', near: () => false, center: c0 ? [c0.lat, c0.lng] : [48, 14], placeholder: 'עיר או אזור, או קואורדינטות', noneText: 'עוד לא נבחר מרכז', on: () => deClock(F), onPick: deAreaPick, ret: F2 => F2 ? { k: 'dest', id: id || null } : null })}<div class="sh-hint de-ccoffer" hidden></div>
-    ${fmSec(F, 'money', { title: 'מטבע ושעון', open: !cur, sum: F2 => [deCountryOf(F2) ? withFlag(flagOfCountry(deCountryOf(F2)), countryName(deCountryOf(F2)) || escH(deCountryOf(F2))) : '', fmEsc(fmGet(F2, 'cur')), deZone(F2) ? tmZoneName(deZone(F2).zone) : ''].filter(Boolean).join(SEP) },
+    ${fmSec(F, 'money', { title: 'מטבע ושעון', open: !cur, sum: F2 => [deCountryOf(F2) ? withFlag(flagOfCountry(deCountryOf(F2)), countryName(deCountryOf(F2)) || escH(deCountryOf(F2))) : '', escH(fmGet(F2, 'cur')), deZone(F2) ? tmZoneName(deZone(F2).zone) : ''].filter(Boolean).join(SEP) },
       fmPick(F, 'country', { label: 'מדינה (הדגל של היעד)', value: cur ? (m.country || '') : '', text: () => '', open: F2 => openCountryPicker(F2.vals.country, countryOfCurrency({ code: fmGet(F2, 'cur').toUpperCase() }), cc => setTimeout(() => { const F3 = fmOf(); if (F3 && F3.kinds.country) { F3.autoCC = ''; fmSet(F3, 'country', cc); } }, 0)), on: () => { deCountryFill(F); deCountryText(F); deClock(F); deCcOffer(F); } })
       + `<div class="sh-times">${fmText(F, 'cur', { label: 'קוד מטבע', value: (m.currency || {}).code || 'EUR', dir: 'ltr', max: 3, on: () => { deCountryText(F); deOffer(F); } })}${fmText(F, 'curName', { label: 'שם המטבע', value: (m.currency || {}).name || 'אירו', on: () => deOffer(F) })}</div><div class="sh-hint de-offer" hidden></div>`
       + `<div class="sh-field de-clock"><span id="deClock"></span><button type="button" class="chip de-tzbtn" data-act="de.tz">שינוי</button></div>`)}
@@ -34,7 +34,7 @@ function deAreaPick(r, F) { if (!r || !F) return; const cc = String(r.cc || '').
     if (!was || (F.autoCC && was === F.autoCC)) { if (was !== cc) fmSet(F, 'country', cc); F.autoCC = cc; } else if (was !== cc) F.ccOffer = cc; }
   deCcOffer(F); }
 function deCcOffer(F) { const el = fmQ(F, '.de-ccoffer'); if (!el) return; const cc = F.ccOffer && F.ccOffer !== deCountryOf(F) ? F.ccOffer : '';
-  el.hidden = !cc; el.innerHTML = cc ? `<span>התוצאה ב${withFlag(flagOfCountry(cc), fmEsc(countryName(cc)))}</span> <button type="button" class="chip de-offer-go" data-act="de.ccOffer">להחליף</button>` : ''; }
+  el.hidden = !cc; el.innerHTML = cc ? `<span>התוצאה ב${withFlag(flagOfCountry(cc), escH(countryName(cc)))}</span> <button type="button" class="chip de-offer-go" data-act="de.ccOffer">להחליף</button>` : ''; }
 act('de.ccOffer', c => { const F = fmOf(c.el); if (!F || !F.ccOffer) return 'quiet'; const cc = F.ccOffer; F.ccOffer = ''; F.autoCC = ''; fmSet(F, 'country', cc); deCcOffer(F); return 'quiet'; });
 function deCountryWants(F) { const cc = deCountryOf(F), c = countryCur(cc), out = {};
   if (c && (fmGet(F, 'cur').toUpperCase() !== c.code || !fmGet(F, 'curName'))) out.cur = c;
@@ -46,10 +46,10 @@ function deCountryFill(F) { const w = deCountryWants(F);
   if (w.cur && !deCurMine(F)) { F.curAuto = w.cur; fmSet(F, 'cur', w.cur.code); fmSet(F, 'curName', w.cur.name); }
   deOffer(F); }
 function deOffer(F) { const el = fmQ(F, '.de-offer'); if (!el) return; const w = deCountryWants(F), cc = deCountryOf(F), parts = [];
-  if (w.cur) parts.push(`${fmEsc(w.cur.name)} (<bdi dir="ltr">${w.cur.code}</bdi>)`);
-  if (w.tz) { const g = tmGuessZone({ country: cc, center: (c => c ? [c.lat, c.lng] : null)(fmGet(F, 'center')) }); if (g) parts.push(`${msi('schedule', { cls: 'msi-in' })} ${fmEsc(tmZoneName(g.zone))}`); }
+  if (w.cur) parts.push(`${escH(w.cur.name)} (<bdi dir="ltr">${w.cur.code}</bdi>)`);
+  if (w.tz) { const g = tmGuessZone({ country: cc, center: (c => c ? [c.lat, c.lng] : null)(fmGet(F, 'center')) }); if (g) parts.push(`${msi('schedule', { cls: 'msi-in' })} ${escH(tmZoneName(g.zone))}`); }
   el.hidden = !parts.length; if (!parts.length) { el.textContent = ''; return; }
-  el.innerHTML = `<span>${withFlag(flagOfCountry(cc), fmEsc(countryName(cc) || cc))}: ${parts.join(SEP)}</span> <button type="button" class="chip de-offer-go" data-act="de.offer">להחליף</button>`; }
+  el.innerHTML = `<span>${withFlag(flagOfCountry(cc), escH(countryName(cc) || cc))}: ${parts.join(SEP)}</span> <button type="button" class="chip de-offer-go" data-act="de.offer">להחליף</button>`; }
 act('de.offer', c => { const F = fmOf(c.el); if (!F) return 'quiet'; const w = deCountryWants(F);
   if (w.cur) { F.curAuto = w.cur; fmSet(F, 'cur', w.cur.code); fmSet(F, 'curName', w.cur.name); }
   if (w.tz) F.vals.tz = ''; deCountryText(F); deClock(F); deOffer(F); return 'quiet'; });
@@ -64,7 +64,7 @@ function deClock(F) { const z = deZone(F), el = fmQ(F, '#deClock'), b = fmQ(F, '
   el.innerHTML = z ? `${msi('schedule', { cls: 'msi-in' })} ${tmZoneName(z.zone)}${SEP}עכשיו <bdi>${tmWall(z.zone).hm}</bdi>${SEP}${tmDiffText(z.zone)}${z.sure ? '' : ' ' + symTip('sym.tz', '≈', 'est')}` : `${msi('schedule', { cls: 'msi-in' })} בוחרים מדינה כדי לדעת את השעון${SEP}עד אז שעון ישראל <span class="est" data-act="tz.tip">≈</span>`; // 10.15.0 (F12): line icon
   if (b) b.hidden = !deCountryOf(F) && !(z && z.zone); fmSums(F); }
 function deDup(F) { const v = fmGet(F, 'name').toLowerCase(), sim = v ? Object.values(DESTS).filter(d => d.id !== F.opts.id && d.meta.name.trim().toLowerCase() === v) : [];
-  fmDup(F, 'name', sim.length ? 'יש כבר במאגר: ' + sim.map(d => `<b>${fmEsc(d.meta.name)}</b>${d.meta.description ? ' (' + fmEsc(d.meta.description) + ')' : ''}`).join(', ') + SEP + 'מותר, אם התיאור שונה' : ''); }
+  fmDup(F, 'name', sim.length ? 'יש כבר במאגר: ' + sim.map(d => `<b>${escH(d.meta.name)}</b>${d.meta.description ? ' (' + escH(d.meta.description) + ')' : ''}`).join(', ') + SEP + 'מותר, אם התיאור שונה' : ''); }
 act('de.tz', c => { const F = fmOf(c.el); if (!F) return; openZonePicker(deCountryOf(F), (deZone(F) || {}).zone, zz => setTimeout(() => { const F3 = fmOf(); if (F3 && F3.kinds.tz) { F3.vals.tz = zz; deClock(F3); } }, 0)); return 'quiet'; });
 act('de.save', c => { const F = fmOf(c.el); if (!F) return; const { id, cur } = F.opts;
   const name = fmGet(F, 'name'), desc = fmGet(F, 'desc'), cc = fmGet(F, 'center');

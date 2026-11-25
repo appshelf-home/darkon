@@ -26,7 +26,7 @@ function iwWhen(inst, role) { const d = dayByKey(inst.day), today = d && d.date 
 function stayOf(l) { const n = nightsBetween(l.checkIn, l.checkOut), iso = todayStr(); return { now: l.checkIn <= iso && iso < l.checkOut, nights: n ? SEP + (n === 1 ? 'לילה אחד' : n + ' לילות') : '' }; }
 const moreDays = list => list.length > 1 ? `${SEP}ועוד ${list.length - 1} ${list.length === 2 ? 'יום' : 'ימים'}` : '';
 function iwStatusHTML(it, ctx) { // 10.2.0 (design-2): a tinted line with its icon ("today" warm); a button opens scheduling
-  const esc = _escH, t = activeTripObj(), arch = !!t.archived || !!ARCHIVE_VIEW, go = msi('chevron_right', { size: 20, cls: 'iw-go' });
+  const esc = escH, t = activeTripObj(), arch = !!t.archived || !!ARCHIVE_VIEW, go = msi('chevron_right', { size: 20, cls: 'iw-go' });
   const rate = it.place ? ratingOf(it.place.id) : null, rateTxt = arch && rate && rate.r ? `${SEP}${RATE[rate.r]}${rate.w ? ' "' + esc(rate.w) + '"' : ''}` : '';
   const line = (ic, txt, today) => `<div class="iw-status${today ? ' today' : ''}">${tagIc(ic)}<span>${txt}</span></div>`;
   if (it.kind === 'travel') { const f = it.travel; if (!f) return '';
@@ -45,7 +45,7 @@ function iwStatusHTML(it, ctx) { // 10.2.0 (design-2): a tinted line with its ic
 // the meta of a place (row 2, plain text): price · this trip's rating · a past trip's rating
 function placeMeta(p, rateOn, past) {
   const b = [];
-  const pr = fmtPrice(p.price); if (pr) b.push(_escH(pr)); // 11.42.0: through the one price formatter ("$$ · בינוני", "25 € לאדם · נכון ל-11.2026")
+  const pr = fmtPrice(p.price); if (pr) b.push(escH(pr)); // 11.42.0: through the one price formatter ("$$ · בינוני", "25 € לאדם · נכון ל-11.2026")
   const r = ratingOf(p.id); if (r && r.r && rateOn()) b.push(symTip('sym.rate.' + r.r, RATE[r.r]));
   const ps = past(p); if (ps) b.push(ps);
   return b;
@@ -59,7 +59,7 @@ function placeMarks(p, bookId) {
   return m.filter(Boolean);
 }
 function iwTagsHTML(it) { // the expanded card's tags row - the card's own tags, with the booking spelled out
-  const esc = _escH, p = it.place, meta = [], t = [];
+  const esc = escH, p = it.place, meta = [], t = [];
   if (it.sched) t.push(grpTag());
   if (it.kind === 'travel') meta.push(esc(travelKindName(it.travel)));
   else if (it.kind === 'note') meta.push(it.sched ? '' : TX.note);
@@ -96,7 +96,7 @@ function iwSection(title, body) { return body ? `<section class="iw-sec"><h4>${t
 const iwRow = (ic, html, cls) => `<div class="iw-row${cls ? ' ' + cls : ''}">${msi(ic, { size: 20 })}<span>${html}</span></div>`;
 const lkBtn = (ic, word, attrs) => `${attrs.startsWith('href') ? `<a class="lk-btn" ${attrs} target="_blank" rel="noopener">` : `<button type="button" class="lk-btn" ${attrs}>`}${msi(ic, { size: 18 })}${word}${attrs.startsWith('href') ? '</a>' : '</button>'}`;
 function iwSectionsHTML(it, ctx) {
-  const esc = _escH, p = it.place, out = [];
+  const esc = escH, p = it.place, out = [];
   // 1. from the organized schedule
   if (it.sched) { const raw = rawSched(it.sched.id), ch = raw ? schedChangeText(raw) : '', e = it.sched;
     out.push(iwSection('מ' + TX.group, `${iwRow('groups', `${esc(e.title)}${SEP}${tmFmt('date', e.date)}${e.start ? SEP + esc(e.start) + (e.end ? '–' + esc(e.end) : '') : ''}`)}${e.note ? iwRow('sticky_note_2', esc(e.note)) : ''}${ch ? `<div class="iw-row sc-mine">${msi('edit', { size: 20 })}<span>שונה אצלי ${tipI('item.mine')}: ${esc(ch)}</span><button type="button" class="iw-tbtn" data-act="sched.reset" data-v="${esc(e.id)}">${msiT('restart_alt', 'חזרה למקור', { size: 18 })}</button></div>` : ''}`)); }
@@ -140,6 +140,7 @@ function iwSectionsHTML(it, ctx) {
     const gu = gidMapsUrl(p) || p.mapsUrl; if (gu) L.push(lkBtn('link', 'Maps', `href="${esc(gu)}"`)); // 11.22.0 (Q8 (1)): by the Google id - exactly this place
     const u = discWikiUrlFor(p); if (u) L.push(lkBtn('menu_book', 'ויקיפדיה', `href="${esc(u)}"`));
     if (p.address) L.push(lkBtn('content_copy', 'כתובת', 'data-act="item.copyAddress"'));
+    if (c && ctx && ctx.mapHost && walkCan(ctx.mapHost)) L.push(`<button type="button" class="lk-btn" data-act="walk.from" data-v="${esc(ctx.mapHost)}">${msiT('directions_walk', 'מה במרחק הליכה מכאן', { size: 18 })}</button>`); // walk-time (Q2): from a map's place, a link - not a new primary
     const l = it.lodging[0]; if (it.hotel && l) { const wa = String(l.whatsapp || '').replace(/[^\d]/g, ''), tel = String(l.phone || '').replace(/[^\d+]/g, ''), web = l.website ? (/^https?:/.test(l.website) ? l.website : 'https://' + l.website) : '';
       if (tel) L.push(`<a class="lk-btn" href="tel:${tel}">${msi('call', { size: 18 })}חיוג</a>`); if (wa) L.push(lkBtn('chat', 'וואטסאפ', `href="https://wa.me/${wa}"`)); if (web) L.push(lkBtn('language', 'אתר', `href="${esc(web)}"`)); } }
   const gl = p ? gidLinkedHTML(p) : ''; // 11.22.0 (Q8 (2), Q9 (2)): "מקושר לגוגל מפות", and a place that repeats another
@@ -151,10 +152,10 @@ function iwSectionsHTML(it, ctx) {
 function iwHeadHTML(lead, name, vis) { return `<div class="sheet-head iw-head">${lead}<b dir="auto" data-act="txt.full"><span class="nm t-ell">${name}</span></b>${vis || ''}</div>`; }
 // kit-fixes (item 4; decisions 2026-11-22 · Review of the `kit-review` report, Q4): the place's local name, under its Hebrew name - quiet,
 // isolated in its own direction (a Latin or local-script name inside the Hebrew window), wrapped whole
-function iwForeignHTML(p) { const f = p && typeof p.foreign === 'string' ? p.foreign.trim() : ''; return f && f !== String(p.name || '').trim() ? `<div class="iw-foreign"><bdi dir="auto">${_escH(f)}</bdi></div>` : ''; }
+function iwForeignHTML(p) { const f = p && typeof p.foreign === 'string' ? p.foreign.trim() : ''; return f && f !== String(p.name || '').trim() ? `<div class="iw-foreign"><bdi dir="auto">${escH(f)}</bdi></div>` : ''; }
 function openItemWin(ref, ctx) {
   ctx = ctx || {}; const sheet = document.getElementById('sheet');
-  const draw = () => { const it = itemOf(ref); if (!it) { closeSheet(); return; } const esc = _escH;
+  const draw = () => { const it = itemOf(ref); if (!it) { closeSheet(); return; } const esc = escH;
     const ttl = it.kind === 'travel' && it.travel ? travelTitle(it.travel) : it.name;
     sheet.innerHTML = `<div class="iw" data-iwkind="${it.kind}" data-ref="item:${esc(String(it.ref))}">${iwHeadHTML(itemLead(it), esc(ttl), it.place && it.kind !== 'travel' ? visBtnHTML(it.place.id, STATE.visited.has(it.place.id)) : '')}${it.kind !== 'travel' ? iwForeignHTML(it.place) : ''}${iwTagsHTML(it)}${iwStatusHTML(it, ctx)}${iwActionsHTML(it, ctx)}${it.place ? rateRowHTML(it.place) : ''}${iwSectionsHTML(it, ctx)}</div>`;
     const d = sheet.querySelector('[data-iwdesc]'), mb = sheet.querySelector('.iw-more'); if (d && mb) requestAnimationFrame(() => { if (d.scrollHeight > d.clientHeight + 2) mb.hidden = false; });
@@ -172,7 +173,7 @@ act('item.moreDesc', c => { const d = c.el.parentElement.querySelector('[data-iw
 // item window; the scheduling line becomes one prominent pick button, the actions only what fits, empty parts are not shown
 function openCandWin(c) {
   const sheet = document.getElementById('sheet');
-  const draw = () => { const esc = _escH, pk = c.pick || {}, small = (c.small || []).filter(Boolean);
+  const draw = () => { const esc = escH, pk = c.pick || {}, small = (c.small || []).filter(Boolean);
     const A = [];
     const w = (ic, word) => `${actIc(ic)}<span>${word}</span>`;
     if (c.edit) A.push(`<button type="button" class="iw-act" data-act="cand.edit" aria-label="תיקון" title="תיקון">${w('edit', 'תיקון')}</button>`);
@@ -217,7 +218,7 @@ let IW_MAP = null;
 function openItemMap(it, ctx) {
   if (!MAP_AVAILABLE || IW_MAP) return; if (!leafOk()) { leafThen(() => openItemMap(it, ctx)); return; } /* 11.29.0 (launch-fast): the library first */ const p = it.place; const c0 = p && routeCoordOf(p), y0 = window.scrollY;
   const el = document.createElement('div'); el.className = 'fs-pick iw-map'; el.id = 'iwMap'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'במפה');
-  el.innerHTML = `<div class="fsp-map" id="iwMapBox"></div><div class="iw-map-title">${_escH(it.name)}</div><button type="button" class="fs-btn" id="iwMapClose" data-act="layer.back" aria-label="סגירה" title="סגירה">${msi('close')}</button>${c0 ? `<a class="iw-map-nav" href="https://www.google.com/maps/dir/?api=1&destination=${c0.lat},${c0.lng}" target="_blank" rel="noopener" aria-label="ניווט" title="ניווט">${msi('navigation')}</a>` : ''}`; // 10.5.0 (design-4 part 2): ✕, the name and navigate
+  el.innerHTML = `<div class="fsp-map" id="iwMapBox"></div><div class="iw-map-title">${escH(it.name)}</div><button type="button" class="fs-btn" id="iwMapClose" data-act="layer.back" aria-label="סגירה" title="סגירה">${msi('close')}</button>${c0 ? `<a class="iw-map-nav" href="https://www.google.com/maps/dir/?api=1&destination=${c0.lat},${c0.lng}" target="_blank" rel="noopener" aria-label="ניווט" title="ניווט">${msi('navigation')}</a>` : ''}`; // 10.5.0 (design-4 part 2): ✕, the name and navigate
   document.body.appendChild(el);
   const map = mapTool('iwMapBox'); addLayerBtn(el); // 5.9.0
   IW_MAP = { el, map, y: y0 }; layerPush('openItemMap', 'full', fp => { closeItemMap(); layerDone('openItemMap', fp); });

@@ -23,13 +23,30 @@ function tvCur(f, C) { return (f && f.id != null && travelById(f.id, C.t)) || f;
 // chain on the day map - DAY_TV_FROM; the stop or the previous travel's arrival on the route and the memory - tvChain); mine still need "מ-"
 function tvEndC(f, side, C, gc) { if (C.home.has(f.id + '|' + side)) return null; const loc = f[side + 'Loc']; if (!loc) return side === 'from' && f.group && gc ? gc : null;
   return loc.pid != null && C.pc ? C.pc(loc.pid) : endCoord(loc, C.t); }
-function travelPts(f, C, gc) { const a = tvEndC(f, 'from', C, gc), b = tvEndC(f, 'to', C); return a && b ? { a, b } : null; }
-function travelPathK(f, P) { return (f.mode || 'flight') + '|' + _r5(P.a) + '|' + _r5(P.b); }
+function travelPts(f, C, gc) { const a = tvEndC(f, 'from', C, gc), b = tvEndC(f, 'to', C); return a && b ? { a, b, via: travelStops(f, C).map(x => x.c) } : null; }
+function travelPathK(f, P) { return (f.mode || 'flight') + '|' + _r5(P.a) + '|' + _r5(P.b) + (P.via && P.via.length ? '|' + P.via.map(_r5).join('|') : ''); } // along-drive: the stops are part of what the path was asked for
+// ---- a drive's stops (along-drive; the owner, 23.11.2026 - option 1 of the task's question): "עצירות בדרך" - a car's places on the way, each
+// { name, loc } as an end is ({ pid } of a place of the trip, or { lat, lng }), kept in the road's order. The road is asked through them
+// (osrmReq's via, the path's key carries them); the day's plan and its legs do not read them (the drive stays one card from its "מ-" to its "אל").
+function tvStopC(s, C) { const loc = s && s.loc; if (!loc || typeof loc !== 'object') return null; return loc.pid != null && C.pc ? C.pc(loc.pid) : endCoord(loc, C.t); }
+function travelStops(f, C) { return (f && f.mode === 'car' && !f.group && Array.isArray(f.stops) ? f.stops : []).map((s, i) => ({ i, s, c: tvStopC(s, C), name: String((s && s.name) || '').trim() })).filter(x => x.c); }
+// the nearest point of a line ([[lat, lng], ...]) to c: { km - along the line from its start, off - from the line } (flat per segment, as a few km asks)
+function lineNear(pts, c) { let run = 0, best = null;
+  for (let i = 1; i < pts.length; i++) { const A = pts[i - 1], B = pts[i], kx = 111.32 * Math.cos(A[0] * Math.PI / 180), ky = 110.57;
+    const bx = (B[1] - A[1]) * kx, by = (B[0] - A[0]) * ky, px = (c.lng - A[1]) * kx, py = (c.lat - A[0]) * ky, len2 = bx * bx + by * by, len = Math.sqrt(len2);
+    const u = len2 ? Math.max(0, Math.min(1, (px * bx + py * by) / len2)) : 0, off = Math.hypot(px - u * bx, py - u * by);
+    if (!best || off < best.off) best = { km: run + u * len, off }; run += len; }
+  return best || { km: 0, off: pts.length ? distanceKm({ lat: pts[0][0], lng: pts[0][1] }, c) : 0 }; }
+function lineKm(pts) { let s = 0; for (let i = 1; i < pts.length; i++) s += distanceKm({ lat: pts[i - 1][0], lng: pts[i - 1][1] }, { lat: pts[i][0], lng: pts[i][1] }); return s; }
+// a drive's stops in the road's order: along its line as kept (or the straight line between its ends); a stop with no point keeps its place last
+function tvStopsOrder(f, stops, C) { const L = travelLine({ ...f, stops: [] }, C) || null, K = L && !L.approx ? L.pts : f.path && f.path.length > 1 ? f.path : L ? L.pts : null;
+  if (!K) return stops; const at = s => { const c = tvStopC(s, C); return c ? lineNear(K, c).km : 1e9; };
+  return stops.map((s, i) => [s, at(s), i]).sort((x, y) => x[1] - y[1] || x[2] - y[2]).map(x => x[0]); }
 // { a, b, mode, pts, approx } - null while an end is unknown
 function travelLine(f, C, gc) { const P = travelPts(f, C, gc); if (!P) return null; const mode = f.mode || 'flight';
   if (mode === 'flight') return { ...P, mode, pts: arcPoints(P.a, P.b), approx: false };
   const kept = Array.isArray(f.path) && f.path.length > 1 && (!f.pathK || f.pathK === travelPathK(f, P)) ? f.path : null;
-  return { ...P, mode, pts: kept || [[P.a.lat, P.a.lng], [P.b.lat, P.b.lng]], approx: !kept }; }
+  return { ...P, mode, pts: kept || [P.a].concat(P.via || [], [P.b]).map(c => [c.lat, c.lng]), approx: !kept }; }
 // a found path is kept in the record the travel lives in - mine: trip.travels; the group's: its program line (derived, like a found
 // address: not a change of mine, so no undo row, and the line's own fields stay as the source gave them)
 function travelPathPut(f, t, val) { const rec = f.group ? (t.schedule || []).find(s => s && String(s.id) === String(f.src)) : (t.travels || []).find(x => String(x.id) === String(f.id)); if (!rec) return false;
@@ -48,7 +65,7 @@ function travelPathWant(f0, C, gc) { if (!f0 || (f0.mode || 'flight') === 'fligh
   const refresh = f.pathK === k && !!f.pathNear && !!f.date && f.date >= todayStr() && tmRouteWhen(f.date, f.depart).slice(0, 10) === f.date;
   if ((f.pathK === k && !refresh) || (!f.pathK && Array.isArray(f.path) && f.path.length > 1)) return null; // kept for these ends, or brought by a file (used as given)
   const wk = t.id + '|' + f.id + '|' + k + (refresh ? '|r' : ''); if (_TV_PW.has(wk) || _TV_DONE.has(wk)) return null; _TV_PW.add(wk);
-  const when = car ? '' : tmRouteWhen(f.date || todayStr(), f.depart), req = car ? osrmReq('car', P.a, P.b, true) : transitReq(P.a, P.b, when, TV_TRANSIT[f.mode] || 'TRANSIT');
+  const when = car ? '' : tmRouteWhen(f.date || todayStr(), f.depart), req = car ? osrmReq('car', P.a, P.b, true, P.via) : transitReq(P.a, P.b, when, TV_TRANSIT[f.mode] || 'TRANSIT');
   return svcAsk(car ? 'route' : 'transit', { key: 'tv|' + k + '|' + when, build: () => req, parse: car ? osrmParse : transitParse }).then(r => { _TV_PW.delete(wk);
     if (r.kind !== 'ok' && r.kind !== 'empty') return false; // no answer (offline, gave up): asked again another time
     _TV_DONE.add(wk); // answered: never twice in one opening, whatever happens to the stored copy
@@ -89,7 +106,7 @@ function tripOutings(t, C) { t = t || activeTripObj(); C = C || tvCtx(t); const 
     if (o && o.date === f.date && o.night === n) o.fs.push(f); else out.push({ f, fs: [f], date: f.date, night: n }); });
   out.forEach(o => { const c = tvEndC(o.f, 'to', C); o.goal = { c, name: String(o.f.to || travelTitle(o.f)).trim() }; });
   return out; }
-function outingHTML(o) { return `טיול יום${SEP}${travelKindName(o.f)} ל<bdi>${_escH(o.goal.name)}</bdi>${SEP}${tmFmt('dayN', o.date)}`; } // the goal's name isolated: a Latin name keeps its place in the Hebrew line
+function outingHTML(o) { return `טיול יום${SEP}${travelKindName(o.f)} ל<bdi>${escH(o.goal.name)}</bdi>${SEP}${tmFmt('dayN', o.date)}`; } // the goal's name isolated: a Latin name keeps its place in the Hebrew line
 function outingKey(o) { return idFix('o:' + o.date + '>' + o.goal.name, null, 'key'); } // 11.21.6 (P5): the key of the file form, as the door converts it
 // the way from one stop to the next through its travels' ends (Q2): [{ pts, mode, approx, link, f }]; null when a travel has an end
 // unknown (the stop-to-stop line stays, as before)
@@ -103,12 +120,14 @@ function tvLoop(a, g) { const p = { lat: a.lat, lng: a.lng }, q = { lat: g.lat, 
 function dayTravelGeo(keys) { const C = tvCtx(), out = [];
   keys.forEach(k => (DAY_TRAVELS[k] || []).forEach(f0 => { const f = tvCur(f0, C); if (out.some(x => x.f === f)) return; const gc = (DAY_TV_FROM[k] || {})[f.id] || null, L = travelLine(f, C, gc);
     out.push({ f, L, gc, mark: !!TV_MARK && TV_MARK.day === k && String(TV_MARK.id) === String(f.id),
-      ends: ['from', 'to'].map(side => ({ side, c: tvEndC(f, side, C, gc), name: String(f[side] || '').trim(), pid: (f[side + 'Loc'] || {}).pid, gc: side === 'from' && !f.fromLoc && !!gc })) }); }));
+      ends: ['from', 'to'].map(side => ({ side, c: tvEndC(f, side, C, gc), name: String(f[side] || '').trim(), pid: (f[side + 'Loc'] || {}).pid, gc: side === 'from' && !f.fromLoc && !!gc })),
+      stops: travelStops(f, C) }); })); // along-drive: a drive's stops, pinned on its line
   return { C, list: out }; }
 // 11.3.0 (the 11.1.0 review's miss b): "על מפת היום" on a travel card - the day map framed by the day (Q9), with that travel marked: its
 // line above the others and heavier, its ends' pins in the maps' selected state (pin-sel); a far end by its edge arrow. Until another
 // travel is marked or that day goes back to its list.
 let TV_MARK = null;
+function tvMarkSet(day, id) { TV_MARK = day ? { day, id } : null; } // along-drive: "לאורך הדרך" marks its drive on the day map
 function tvPinIcon(f) { const big = (f.mode || 'flight') === 'flight', s = big ? 34 : 26;
   return L.divIcon({ className: '', html: `<div class="tv-pin${big ? ' big' : ''}">${msi(TRAVEL_MS[f.mode] || 'flight', { size: big ? 18 : 14 })}</div>`, iconSize: [s, s], iconAnchor: [s / 2, s / 2] }); }
 function tvLineOpts(x) { const fl = x.mode === 'flight', S = ROUTE_STYLE[x.mode] || ROUTE_STYLE.none;
@@ -118,8 +137,11 @@ function dayTravelsDraw(map, hostId, G, pinned) { const out = [], seen = [];
   G.list.slice().sort((p, q) => (p.mark ? 1 : 0) - (q.mark ? 1 : 0)).forEach(x => { if (x.L) { const o = tvLineOpts(x.L), pl = L.polyline(x.L.pts, x.mark ? { ...o, weight: o.weight + 2, opacity: 1, className: o.className + ' tv-mark' } : o).addTo(map); pl.on('click', () => openTravelFloat(hostId, x.f, x.gc)); out.push(pl); }
     x.ends.forEach(e => { if (!e.c || e.gc || (e.pid != null && pinned.has(e.pid)) || seen.some(c => distanceKm(c, e.c) < TV_FAR)) return; seen.push(e.c); // the previous point a group travel leaves from is already pinned
       const mk = L.marker([e.c.lat, e.c.lng], { icon: tvPinIcon(x.f), zIndexOffset: x.mark ? 3000 : 800, title: e.name }).addTo(map); mk.on('click', () => openTravelFloat(hostId, x.f, x.gc)); out.push(mk);
-      if (x.mark) { const el = mk.getElement && mk.getElement(); if (el) el.classList.add('pin-sel'); } }); });
+      if (x.mark) { const el = mk.getElement && mk.getElement(); if (el) el.classList.add('pin-sel'); } });
+    (x.stops || []).forEach(st => { if ((st.s.loc || {}).pid != null && pinned.has(st.s.loc.pid)) return; // a stop that is a place of the day is already pinned
+      const mk = L.marker([st.c.lat, st.c.lng], { icon: tvStopIcon(), zIndexOffset: x.mark ? 2900 : 700, title: st.name }).addTo(map); mk.on('click', () => openTravelFloat(hostId, x.f, x.gc)); out.push(mk); }); });
   return out; }
+function tvStopIcon() { return L.divIcon({ className: '', html: `<div class="tv-pin tv-stop">${msi('location_on', { size: 14 })}</div>`, iconSize: [24, 24], iconAnchor: [12, 12] }); }
 // the frame (Q9): the day's places, and a travel's end only when it is near them (a short travel fits; a long one's far end stays out)
 function dayTravelFrame(bounds, G) { const ends = [].concat(...G.list.map(x => x.ends.filter(e => e.c).map(e => e.c)));
   if (!ends.length) return bounds; let core = bounds.map(b => ({ lat: b[0], lng: b[1] }));
@@ -132,11 +154,11 @@ function dayTravelFrame(bounds, G) { const ends = [].concat(...G.list.map(x => x
 function tvEdgeArrows(map, G) { const items = []; G.list.forEach(x => { if (!x.L) return; [[x.ends[1], x.L.a], [x.ends[0], x.L.b]].forEach(([e, near]) => { if (e.c) items.push({ c: e.c, near, name: e.name || travelKindName(x.f), km: distanceKm(near, e.c), fit: x.L.pts }); }); });
   return mapEdgeArrows(map, items, 'tv-edge'); }
 // a travel's floating card on a map: its kind, time, ends and length; navigate to the departure point and the editor (not in a memory)
-function openTravelFloat(hostId, f, gc) { const esc = _escH, C = tvCtx(), P = travelPts(f, C, gc), ro = !!activeTripObj().archived || !!ARCHIVE_VIEW, nav = travelNavUrl(f);
+function openTravelFloat(hostId, f, gc) { const esc = escH, C = tvCtx(), P = travelPts(f, C, gc), ro = !!activeTripObj().archived || !!ARCHIVE_VIEW, nav = travelNavUrl(f);
   const km = P ? Math.round(distanceKm(P.a, P.b)) : null, Ln = P ? travelLine(f, C, gc) : null;
   const html = cdCard({ lead: leadHTML('travel', msi(TRAVEL_MS[f.mode] || 'flight', { size: 18 }), ''), name: esc(travelTitle(f)),
     tags: [f.depart || f.arrive ? `<span class="tl-tag cd-when time">${tagIc('schedule')}<span dir="ltr">${esc(f.depart || '?')}–${esc(f.arrive || '?')}</span></span>` : '', cdMeta([travelKindName(f), f.date ? tmFmt('date', f.date) : '', f.group ? 'קבוצתי' : ''])],
-    desc: `${travelEndsLine(f)}${km != null ? `<span class="mc-desc mc-desc2">${fmtKm(km)}${Ln && Ln.approx ? (SEP + '≈ קו משוער') : ''}</span>` : ''}`,
+    desc: `${travelEndsLine(f)}${travelStopsLine(f)}${km != null ? `<span class="mc-desc mc-desc2">${fmtKm(km)}${Ln && Ln.approx ? (SEP + '≈ קו משוער') : ''}</span>` : ''}`,
     acts: `<div class="tl-acts mc-acts">${nav ? linkBtn('tl-act a-nav', nav, actIc('navigation'), 'ניווט למיקום היציאה') : ''}${ro ? '' : `<button type="button" class="tl-act a-ed" data-act="trip.editTravel" data-v="${esc(String(f.id))}" aria-label="עריכת הנסיעה" title="עריכת הנסיעה">${actIc('edit')}</button>`}</div>` });
   openFloatCard(hostId, html); }
 // ---- a memory (the memory map, the trip picture): its places by the trip's snapshot, kept paths only ----

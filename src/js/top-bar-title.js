@@ -14,7 +14,7 @@ function fitTitle() {
   const btn = document.getElementById('titleBtn'), nm = document.getElementById('appTitle'); if (!btn || !nm) return;
   btn.dataset.tight = ''; if (nm.scrollWidth > nm.clientWidth + 1) btn.dataset.tight = '1';
 }
-window.addEventListener('resize', fitTitle); if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitTitle);
+sysOn(window, 'resize', fitTitle); if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitTitle);
 // 4.0.0: an empty copy (or one whose trips were all deleted) opens here
 // 10.1.0 (design-1): the logo - the oval stamp (look.md "Icons", notes/design-round/screens-1/stamps.py B) in the primary color; the plane is
 // the font's 'flight'. size: 'l' (the welcome screen) · 'm' (the head of the guide) · 's' (the smallest where its words still read)

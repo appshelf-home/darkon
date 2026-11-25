@@ -1,10 +1,10 @@
 /* ===== 9.7.0 TOUCH (T13א, Q4): what the browser may still do under the finger, once per gesture kind - the only touch-action
-   and overscroll settings (the map component keeps its own). Classes: g-swipe / g-grip / g-pic / g-float on the element; the
+   and overscroll settings (the map component keeps its own). Classes: g-swipe / g-grip / g-pic / g-float / g-scrub on the element; the
    gesture's states g-arm (sinks at once), g-lift (ready to drag), g-moving (follows the finger), g-ghost, g-dragging, g-dropline, g-prev ===== */
 html { touch-action: pan-x pan-y; overscroll-behavior-y: none; } /* the page scrolls and never zooms like a picture (maps keep their own pinch); back-exit (decisions 2026-11-20 · No pull-to-refresh): a pull down at the page's top never reloads the app - every screen, installed and in a tab (the windows and the map keep their own scrolling) */
 .g-swipe { touch-action: pan-y; }                      /* a sideways swipe keeps vertical scrolling */
 .g-grip { touch-action: none; cursor: grab; -webkit-user-select: none; user-select: none; } /* ⠿ - a drag owns the finger at once */
-.g-pic, .g-float { touch-action: none; }               /* a picture moves and zooms inside itself only; the floating card follows the finger */
+.g-pic, .g-float, .g-scrub { touch-action: none; }               /* a picture moves and zooms inside itself only; the floating card follows the finger */
 .sheet, .screen-layer, .tp-body, .cb-t { overscroll-behavior: contain; } /* a window's (and a tall bubble's) scroll is never handed to the page under it */
 .sheet { transition: transform var(--motion-fast) var(--ease); }        /* a pulled window snaps back */
 .g-moving { transition: none !important; z-index: 2; }

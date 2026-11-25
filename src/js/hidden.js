@@ -21,20 +21,20 @@ function hiddenGroups() { // phone-round-2b-fixes P7 (G55, 11.23.2): one rule - 
 }
 function hiddenCount() { return hiddenGroups().reduce((n, g) => n + g.places.length + g.layers.length + (g.moved || []).length, 0); }
 function hiddenMovedRow(p) { const st = STATE.edits.status[p.id] || {}, t = STATE.trips[st.trip], L = layerDef(p.layer);
-  return `<div class="card hid-card"><div class="card-top"><div><h3><span class="dd-dot" style="background:${L.color || 'var(--outline-variant)'}"></span>${msi('hotel', { size: 18, cls: 'msi-in' })} ${_qe(p.name)}</h3><div class="sub">${msi('luggage', { size: 16, cls: 'msi-in' })} עבר לטיול ${t ? _qe(String(t.name).split(' · ')[0]) : ''} - מלון תמיד שייך לטיול</div></div></div></div>`; }
+  return `<div class="card hid-card"><div class="card-top"><div><h3><span class="dd-dot" style="background:${L.color || 'var(--outline-variant)'}"></span>${msi('hotel', { size: 18, cls: 'msi-in' })} ${escH(p.name)}</h3><div class="sub">${msi('luggage', { size: 16, cls: 'msi-in' })} עבר לטיול ${t ? escH(String(t.name).split(' · ')[0]) : ''} - מלון תמיד שייך לטיול</div></div></div></div>`; }
 function hiddenPlaceRow(p, trip) { const L = layerDef(p.layer), why = isGoneStatus(p.status) ? `<span class="badge st-why">${statusHTML(p.status, { size: 16 })}</span>` : '';
-  return `<div class="card hid-card"><div class="card-top"><div><h3><span class="dd-dot" style="background:${L.color || 'var(--outline-variant)'}"></span>${msiTie(typeIcon(p.icon || L.icon, { size: 18, cls: 'msi-in' }), _qe(p.name))}</h3>
-    <div class="sub">${trip ? `<span class="badge st-why">${msi('thumb_down', { size: 16 })}מטיול קודם</span> ` : ''}${why}${p.statusNote ? _qe(p.statusNote) : ''}</div></div></div>
-    <div class="brow card-actions"><button class="btn-nav" data-act="hidden.back" data-v="p:${_qe(p.id)}">${msi('visibility', { size: 18 })} החזרה</button></div></div>`; }
+  return `<div class="card hid-card"><div class="card-top"><div><h3><span class="dd-dot" style="background:${L.color || 'var(--outline-variant)'}"></span>${msiTie(typeIcon(p.icon || L.icon, { size: 18, cls: 'msi-in' }), escH(p.name))}</h3>
+    <div class="sub">${trip ? `<span class="badge st-why">${msi('thumb_down', { size: 16 })}מטיול קודם</span> ` : ''}${why}${p.statusNote ? escH(p.statusNote) : ''}</div></div></div>
+    <div class="brow card-actions"><button class="btn-nav" data-act="hidden.back" data-v="p:${escH(p.id)}">${msi('visibility', { size: 18 })} החזרה</button></div></div>`; }
 function hiddenLayerRow(l) { const n = POINTS.filter(p => p.layer === l.id).length;
-  return `<div class="card hid-card"><div class="card-top"><div><h3><span class="dd-dot" style="background:${l.color}"></span>שכבה: ${_qe(l.name)}</h3><div class="sub">${n} מקומות</div></div></div>
+  return `<div class="card hid-card"><div class="card-top"><div><h3><span class="dd-dot" style="background:${l.color}"></span>שכבה: ${escH(l.name)}</h3><div class="sub">${n} מקומות</div></div></div>
     <div class="brow card-actions"><button class="btn-nav" data-act="hidden.back" data-v="l:${l.id}">${msi('visibility', { size: 18 })} החזרה</button></div></div>`; }
 function renderHiddenScreen() {
   const G = hiddenGroups(), t = hasTrip() ? activeTripObj() : null;
   document.getElementById('main').innerHTML = `<div class="section-head"><h2>${SY.hide} מוסתרים</h2><p>מקומות ושכבות שלא מוצגים ברשימות ובמפה. "החזרה" מציגה אותם שוב.</p></div>`
     + (G.length ? G.map(g => g.kind === 'trip'
-      ? `<h3 class="lyr-h">${msi('luggage', { cls: 'msi-in' })} רק בטיול ${t ? _qe(t.name) : ''}</h3>${g.places.length > 1 ? `<button type="button" class="sh-secondary hid-all" data-act="hidden.backTrip">${msi('visibility', { size: 18 })} החזרת כולם (${g.places.length})</button>` : ''}${g.places.map(p => hiddenPlaceRow(p, true)).join('')}`
-      : `<h3 class="lyr-h">${g.dest ? _qe(withFlag(destFlag(g.dest), destName(g.dest))) : `${msi('luggage', { cls: 'msi-in' })} מקומות של הטיול, בלי יעד`}</h3>${g.layers.map(hiddenLayerRow).join('')}${g.places.map(p => hiddenPlaceRow(p)).join('')}${(g.moved || []).map(hiddenMovedRow).join('')}`).join('')
+      ? `<h3 class="lyr-h">${msi('luggage', { cls: 'msi-in' })} רק בטיול ${t ? escH(t.name) : ''}</h3>${g.places.length > 1 ? `<button type="button" class="sh-secondary hid-all" data-act="hidden.backTrip">${msi('visibility', { size: 18 })} החזרת כולם (${g.places.length})</button>` : ''}${g.places.map(p => hiddenPlaceRow(p, true)).join('')}`
+      : `<h3 class="lyr-h">${g.dest ? escH(withFlag(destFlag(g.dest), destName(g.dest))) : `${msi('luggage', { cls: 'msi-in' })} מקומות של הטיול, בלי יעד`}</h3>${g.layers.map(hiddenLayerRow).join('')}${g.places.map(p => hiddenPlaceRow(p)).join('')}${(g.moved || []).map(hiddenMovedRow).join('')}`).join('')
       : emptyHTML(msi('visibility_off'), 'מה שמסתירים יופיע כאן, עם הדרך להחזיר אותו.', '', 'אין מוסתרים'));
 }
 // a place comes back: its reason leaves (or "פתוח שוב" over a reason that came in the destination's file), and the trip's own hiding

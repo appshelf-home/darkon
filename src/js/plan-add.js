@@ -34,21 +34,21 @@ function openAddPlaceSheet(day, slot) { layerNote(openAddPlaceSheet, arguments);
   const d = dayByKey(day); if (!d) return;
   const favN = addPlacePool(day).filter(p => STATE.favorites.has(p.id) && !TRIP_DAYS.some(x => isInDay(x.key, p.id))).length;
   _addPl = { day, slot: slot || 'unassigned', tab: favN ? 'fav' : 'near', q: '' };
-  const sheet = document.getElementById('sheet'), esc = _escH;
+  const sheet = document.getElementById('sheet'), esc = escH;
   const partLab = _addPl.slot !== 'unassigned' ? SEP + ((SLOTS.find(s => s.key === _addPl.slot) || {}).label || '').replace(/^\S+\s+/, '') : '';
   sheet.innerHTML = `${fmHead(`＋ הוספה ליום${SEP}${tmFmt('day', d.date)}${partLab}`, 'apClose')}
     <div class="ap-search">${searchFieldHTML('apQ', 'חיפוש לפי שם, כתובת, תיאור, אזור או שכבה', '')}</div>
     <div class="ap-tabs" id="apTabs"></div>
     <div id="apList"></div>
     <div class="brow sheet-actions sheet-save-bar"><button class="sh-secondary" id="apNew" data-act="addPlace.new">＋ מקום חדש</button></div>`;
-  wireSearchField(sheet.querySelector('#apQ'), v => { _addPl.q = v; drawAddPlace(); });
+  fmOnInput(sheet.querySelector('#apQ'), v => { _addPl.q = v; drawAddPlace(); });
   
   drawAddPlace();
   openSheet('openAddPlaceSheet');
 }
 function drawAddPlace() {
   const a = _addPl, sheet = document.getElementById('sheet'), box = sheet.querySelector('#apList'), tabs = sheet.querySelector('#apTabs'); if (!a || !box) return;
-  const esc = _escH, pool = addPlacePool(a.day), inPlan = p => TRIP_DAYS.find(x => isInDay(x.key, p.id) || schedEntries(p.id).some(e => e.day === x.key));
+  const esc = escH, pool = addPlacePool(a.day), inPlan = p => TRIP_DAYS.find(x => isInDay(x.key, p.id) || schedEntries(p.id).some(e => e.day === x.key));
   const favs = pool.filter(p => STATE.favorites.has(p.id) && !inPlan(p));
   const refs = dayRefCoords(a.day), dist = p => { const c = routeCoordOf(p); if (!c || !refs.length) return null; return Math.min(...refs.map(r => distanceKm(r, c))); };
   const q = a.q.trim().toLowerCase();

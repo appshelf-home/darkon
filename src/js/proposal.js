@@ -138,7 +138,7 @@ function openPropAsk() { layerNote(openPropAsk, arguments); if (!propCan()) retu
 }
 function propPickDays(F) { const all = TRIP_DAYS.filter(d => !(tripState(activeTripObj()) === 'during' && d.date < todayStr()));
   // picker-rule: it fills the form's field - a draft until "✓ סיום"; every other close leaves the field as it was
-  openFmChoice({ key: 'propPickDays', as: 'chips', multi: 'draft', draft: () => (fmLive(F).opts.picked || []).slice(), title: d => `${SY.days} לבחור ימים${d.length ? SEP + d.length : ''}`, options: all.map(d => ({ v: d.key, html: _escH(d.label), text: d.label })) },
+  openFmChoice({ key: 'propPickDays', as: 'chips', multi: 'draft', draft: () => (fmLive(F).opts.picked || []).slice(), title: d => `${SY.days} לבחור ימים${d.length ? SEP + d.length : ''}`, options: all.map(d => ({ v: d.key, html: escH(d.label), text: d.label })) },
     d => { const G = fmLive(F); G.opts.picked = all.map(x => x.key).filter(k => d.includes(k)); }); } // the live form (11.15.1, Q2); in the days' order
 function propRequestFile(keys, keep) {
   const id = STATE.activeTrip, t = activeTripObj(), dated = !!t.start, td = STATE.tripData[id] || {}, ref = x => portableRef(x, t), dd = k => { const d = dayByKey(k); return dated ? { date: d.date } : { day: dayIdx(k) }; };
@@ -173,14 +173,14 @@ function propDayHTML(d, P, R) { const D = P.days[d.key], open = PROP_OPEN.has(d.
   try { total = mergedIds(d.key).length + scheduleOf(d.date).length; if (open) tl = dayTimelineHTML(d); } finally { STATE.itinerary = saved.it; STATE.times = saved.times; PROP_VIEW = null; }
   const nw = D.items.filter(x => { const m = R.marks[d.key + '|' + x.id]; return m && (m.nw || m.mv); }).length, info = dayHeadInfo(d);
   const lines = (propEdited(P, d.key) ? `<div class="pv-line">${msi('edit_calendar', { size: 18 })}<span>שינית את היום הזה אחרי שההצעה נבנתה</span></div>` : '') + (D.drop ? `<div class="pv-line">${msi('playlist_remove', { size: 18 })}<span>מקום שהורדת בטיוטה ירד מהיום הזה</span></div>` : '')
-    + (String(D.note || '').trim() ? `<div class="pv-say pv-daysay">${msi('chat', { size: 18 })}<span>${_escH(D.note)}</span></div>` : '');
-  return `<div class="accordion-item day-item pv-day" data-day-item="${d.key}" data-ref="day:${d.key}" data-open="${open}"><div class="pv-dh"><button type="button" class="accordion-header day-head t-wrap" data-act="prop.day"><span class="dh-t"><b>${glueText(_escH(info.title))}</b><small>${total} בתוכנית${nw ? `${SEP}${nw === 1 ? 'אחד חדש' : nw + ' חדשים'}` : ''}</small></span></button><button type="button" class="pv-only" data-act="prop.applyDay">${msi('check', { size: 18 })}רק את היום</button><button type="button" class="pv-arrow" data-act="prop.day" aria-label="פתיחה וסגירה של היום">${msi('expand_more')}</button></div>
+    + (String(D.note || '').trim() ? `<div class="pv-say pv-daysay">${msi('chat', { size: 18 })}<span>${escH(D.note)}</span></div>` : '');
+  return `<div class="accordion-item day-item pv-day" data-day-item="${d.key}" data-ref="day:${d.key}" data-open="${open}"><div class="pv-dh"><button type="button" class="accordion-header day-head t-wrap" data-act="prop.day"><span class="dh-t"><b>${glueText(escH(info.title))}</b><small>${total} בתוכנית${nw ? `${SEP}${nw === 1 ? 'אחד חדש' : nw + ' חדשים'}` : ''}</small></span></button><button type="button" class="pv-only" data-act="prop.applyDay">${msi('check', { size: 18 })}רק את היום</button><button type="button" class="pv-arrow" data-act="prop.day" aria-label="פתיחה וסגירה של היום">${msi('expand_more')}</button></div>
     <div class="accordion-body">${open ? `${lines}<div class="tl pv-tl">${tl}</div>` : ''}</div></div>`; }
 function renderProposalScreen() { const main = document.getElementById('main'), P = propOf(), keys = P ? propDays(P) : [];
   if (!keys.length || !propCan()) { main.innerHTML = ''; setTimeout(() => { const e = screenTop(); if (e && e.tab === 'proposal') layerBack(false); }, 0); return; }
   if (!PROP_OPEN) PROP_OPEN = new Set([keys[0]]);
   const R = propBuild(keys, P), part = (P.applied || []).length > 0, tag = (cls, ic, w, fill) => `<span class="tl-tag pv-tag ${cls}">${msi(ic, { fill: !!fill })}${w}</span>`;
-  main.innerHTML = `${String(P.note || '').trim() ? `<div class="pv-say">${msi('chat', { size: 20 })}<span>ה-${AI}: ${_escH(P.note)}</span></div>` : ''}
+  main.innerHTML = `${String(P.note || '').trim() ? `<div class="pv-say">${msi('chat', { size: 20 })}<span>ה-${AI}: ${escH(P.note)}</span></div>` : ''}
     <div class="pv-legend">${tag('pv-new', 'auto_awesome', 'חדש')}${tag('pv-mv', 'swap_horiz', 'זז מיום X')}${tag('pv-must', 'flag', 'לא לפספס', true)}${tag('pv-fix', 'lock', 'קבוע')}</div>
     <div class="accordion pv-days">${TRIP_DAYS.filter(d => P.days[d.key]).map(d => propDayHTML(d, P, R)).join('')}</div>
     <div class="dr-dock pv-dock"><button type="button" class="pv-later" id="pvLater" data-act="prop.later">${msi('schedule', { size: 18 })}לא עכשיו</button><button type="button" class="btn-nav pv-apply" id="pvApply" data-act="prop.applyAll">${msi('done_all', { size: 18 })}${part ? 'להחיל ' + propN(keys.length) : 'להחיל את ההצעה'}</button></div>`;

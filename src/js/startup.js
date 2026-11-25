@@ -10,12 +10,20 @@ const IS_TEST_SITE = location.hostname.startsWith(APP.testHost);
 // 3.2.0: a badge in the top bar only while there is no network (the app has no sync, so no permanent dot)
 (function netBadge() {
   const b = document.getElementById('netBadge'); b.innerHTML = msi('cloud_off', { size: 22 }); // 10.1.0 (design-1): a small warm icon, its name on a long press
-  const upd = () => { b.hidden = navigator.onLine !== false; };
-  window.addEventListener('online', upd); window.addEventListener('offline', upd); upd();
+  const upd = () => { b.hidden = svcOnline(); };
+  svcOnBack(upd); sysOn(window, 'offline', upd); upd();
 })();
 act('net.info', () => showToast('בלי רשת: המפה, התחזית, שער המטבע וחיפוש כתובות מחכים לחיבור. כל השאר עובד ונשמר.'));
 // 3.2.0: weekday next to every date field (standard), for fields that don't show one already
-const REG_READY = regStartup(loadDestsFromDB()); // 11.20.0: a share waits for the stored data (psShareIn)
+// arch-guard (3; decisions 2026-11-20 · Review of the `quality-review` report, Q8): the first real screen - performance.mark('first-screen')
+// at the first draw that has the stored data in: the draw after the IndexedDB read when that read brought destinations (startupRedraw),
+// else the first draw itself (the mark at that draw's time). t1103 measures it: the demo trip, CPU x4, opened from the service worker.
+// Its state lives on the function (hoisted: render may call it before this line runs).
+function firstScreen(ev) { const F = firstScreen; if (F.done) return;
+  if (ev === 'drawn') { F.at = performance.now(); if (!F.data) return; } // every draw (render) until the mark
+  else { F.data = true; if (ev === 'redraw' || !F.at) return; } // the stores answered: 'redraw' - the draw that follows marks
+  F.done = true; try { performance.mark('first-screen', { startTime: F.at }); } catch (e) {} }
+const REG_READY = regStartup(loadDestsFromDB().then(r => { firstScreen(r ? 'redraw' : 'data'); return r; }, e => { firstScreen('data'); throw e; })); // 11.20.0: a share waits for the stored data (psShareIn)
 updateHeader();
 // 4.3.0: the title is a button (no text selection, no flash): it opens the trips screen, and does nothing more when already there
 act('title.trips', () => { if (activeTab === 'trips') { appScroll(0, true); return; } openMenuScreen('trips'); });
@@ -48,11 +56,11 @@ let QUIET_SWAP = false; // 11.29.1: the next controllerchange is a quiet swap to
         if (document.getElementById('updateBar')) return; window._swWaiting = w; showUpdateBar(); });
     };
     if (reg.waiting) offer(reg.waiting);
-    reg.addEventListener('updatefound', () => { const w = reg.installing; w && w.addEventListener('statechange', () => { if (w.state === 'installed') offer(w); }); });
+    sysOn(reg, 'updatefound', () => { const w = reg.installing; if (w) sysOn(w, 'statechange', () => { if (w.state === 'installed') offer(w); }); });
     setInterval(() => reg.update().catch(() => {}), 60 * 60 * 1000);
   }).catch(() => {});
   let reloading = false; const hadController = !!navigator.serviceWorker.controller; // 4.2.0: no reload on the very first install
-  navigator.serviceWorker.addEventListener('controllerchange', () => { if (QUIET_SWAP) { QUIET_SWAP = false; return; } if (reloading || !hadController) return; reloading = true; location.reload(); });
+  sysOn(navigator.serviceWorker, 'controllerchange', () => { if (QUIET_SWAP) { QUIET_SWAP = false; return; } if (reloading || !hadController) return; reloading = true; location.reload(); });
 })();
 (function handleShareTarget() { // 2.0.0: "share to app" from Google Maps (Android, installed app) opens a new place
   const q = new URLSearchParams(location.search); if (q.get('shared') || q.get('title') || q.get('text') || q.get('url')) SHARE_START = true; // place-find (G68): its windows' history waits for a touch (layer-manager.js)
@@ -62,11 +70,11 @@ let QUIET_SWAP = false; // 11.29.1: the next controllerchange is a quiet swap to
   const shared = [q.get('title'), q.get('text'), q.get('url')].filter(Boolean).join('\n');
   if (!shared) return;
   try { history.replaceState(null, '', location.pathname); } catch (e) {}
-  if (/^\s*\{/.test(q.get('text') || '')) { setTimeout(() => { const d = parseAppText(q.get('text')); if (!d || !openIncoming(d, 'share')) showToast('הטקסט ששותף לא נראה כמו קובץ של ' + APP.appTitle); }, 300); return; }
+  if (/^\s*\{/.test(q.get('text') || '')) { setTimeout(() => { const d = parseAppText(q.get('text')).data; if (!d || !openIncoming(d, 'share')) showToast('הטקסט ששותף לא נראה כמו קובץ של ' + APP.appTitle); }, 300); return; }
   setTimeout(() => psShareIn(shared), 300); // 11.20.0 (place-search-upgrade, Q9): the open search, or a new place at the trip's nearest destination
 })();
 if ('launchQueue' in window) { // 4.2.0: opening a .json file with the installed app (desktop Chrome: file_handlers)
-  try { window.launchQueue.setConsumer(async params => { for (const fh of (params.files || [])) { try { const f = await fh.getFile(); const d = parseAppText(await f.text()); if (d && openIncoming(d, 'launch')) return; } catch (e) {} } }); } catch (e) {}
+  try { window.launchQueue.setConsumer(async params => { for (const fh of (params.files || [])) { try { const f = await fh.getFile(); const d = parseAppText(await f.text()).data; if (d && openIncoming(d, 'launch')) return; } catch (e) {} } }); } catch (e) {}
 }
 act('nav.section', c => {
   const sec = c.el.dataset.sec, from = sectionOf(activeTab); // 4.4.0: the filter (search included) is shared by points and map
@@ -75,13 +83,13 @@ act('nav.section', c => {
 });
 (function () { // bottom nav hides on scroll down, returns on scroll up
   let lastY = window.scrollY; const nav = document.getElementById('bottomNav');
-  window.addEventListener('scroll', () => { const y = window.scrollY; if (Math.abs(y - lastY) < 6) return; if (Date.now() - _revealAt < 900) { lastY = y; return; } /* 10.6.0: a scroll by reveal() is not the person's - the navigation stays */ nav.classList.toggle('hide', y > lastY && y > 120); document.body.classList.toggle('nav-hidden', nav.classList.contains('hide')); lastY = y; }, { passive: true });
+  sysOn(window, 'scroll', () => { const y = window.scrollY; if (Math.abs(y - lastY) < 6) return; if (Date.now() - _revealAt < 900) { lastY = y; return; } /* 10.6.0: a scroll by reveal() is not the person's - the navigation stays */ nav.classList.toggle('hide', y > lastY && y > 120); document.body.classList.toggle('nav-hidden', nav.classList.contains('hide')); lastY = y; }, { passive: true });
 })();
 act('theme.next', () => {
   const order = ['auto','light','dark'];
   const cur = order.indexOf(STATE.theme || 'auto');
   STATE.theme = order[(cur+1) % order.length];
-  persist(); applyTheme();
+  persist(); applyTheme(); mapThemeChanged(); // hebrew-map: the maps drawn in the app's colours follow
   showUndoToast(document.getElementById('themeToggle').textContent);
 });
 applyTheme();
@@ -100,14 +108,16 @@ act('search.toggle', () => {
 });
 
 const scrollBtn = document.getElementById('scrollTopBtn');
-window.addEventListener('scroll', () => {
+sysOn(window, 'scroll', () => {
   scrollBtn.classList.toggle('show', window.scrollY > 400);
 }, {passive:true});
 act('page.top', () => appScroll(0, true));
 
 renderLegend();
 
-(function seedFlights() {
+// review-fixes-11471 (4; decisions 2026-11-23 · Review of the `test-dedupe` and `one-way` summaries, Q2): an ordinary step of the startup, not a
+// one-time migration - the open trip's flights go into its plan when it was not seeded yet (flightsSeeded is the trip's own)
+function seedFlights() {
   if (STATE.flightsSeeded) return;
   const add = (fid, day, name, start, end) => {
     if (!STATE.planItems[fid]) STATE.planItems[fid] = { name, address: '', icon: 'airport' };
@@ -117,7 +127,8 @@ renderLegend();
   };
   tripFlights().forEach(f => { const dk = travelDay(f); if (dk) add(f.id, dk, flightPlanName(f), f.depart, !(Number(f.arriveDay) || 0) && f.arrive > f.depart ? f.arrive : f.depart); });
   STATE.flightsSeeded = true; persist();
-})();
+}
+seedFlights();
 
 FP.regions = defaultRegions();
 if (STATE._tripUpdated) { const n = STATE._tripUpdated; delete STATE._tripUpdated; logEvent('הטיול עודכן מהאתר: ' + n, true, { b: 1 }); setTimeout(() => showToast('פרטי הטיול עודכנו (' + n + '). הסימונים והתוכנית נשמרו'), 800); }

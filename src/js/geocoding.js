@@ -15,6 +15,7 @@ function saveGeocodeCache(cache) {
   regWrite('geocode', out);
 }
 let GEOCODE_CACHE = MAP_AVAILABLE ? loadGeocodeCache() : {};
+function geocodeForget() { GEOCODE_CACHE = {}; Object.keys(GEO_NONE_AT).forEach(k => { delete GEO_NONE_AT[k]; }); regDrop('geocode'); } // storage (Q5 🌐): the addresses found are cleared - looked up again when needed
 // one question to the address service; first = the provider asked first (the other answers when it is busy).
 // Returns a place, null (a real "not found"), or throws GEO_NO (no network, busy, an error): nothing is kept then.
 const GEO_NO = new Error('geocode: no answer');

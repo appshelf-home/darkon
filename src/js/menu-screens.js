@@ -9,9 +9,8 @@ const ACC_MS = { '📱': 'smartphone', '🔠': 'format_size', '🩺': 'monitor_h
   '📄': 'description', '🧩': 'extension', '💡': 'lightbulb', '📋': 'list', [SY.map]: 'layers', '✈️': 'flight', '🧭': 'route', [SY.group]: 'groups', '⏱️': 'more_time' };
 // 10.15.0 (design-review Q15): the destination file's sections - the app draws its own expand_more and ignores the file's "▾"; a section's
 // icon is a line icon named in the file (data-icon, the kit's list); "נציגות ישראל" is a custom Israeli-flag line icon (Material Symbols has
-// none); an older file's leading emoji still shows (content, as a flag), with the same fixed gap as an icon
-const IL_FLAG_SVG = '<svg class="msi acc-ic il-flag" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="1.5"/><path d="M2.5 8h19M2.5 16h19"/><path d="M12 9.3l2.3 4H9.7z M12 14.7l-2.3-4h4.6z" stroke-width="1.2"/></svg>';
-function infoSecIcon(n) { return n === 'israel_flag' ? IL_FLAG_SVG : MS_CP[n] ? msi(n, { cls: 'acc-ic' }) : ''; }
+// none; msi's drawn entry israel_flag, IL_FLAG_SVG in flags-place-types.js); an older file's leading emoji still shows (content, as a flag), with the same fixed gap as an icon
+function infoSecIcon(n) { return n === 'israel_flag' || MS_CP[n] ? msi(n, { cls: 'acc-ic' }) : ''; } // one-way (7): the flag is msi's drawn entry
 function infoHeadFrame(hd) { if (hd.dataset.framed) return; hd.dataset.framed = '1';
   hd.querySelectorAll('.accordion-arrow').forEach(a => a.remove());
   const ic = infoSecIcon(hd.dataset.icon || ''), first = hd.firstChild;
@@ -21,9 +20,16 @@ function infoHeadFrame(hd) { if (hd.dataset.framed) return; hd.dataset.framed = 
   if (!hd.querySelector(':scope > .acc-ic')) hd.insertAdjacentHTML('afterbegin', msi('article', { cls: 'acc-ic' })); // final-review Q4: an unknown icon name (or none, and no emoji) - a general icon, so the column of titles stays straight
   const rest = [...hd.childNodes].filter(n => !(n.nodeType === 1 && n.classList.contains('acc-ic')));
   const span = document.createElement('span'); rest.forEach(n => span.appendChild(n)); span.innerHTML = span.innerHTML.trim(); hd.appendChild(span);
-  hd.insertAdjacentHTML('beforeend', ` <span class="accordion-arrow">${msi('expand_more')}</span>`); hd.classList.add('t-wrap'); }
+  hd.insertAdjacentHTML('beforeend', ` <span class="accordion-arrow">${msi('expand_more')}</span>`); hd.classList.add('t-wrap'); infoCheckNote(hd); }
+// limits-and-safety (D4; decisions 2026-11-24 · Review of the legal-review-2 report, Q12 - an exception to content-may-be-wrong's "a note only
+// where content comes in"): the AI-written facts that can hurt a person - the safety and emergency section, Israel's embassy - open with one
+// quiet line (wrong.official); by the section's icon, or an older file's title (the words of info-complete's INFO_OLD_TITLE)
+const INFO_CHECK = { local_hospital: /בטיחות|חירום|בריאות/, israel_flag: /נציגות|שגרירות|קונסוליה/ };
+function infoCheckNote(hd) { const b = hd.nextElementSibling, ic = hd.dataset.icon || '';
+  if (!b || !b.classList.contains('accordion-body') || b.querySelector(':scope > .info-check')) return;
+  if (INFO_CHECK[ic] || (!ic && Object.values(INFO_CHECK).some(re => re.test(hd.textContent)))) b.insertAdjacentHTML('afterbegin', `<p class="sh-hint info-check">${tipText('wrong.official')}</p>`); }
 function accLead(title, val) { const m = String(title).match(/^\s*([^\s\u0590-\u05FFA-Za-z0-9"(<]+)\s+/), ic = m && (ACC_MS[m[1]] || ACC_MS[m[1].replace(/\uFE0F/g, '')]),
-    v = val == null ? '' : `<small class="acc-val"${val ? '' : ' hidden'}>${sepTie(fmEsc(val))}</small>`;
+    v = val == null ? '' : `<small class="acc-val"${val ? '' : ' hidden'}>${sepTie(escH(val))}</small>`;
   return ic ? `${msi(ic, { cls: 'acc-ic' })}<span>${String(title).slice(m[0].length)}${v}</span>` : `<span>${title}${v}</span>`; }
 // 6.1.0: one action opens and folds every section (accordion); what is remembered: ACC_OPEN by key, ℹ️ כללי by section
 act('acc.toggle', c => { const it = c.el.parentElement, o = it.dataset.open !== 'true'; it.dataset.open = String(o);
@@ -35,7 +41,7 @@ function renderLogScreen() {
 function renderSettingsScreen() {
   // 10.13.0 (design-screens, gap 53, decisions 2026-11-07-design-gaps Q12, Q14): the top card in the hero's light blue - the app's name,
   // the version line and the copyright line, the small stamp at its end (the place of "about"); the rows grouped under accent headers
-  document.getElementById('main').innerHTML = `<div class="section-head"><h2>⚙️ הגדרות</h2></div><div class="set-head"><div class="set-head-t"><b>${APP.appTitle}</b><p class="set-ver">גרסה ${APP_VERSION}${SEP}עודכן ${APP_DATE}</p><p class="set-ver set-copy">${copyrightText().replace(/ (© [\d–]+)$/, (m, c) => `\u00A0<bdi dir="ltr">${c}</bdi>`).replace(COPY_WORDS, w => `<a href="${escH(COPY_REPO)}" target="_blank" rel="noopener">${w}</a>`)}</p><div class="brow set-links">${termsLinkHTML()}<button type="button" class="link-btn" data-act="set.sources">מקורות ורישיונות</button></div></div>${logoHTML('s')}</div>` + settingsHTML(); // 10.3.0 (design-3): the version lives here and in ⋮ (no line at the bottom of screens); 11.39.0 (legal-page): the years tied to the word before them (the longer name wrapped "© 2026" alone); under the copyright line, the terms page and "מקורות ורישיונות"; task open-source: the line's words link the public repository (COPY_REPO)
+  document.getElementById('main').innerHTML = `<div class="section-head"><h2>⚙️ הגדרות</h2></div><div class="set-head"><div class="set-head-t"><b>${APP.appTitle}</b><p class="set-ver">גרסה ${APP_VERSION}${SEP}עודכן ${APP_DATE}</p><p class="set-ver set-copy">${copyrightText().replace(/ (© [\d–]+)$/, (m, c) => `\u00A0<bdi dir="ltr">${c}</bdi>`).replace(COPY_WORDS, w => `<a href="${escH(COPY_REPO)}" target="_blank" rel="noopener">${w}</a>`)}</p><div class="brow set-links">${termsLinkHTML()}<button type="button" class="link-btn" data-act="set.sources">מקורות ורישיונות</button>${siteLinkHTML('terms#access')}</div></div>${logoHTML('s')}</div>` + settingsHTML(); // 10.3.0 (design-3): the version lives here and in ⋮ (no line at the bottom of screens); 11.39.0 (legal-page): the years tied to the word before them (the longer name wrapped "© 2026" alone); under the copyright line, the terms page and "מקורות ורישיונות"; task open-source: the line's words link the public repository (COPY_REPO); task access-statement: "הצהרת נגישות" beside them (the terms page at its anchor)
   if (!DIAG_ONCE) DIAG_DEST = ''; else setTimeout(() => { const b = document.getElementById('diagBtn'); if (b) runAct(b); }, 0); DIAG_ONCE = false;
   wireSettings();
 }
@@ -169,8 +175,9 @@ function settingsHTML() {
       <label class="sh-field fm-f">${fmLabel({ label: 'סוף הצהריים' })}${fmInput({ id: 'setAfternoonEnd', type: 'time', step: 900, dir: 'ltr', value: STATE.settings.afternoonEnd })}</label>
     </div><div class="sh-error" id="setError" hidden></div>`, false) // 11.14.0 (phone-round-1-fixes P3, decisions 2026-11-14 G1): every settings row starts closed
   + accHTML('set-weather', '🌦️ מזג אוויר', wxSettingsHTML(), false);
-  const offm = MAP_AVAILABLE ? accHTML('set-offmaps', '💾 מפות בטלפון', offSettingsHTML(), false) : ''; // 4.39.0
+  const store = accHTML('set-storage', '💾 ' + TX.storage, offSettingsHTML(), false); // storage (decisions 2026-11-23 · Storage on the phone, Q4): grew out of "מפות בטלפון" (4.39.0); shown also where the map is not available
   const map = accHTML('set-map', SY.map + ' סוג המפה', `${choiceHTML({ id: 'setBaseMaps', list: true, label: 'בכל המפות במכשיר הזה (אפשר להחליף גם בכפתור שבפינת כל מפה)', act: 'set.basemap', cur: baseMapId(), attrs: k => ` data-basemap="${k}"`, opts: Object.entries(BASE_MAPS).map(([k, v]) => [k, v.label, v.sub || '', BASE_MAP_MS[k] || 'map']) })}
+      <div class="set-sw-row">${setSwitchHTML('set.mapLight', ` data-v="${!!DEV.mapLight}"`, !DEV.mapLight, 'מפה כהה במצב כהה', 'המפה הרגילה מתכהה כשהאפליקציה כהה. כבוי: היא נשארת בהירה')}</div>
       <label class="sh-field fm-f">${fmLabel({ label: 'מפתח Esri ללוויין', note: '(רשות)' })}${fmInput({ id: 'setEsriKey', dir: 'ltr', data: 'autocomplete="off" spellcheck="false"', placeholder: 'AAPK…', value: String(DEV.esriKey || '') })}</label>
       <div class="sh-hint" id="esriKeyStatus">${esriKeyStatusText()} ${tipI('set.esri')}</div>
       <details class="sh-hint"><summary class="t-wrap">איך מקבלים מפתח (כ-5 דקות)</summary><ol style="margin:6px 0;padding-inline-start:20px">
@@ -188,7 +195,7 @@ function settingsHTML() {
   const diag = (MAP_AVAILABLE ? accHTML('set-diag', '🩺 מקומות שלא על המפה', geocodeDiagnosticHTML(), false) : '') + accHTML('set-svc', '🩺 מצב השירותים', svcHealthHTML(), false); // 7.1.0 (ש11): two parts, each for its purpose
   const plan = accHTML('set-margins', '⏱️ זמן לפני נסיעה ואחריה', marginsSettingsHTML(), false, marginsValLine()) // 11.0.0 (travels-1-model, Q7; picture travels-map-2b, 6)
     + `<div class="set-sw-row">${setSwitchHTML('set.tlRemind', ` data-v="${hintSeen('tl.never')}"`, !hintSeen('tl.never'), 'תזכורת לציר הזמן של גוגל לפני טיול', 'שורה בכרטיס "לקראת הטיול": להדליק אותו, כדי שסגירת הטיול תהיה קלה')}</div>`; // 11.9.0 (timeline-import, Q3): brings back "לא מעניין אותי" (this phone)
-  return accGroupHTML('כללי', gen) + accGroupHTML('תכנון', plan) + accGroupHTML('מפה', map + offm + hotel) + accGroupHTML('תקלות ושירותים', diag); // 10.13.0 (Q14): groups; 11.0.0: "תכנון"
+  return accGroupHTML('כללי', gen + store) + accGroupHTML('תכנון', plan) + accGroupHTML('מפה', map + hotel) + accGroupHTML('תקלות ושירותים', diag); // 10.13.0 (Q14): groups; 11.0.0: "תכנון"
 }
 // 10.13.0 (design-screens, gap 53, Q14): a menu screen's rows grouped into a card on the grey page under a small header in the accent
 function accGroupHTML(title, rows) { return rows ? `<div class="acc-grp-h">${title}</div><div class="accordion acc-grp">${rows}</div>` : ''; }
@@ -197,6 +204,9 @@ function wireSettings() { try { offSettingsCtl(); } catch (e) {}
   if (a) a.dataset.act = b.dataset.act = 'set.parts.times'; if (k) k.dataset.act = 'set.esriKey'; if (dn) dn.dataset.act = 'set.deviceName'; // fields saved on leaving them
 }
 act('set.basemap', c => { setBaseMap(c.el.dataset.basemap); return 'redraw'; });
+// hebrew-map (Q7 (2)): in dark mode "מפה" is drawn dark (a filter on its tiles, css/maps.css); this phone can keep it light
+act('set.mapLight', c => { const dark = c.el.dataset.v === 'true'; if (!DEV.mapLight === dark) return 'quiet'; devSet({ mapLight: !dark }); refreshBaseMaps();
+  showUndoToast(dark ? 'המפה מתכהה במצב כהה' : 'המפה נשארת בהירה במצב כהה'); return 'redraw'; });
 act('set.weather', c => { const b = c.el, k = b.dataset.wxset, raw = b.dataset.wxval, v = raw === 'true' ? true : raw === 'false' ? false : raw; // 4.17.0
   if (wxSet()[k] === v) return; STATE.settings = { ...STATE.settings, weather: { ...wxSet(), [k]: v } }; persist();
   showUndoToast('ההגדרה עודכנה'); });
@@ -221,7 +231,7 @@ const MARGIN_KINDS = ['flight', 'train', 'bus', 'ferry', 'car']; // the picture'
 function marginsValLine() { return MARGIN_KINDS.map(k => { const [b, a] = travelMarginDef(k); return `${TRAVEL_MODES[k][1]}: ${marginText(b)} / ${marginText(a)}`; }).join(SEP); }
 function marginsSettingsHTML() { const opts = MARGIN_STEPS.map(m => [String(m), marginText(m)]);
   return `<div class="mg-box"><div class="mg-grid"><span class="mg-corner"></span><small class="mg-h">להגיע לפני</small><small class="mg-h">לצאת אחרי</small>${MARGIN_KINDS.map(k => { const d = travelMarginDef(k);
-    return `<span class="mg-kind">${msiT(TRAVEL_MS[k], fmEsc(TRAVEL_MODES[k][1]), { size: 20 })}</span>${[0, 1].map(i => fmSelect({ act: 'set.margin', data: `data-mk="${k}|${i}" data-mh="${i ? 'לצאת אחרי' : 'להגיע לפני'}" aria-label="${fmEsc(TRAVEL_MODES[k][1])}: ${i ? 'לצאת אחרי' : 'להגיע לפני'}"`, cls: 'mg-sel', options: opts, value: String(d[i]) })).join('')}`; }).join('')}</div></div>`; }
+    return `<span class="mg-kind">${msiT(TRAVEL_MS[k], escH(TRAVEL_MODES[k][1]), { size: 20 })}</span>${[0, 1].map(i => fmSelect({ act: 'set.margin', data: `data-mk="${k}|${i}" data-mh="${i ? 'לצאת אחרי' : 'להגיע לפני'}" aria-label="${escH(TRAVEL_MODES[k][1])}: ${i ? 'לצאת אחרי' : 'להגיע לפני'}"`, cls: 'mg-sel', options: opts, value: String(d[i]) })).join('')}`; }).join('')}</div></div>`; }
 act('set.margin', c => { const [k, i] = c.el.dataset.mk.split('|'), v = Number(c.el.value), cur = travelMarginDef(k); if (cur[+i] === v) return;
   const m = { ...(STATE.settings.margins || {}) }, row = cur.slice(); row[+i] = v; const d = TRAVEL_MARGIN_DEF[k];
   if (row[0] === d[0] && row[1] === d[1]) delete m[k]; else m[k] = row;

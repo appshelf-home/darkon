@@ -19,22 +19,24 @@ const DEST_DB = {
   all() { return new Promise(res => { const q = this.tx('readonly').getAll(); q.onsuccess = () => res(q.result || []); q.onerror = () => res([]); }); },
   keys() { return new Promise(res => { const q = this.tx('readonly').getAllKeys(); q.onsuccess = () => res(q.result || []); q.onerror = () => res([]); }); },
   // 4.37.3: a deleted destination is kept whole in its own store (too big for localStorage), keyed 'dest:<trash entry id>'
-  tput(rec) { this.mem.set(rec.key, rec); if (OLD_COPY) return Promise.resolve(true); return new Promise(res => { try { const st = this.db.transaction('trash', 'readwrite').objectStore('trash'); st.put(rec); st.transaction.oncomplete = () => res(true); st.transaction.onerror = st.transaction.onabort = () => res(false); } catch (e) { res(false); } }); },
+  tput(rec) { this.mem.set(rec.key, rec); if (OLD_COPY) return Promise.resolve(true); return new Promise(res => { try { const st = this.db.transaction('trash', 'readwrite').objectStore('trash'); st.put(rec); st.transaction.oncomplete = () => res(true); st.transaction.onerror = st.transaction.onabort = () => { regSpaceFail(st.transaction.error); res(false); }; } catch (e) { res(false); } }); },
   tget(key) { return new Promise(res => { try { const q = this.db.transaction('trash', 'readonly').objectStore('trash').get(key); q.onsuccess = () => res(q.result || null); q.onerror = () => res(null); } catch (e) { res(null); } }); },
   tdel(keys) { keys.forEach(k => this.mem.delete(k)); if (OLD_COPY) return Promise.resolve(true); return new Promise(res => { try { const st = this.db.transaction('trash', 'readwrite').objectStore('trash'); keys.forEach(k => st.delete(k)); st.transaction.oncomplete = () => res(true); st.transaction.onerror = st.transaction.onabort = () => res(false); } catch (e) { res(false); } }); },
   async tload() { if (!this.ok) return; for (const k of await this.tkeys()) { const r = await this.tget(k); if (r) this.mem.set(k, r); } },
   tkeys() { return new Promise(res => { try { const q = this.db.transaction('trash', 'readonly').objectStore('trash').getAllKeys(); q.onsuccess = () => res(q.result || []); q.onerror = () => res([]); } catch (e) { res([]); } }); },
-  sync(list) { regChanged('dests'); return new Promise(async res => { try { const keys = await this.keys(); const st = this.tx('readwrite'); keys.filter(k => !list.some(d => d.id === k)).forEach(k => st.delete(k)); list.forEach(d => st.put(d)); st.transaction.oncomplete = () => res(true); st.transaction.onerror = st.transaction.onabort = () => res(false); } catch (e) { res(false); } }); },
+  sync(list) { regChanged('dests'); return new Promise(async res => { try { const keys = await this.keys(); const st = this.tx('readwrite'); keys.filter(k => !list.some(d => d.id === k)).forEach(k => st.delete(k)); list.forEach(d => st.put(d)); st.transaction.oncomplete = () => res(true); st.transaction.onerror = st.transaction.onabort = () => res(regSpaceFail(st.transaction.error) ? null : false); } catch (e) { res(false); } }); }, // storage (Q6): null - refused for space, the one message already shown
 };
 // 4.30.0: mementos (photos, point images, the illustrated version) and 6.0.0 hotel photos - what can't be rebuilt
 var MEMO = new Map();                 // key -> value: "photo:<trip>:<key>" -> dataURL, "art:<trip>" -> {svg, at, orient}, "hotel:<place ref>" -> dataURL
+// hidden-data (H2): put - every stored image (a string under a photo's key) passes the one cleaner (photoClean) first - a file, a restore, an undo, my own;
+// one it refuses is not written (an object - the illustrated version moved to the trash - is the app's own and is not an image)
 const MEMO_DB = {
   db: null,
   async open() { if (!this.db) this.db = await regIdbOpen(PACK.filePrefix + '_memo', 1, [['m']]); return this.db; },
   async all() { if (!(await this.open())) return []; return new Promise(res => { try { const st = this.db.transaction('m', 'readonly').objectStore('m'), out = [];
     const q = st.openCursor(); q.onsuccess = () => { const c = q.result; if (c) { out.push([c.key, c.value]); c.continue(); } else res(out); }; q.onerror = () => res(out); } catch (e) { res([]); } }); },
-  async put(k, v, again) { MEMO.set(k, v); regChanged(memoRow(k)); if (OLD_COPY) return true; if (!(await this.open())) return false; return new Promise(res => { try { const tx = this.db.transaction('m', 'readwrite'); tx.objectStore('m').put(v, k); tx.oncomplete = () => res(true);
-    tx.onerror = tx.onabort = async e => { if (e && e.preventDefault) e.preventDefault(); if (!again && await regFreeBig()) res(await this.put(k, v, true)); else { showToast('אין מקום לשמור במכשיר'); res(false); } }; } catch (e) { res(false); } }); },
+  async put(k, v, again) { { const c = photoCleanAt(k, v); if (c == null && v != null) return false; v = c; } MEMO.set(k, v); regChanged(memoRow(k)); if (OLD_COPY) return true; if (!(await this.open())) return false; return new Promise(res => { try { const tx = this.db.transaction('m', 'readwrite'); tx.objectStore('m').put(v, k); tx.oncomplete = () => res(true);
+    tx.onerror = tx.onabort = async e => { if (e && e.preventDefault) e.preventDefault(); if (!again && await regFreeBig()) res(await this.put(k, v, true)); else { if (!regSpaceFail(tx.error)) showToast(TX.notSaved); res(false); } }; } catch (e) { res(false); } }); },
   async del(k) { MEMO.delete(k); regChanged(memoRow(k)); if (OLD_COPY || !(await this.open())) return; try { this.db.transaction('m', 'readwrite').objectStore('m').delete(k); } catch (e) {} },
 };
 // undo-history (Q2): the previous states of the undo history's rows - device only, never in a backup (registry row 'undo'),
@@ -44,7 +46,7 @@ const UNDO_DB = {
   async open() { if (!this.db) this.db = await regIdbOpen(PACK.filePrefix + '_undo', 1, [['u']]); return this.db; },
   async get(k) { if (!(await this.open())) return null; return new Promise(res => { try { const q = this.db.transaction('u', 'readonly').objectStore('u').get(k); q.onsuccess = () => res(q.result || null); q.onerror = () => res(null); } catch (e) { res(null); } }); },
   async put(k, v) { if (OLD_COPY || !(await this.open())) return false; return new Promise(res => { try { const tx = this.db.transaction('u', 'readwrite'); tx.objectStore('u').put(v, k); tx.oncomplete = () => res(true);
-    tx.onerror = tx.onabort = e => { if (e && e.preventDefault) e.preventDefault(); res(false); }; } catch (e) { res(false); } }); },
+    tx.onerror = tx.onabort = e => { if (e && e.preventDefault) e.preventDefault(); regSpaceFail(tx.error); res(false); }; } catch (e) { res(false); } }); },
   async del(keys) { if (OLD_COPY || !keys.length || !(await this.open())) return; try { const st = this.db.transaction('u', 'readwrite').objectStore('u'); keys.forEach(k => st.delete(k)); } catch (e) {} },
   async keys() { if (!(await this.open())) return []; return new Promise(res => { try { const q = this.db.transaction('u', 'readonly').objectStore('u').getAllKeys(); q.onsuccess = () => res(q.result || []); q.onerror = () => res([]); } catch (e) { res([]); } }); },
 };
@@ -57,7 +59,7 @@ const GEO_DB = {
   async open() { if (!this.db) this.db = await regIdbOpen(PACK.filePrefix + '_geo', 1, [['g']]); return this.db; },
   async get(k) { if (GEO_MEM.has(k)) return GEO_MEM.get(k); if (!(await this.open())) return null;
     return new Promise(res => { try { const q = this.db.transaction('g', 'readonly').objectStore('g').get(k); q.onsuccess = () => { if (q.result) GEO_MEM.set(k, q.result); res(q.result || null); }; q.onerror = () => res(null); } catch (e) { res(null); } }); },
-  async put(k, v) { GEO_MEM.set(k, v); if (!(await this.open())) return; try { this.db.transaction('g', 'readwrite').objectStore('g').put(v, k); } catch (e) {} },
+  async put(k, v) { GEO_MEM.set(k, v); if (!(await this.open())) return; try { const tx = this.db.transaction('g', 'readwrite'); tx.objectStore('g').put(v, k); tx.onabort = () => regSpaceFail(tx.error); } catch (e) { regSpaceFail(e); } },
   async keys() { if (!(await this.open())) return []; return new Promise(res => { try { const q = this.db.transaction('g', 'readonly').objectStore('g').getAllKeys(); q.onsuccess = () => res(q.result || []); q.onerror = () => res([]); } catch (e) { res([]); } }); },
   async del(keys) { keys.forEach(k => GEO_MEM.delete(k)); if (!keys.length || !(await this.open())) return; try { const st = this.db.transaction('g', 'readwrite').objectStore('g'); keys.forEach(k => st.delete(k)); } catch (e) {} },
 };
@@ -73,10 +75,52 @@ function offScanTiles(write, fn, onPacks) { return offDB().then(db => db && new 
 // ---- the Cache API (📚, shared files, viewed tiles) ----
 function regCache(name) { return window.caches ? caches.open(name) : Promise.reject(new Error('no caches')); }
 function regCacheDrop(name) { return window.caches ? caches.delete(name).catch(() => false) : Promise.resolve(false); }
+async function regDiscImgDrop() { const any = await regCacheDrop('darkon-disc-img'); if (any && typeof DISC !== 'undefined') DISC.imgs = []; return any; } // 📚 pictures (their list goes with them)
+// ---- storage (decisions 2026-11-23 · Storage on the phone, Q2-Q6): the device's space, each kind's size, one message for a write refused for space ----
+const TILES_CACHE = 'darkon-tiles', TILES_CAP = 200 * 1048576, TILES_INDEX = '/__tiles-index'; // sw.js TILE_CAP and TILE_INDEX: the worker keeps each tile's size and last use in one entry
+function regIsSpace(e) { return !!e && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22 || e.code === 1014); }
+// the one message (Q6 (b)): every store's write path sends its error here; true when it was a refusal for space (then shown, once in a few seconds)
+function regSpaceFail(e) { if (!regIsSpace(e)) return false; if (Date.now() - REG_SPACE.at > 4000) { REG_SPACE.at = Date.now(); showToast(TX.noSpace, { act: 'storage.open', label: TX.storage, ms: 7000 }); } return true; }
+async function regCachePut(c, req, res) { try { await c.put(req, res); return true; } catch (e) { regSpaceFail(e); return false; } } // a write into the Cache API
+// the space the browser gives the app (Q4): used, quota, free - null when the browser does not say
+async function regSpace() { try { const e = navigator.storage && navigator.storage.estimate ? await navigator.storage.estimate() : null; if (!e || !e.quota) return null; const used = e.usage || 0; return { used, quota: e.quota, free: Math.max(0, e.quota - used) }; } catch (x) { return null; } }
+const regLen = v => v == null ? 0 : typeof v === 'string' ? v.length : v instanceof Blob ? v.size : typeof v.byteLength === 'number' ? v.byteLength : JSON.stringify(v).length;
+// a cache's size from its entries - known only when no entry is opaque (Q5: a size that cannot be measured is never shown as 0)
+async function regCacheSize(name, skip) { if (!window.caches || !(await caches.has(name))) return { bytes: 0, n: 0, known: true };
+  const c = await caches.open(name), keys = (await c.keys()).filter(r => !skip || !skip(r.url)); let bytes = 0, known = true;
+  for (const r of keys) { const x = await c.match(r); if (!x || x.type === 'opaque') { known = false; continue; } try { bytes += (await x.blob()).size; } catch (e) { known = false; } }
+  return { bytes, n: keys.length, known }; }
+// the tiles kept on the way (Q3): from the worker's index, never by reading every tile; tiles the index does not list (an old opaque copy) make it unknown
+async function regTilesSize() { if (!window.caches || !(await caches.has(TILES_CACHE))) return { bytes: 0, n: 0, known: true };
+  const c = await caches.open(TILES_CACHE), keys = (await c.keys()).map(r => r.url), ik = keys.find(u => u.endsWith(TILES_INDEX)); let idx = {};
+  if (ik) try { idx = await (await c.match(ik)).json(); } catch (e) { idx = {}; }
+  const tiles = keys.filter(u => u !== ik), bytes = tiles.reduce((a, u) => a + (idx[u] ? idx[u][0] : 0), 0);
+  return { bytes, n: tiles.length, known: tiles.every(u => idx[u]) }; }
+function regTilesDrop() { return regCacheDrop(TILES_CACHE).then(x => { try { const w = navigator.serviceWorker && navigator.serviceWorker.controller; if (w) w.postMessage('tiles-cleared'); } catch (e) {} return x; }); }
+// storage (Q7): the tiles kept before this version were opaque (several MB each in the browser's count) - every tile the worker's index does not list goes, once
+async function regTilesOld() { const u = regRead('upkeep'); if (u.tilesSized || OLD_COPY) return;
+  try { if (window.caches && await caches.has(TILES_CACHE)) { const c = await caches.open(TILES_CACHE), keys = (await c.keys()).map(r => r.url), ik = keys.find(x => x.endsWith(TILES_INDEX));
+    let idx = {}; if (ik) try { idx = await (await c.match(ik)).json(); } catch (e) {}
+    await Promise.all(keys.filter(x => x !== ik && !idx[x]).map(x => c.delete(x))); } } catch (e) { return; }
+  regWrite('upkeep', { ...regRead('upkeep'), tilesSized: 1 }); }
+migRun('tilesOpaque', () => { regTilesOld(); });
+// kept from the network (Q5 🌐; item 8): opened places' pictures, the trips' schematic backgrounds, the addresses found - never the app's own files (regAppSize)
+async function regNetSize() { const img = await regCacheSize('darkon-disc-img'); let geo = 0;
+  for (const k of await GEO_DB.keys()) geo += regLen(await GEO_DB.get(k));
+  const addr = regLen(regRawGet(PACK.geocodeKey)); return { bytes: img.bytes + geo + addr, known: img.known }; }
+async function regNetClear() { await regDiscImgDrop(); await GEO_DB.del(await GEO_DB.keys()); regDrop('geocode'); }
+// the app itself (item 8; decisions 2026-11-23 · Review of the finished branch storage, Q1): the shell and the libraries and fonts (darkon-libs) - part of the app, never cleared
+async function regAppSize() { let bytes = 0, known = true; const names = window.caches ? (await caches.keys()).filter(k => k.startsWith('darkon-shell-') || k === 'darkon-libs') : [];
+  for (const n of names) { const x = await regCacheSize(n); bytes += x.bytes; known = known && x.known; } return { bytes, known }; }
+// the user's own (Q5 📷 🧳 🗑️): sizes from the stores themselves
+function regMemoSizes() { const by = {}; MEMO.forEach((v, k) => { const m = /^(?:frame:)?(?:photo|pimg):([^:]+):/.exec(String(k)) || /^art:(.+)$/.exec(String(k)); if (m) by[m[1]] = (by[m[1]] || 0) + regLen(v); }); return by; }
+async function regMineSize() { let bytes = regLen(regRawGet(STORE_KEY)); MEMO.forEach((v, k) => { if (memoRow(k) === 'hotelPhotos') bytes += regLen(v); });
+  if (DEST_DB.ok) (await DEST_DB.all()).forEach(d => { bytes += regLen(d); }); else bytes += regLen(regRawGet(REG_BY.dests.where.ls[0])); return bytes; }
+function regTrashSize() { let bytes = regLen(STATE.trash || []); DEST_DB.mem.forEach(v => { bytes += regLen(v); }); MEMO.forEach((v, k) => { if (String(k).startsWith('trash:')) bytes += regLen(v); }); return bytes; }
 // when a big store is full: viewed tiles, 📚 pictures, then the schematic backgrounds of trips that aren't open (ר8)
 async function regFreeBig() { let any = false;
   if (await regCacheDrop('darkon-tiles')) any = true;
-  if (await regCacheDrop('darkon-disc-img')) { any = true; if (typeof DISC !== 'undefined') DISC.imgs = []; }
+  if (await regDiscImgDrop()) any = true;
   const ks = (await GEO_DB.keys()).filter(k => !String(k).startsWith('schem:' + STATE.activeTrip + ':')); if (ks.length) { await GEO_DB.del(ks); any = true; }
   return any; }
 // ---- the trash by declarations (ר3, ר8): every kind says how it comes back and what leaves with it ----
@@ -87,6 +131,8 @@ async function regPurgeTripRows(id) {
   if (STATE.chipOrder && STATE.chipOrder[id]) { const co = { ...STATE.chipOrder }; delete co[id]; STATE.chipOrder = co; persist(); }
   const gk = (await GEO_DB.keys()).filter(k => String(k).startsWith('schem:' + id + ':')); await GEO_DB.del(gk);
   if (typeof offDeletePack === 'function') try { await offDeletePack(id, true); } catch (e) {}
+  const st = DEV.stamps || {}, gone = Object.keys(st).filter(k => k.split('|')[0] === String(id)); // passport-book: the trip's stamps' characters
+  if (gone.length) { const o = { ...st }; gone.forEach(k => delete o[k]); devSet({ stamps: o }); }
 }
 // purges wait out the undo of "🧹 מחיקה לצמיתות" - the history's UNDO_DAYS (undo-history Q4: a permanent deletion frees the space
 // after 3 days): they are done on an open after that, if the trip or photo didn't come back
@@ -126,9 +172,10 @@ function hotelRef(id) { if (typeof id !== 'number' || id >= 1e11) return String(
 async function regStartup(destsLoaded) {
   try { await Promise.all([MEMO_READY, destsLoaded]); } catch (e) {}
   try { await DEST_DB.tload(); } catch (e) {}
-  try { roadDaysStored(); } catch (e) {} // 11.19.0 (trip-travel-days): the switches the editor used to derive, stored once - before the history's base
-  try { fileCleanStored(); } catch (e) {} // 11.8.0 (small-fixes item 4): stored data passes a new rule of the door check once - before the history's base
-  hRebase(); undoMenuSync(); // undo-history: the state the next row is measured against
+  migrate('stores'); // the register's passes once IndexedDB answered (roadDays, fileRules) - before the history's base
+  hRebase(); // undo-history: the state the next row is measured against
+  migrate('history'); // the register's passes the user sees, each its own undo row (addKey)
+  undoMenuSync();
   regRunPurges(); photoTrashOrphans(); setTimeout(() => regDailyCleanup(), 1500); }
 // ---- 8.0.0 (cl-files-impl-plan stage 1, ק4): PARTS - the one list of what any file carries. A part is its rows (the
 // row's "part" above); the backup, restore, sending and receiving take their parts from here and move the rows only
@@ -157,7 +204,7 @@ function memoInScope(k, sc) {
 function editsInScope(E, dests) {
   if (!dests) return E; const keep = (o, f) => Object.fromEntries(Object.entries(o || {}).filter(f));
   return { ...E, places: keep(E.places, ([id, e]) => dests.has(destOfEditId(id, e))), status: keep(E.status, ([id]) => dests.has(destOfEditId(id, (E.places || {})[id]))),
-    layers: keep(E.layers, ([id, e]) => dests.has(destOfEditId(id, e))), layerOrder: keep(E.layerOrder, ([d]) => dests.has(d)), infoNA: keep(E.infoNA, ([d]) => dests.has(d)) };
+    layers: keep(E.layers, ([id, e]) => dests.has(destOfEditId(id, e))), layerOrder: keep(E.layerOrder, ([d]) => dests.has(d)) };
 }
 // a row's data for a file, inside a scope (all; a trip with its destinations; one destination)
 function rowOut(id, sc) {
@@ -167,6 +214,7 @@ function rowOut(id, sc) {
     return o; }
   if (w.idb === 'memo') { const o = {}; MEMO.forEach((v, k) => { if (w.prefix.some(p => String(k).startsWith(p)) && memoInScope(k, sc)) o[k] = v; }); return o; }
   if (w.idb === 'dests') { const o = {}; Object.values(DESTS).filter(d => !d.builtin && !d.ghost && (!sc.dests || sc.dests.has(d.id))).forEach(d => { o[d.id] = d; }); return o; }
+  if (r.of === 'app' && sc.trips) return {}; // countries-visited: a row of the app is out of a trip's or a destination's scope (its file)
   const o = {}; (w.blob || []).forEach(f => { let v = STATE[f];
     if (f === 'activeTrip') { if (!sc.trips) o[f] = v; return; }
     if ((f === 'trips' || f === 'chipOrder') && sc.trips) v = Object.fromEntries(Object.entries(v || {}).filter(([k]) => sc.trips.has(k)));

@@ -105,8 +105,8 @@ function bpDoor(v, hotel) { if (typeof v === 'string') return hotel ? hotelPrice
   if (!hotel && r.kind === 'amount' && r.checkedAt != null && !BP_MONTH.test(bpStr(r.checkedAt))) drop('checkedAt');
   return pricePack(r, hotel); }
 // ---- the editors' fields: a place's "הזמנה ומחיר" and a hotel's "מחיר" ----
-function bpCurOpts() { return [...CLOSED_LISTS.currencies].map(c => ({ v: c, text: c + ' ' + curNameHe(c), html: `<b dir="ltr">${c}</b> ${fmEsc(curNameHe(c))} <span dir="ltr">${fmEsc(bpCurSym(c))}</span>` })); }
-function bpCurField(F, id, cur) { return fmPick(F, id, { label: 'מטבע', value: cur || '', text: v => v ? fmEsc(bpCurText(v)) : 'בחירת מטבע',
+function bpCurOpts() { return [...CLOSED_LISTS.currencies].map(c => ({ v: c, text: c + ' ' + curNameHe(c), html: `<b dir="ltr">${c}</b> ${escH(curNameHe(c))} <span dir="ltr">${escH(bpCurSym(c))}</span>` })); }
+function bpCurField(F, id, cur) { return fmPick(F, id, { label: 'מטבע', value: cur || '', text: v => v ? escH(bpCurText(v)) : 'בחירת מטבע',
   open: F2 => openFmChoice({ title: 'מטבע', value: F2.vals[id], search: true, searchHint: 'חיפוש מטבע', options: bpCurOpts() }, v => { const G = fmOf(); if (G && G.kinds[id]) fmSet(G, id, v); }) }); }
 function bpDestCur(dest) { const d = (dest && DESTS[dest]) || curDest(); const c = d && d.meta && d.meta.currency && d.meta.currency.code; return bpIn('currency', c) ? c : ''; }
 // the place editor's section (C.resv, C.price: the stored values; dest: the place's destination, for the default currency)
@@ -130,7 +130,7 @@ function bpPlaceValues(F) { const reservation = resvPack(F.vals.need, fmGet(F, '
   return { reservation, price: pricePack({ kind, amount, currency, per: F.vals.pper, note, checkedAt: same ? w.checkedAt : bpMonthNow() }) }; }
 // the section's summary line: "חובה להזמין · $$ · בינוני"
 function bpPlaceSum(F) { const k = F.vals.pkind, pr = k === 'level' ? { kind: k, level: F.vals.plevel } : k === 'amount' ? { kind: k, amount: String(fmGet(F, 'pamt') || '').replace(/[,\s]/g, ''), currency: F.vals.pcur, per: F.vals.pper, checkedAt: bpMonthNow() } : { kind: k };
-  return [RESV_LONG[F.vals.need], k !== 'unknown' && fmtPrice(pr, { date: false })].filter(Boolean).map(fmEsc).join(SEP); }
+  return [RESV_LONG[F.vals.need], k !== 'unknown' && fmtPrice(pr, { date: false })].filter(Boolean).map(escH).join(SEP); }
 // a hotel's "מחיר": the amount paid, its currency, per night or for the whole stay, a note; the other one derived from the nights
 function bpHotelFields(F, price, dest) { const p = bpPrice(price, true);
   return `<div class="bp-hotel"><div class="sh-times">${fmText(F, 'hamt', { label: 'מחיר', value: p.amount || '', inputmode: 'decimal', dir: 'ltr', max: 12, placeholder: '0', on: () => bpHotelDerived(F) })}${bpCurField(F, 'hcur', p.currency || bpDestCur(dest))}</div>`

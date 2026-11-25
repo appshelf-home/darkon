@@ -33,8 +33,6 @@ function routeVisits() { // [{ n:[numbers], name, from, to, nights, hotels:[name
 function routeOffered() { return hasTrip() && routeVisits().length > 1; }
 // 4.24.0: hiding a stop or a leg in the route map only (the trip itself doesn't change). Personal per trip, in planX
 // (so it travels in backup and only with the plan when a trip is sent). Keys are dates, the same on every device.
-const EYE_ON = '<svg class="ic-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7z"/><circle cx="12" cy="12" r="2.6"/></svg>';
-const EYE_OFF = '<svg class="ic-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A9.6 9.6 0 0 1 12 5c6 0 9.5 7 9.5 7a16.6 16.6 0 0 1-3.1 4.1M6.6 6.6A16.8 16.8 0 0 0 2.5 12s3.5 7 9.5 7a9.6 9.6 0 0 0 5.4-1.6"/></svg>';
 // 11.21.6 (phone-round-2-fixes P5): every key stored in routeHide is made through the door's own conversion (idFix, deterministic), so a
 // key the door or the once pass already converted is the key the app looks up - a hidden leg or day trip stays hidden after a restore
 function stopKey(v) { return idFix('v:' + v.from, null, 'key'); }
@@ -57,7 +55,7 @@ undoAfter(() => refreshRouteHideUI()); // undo-history: the route-hide picker sh
 function routeRowsHTML(nav) {
   const esc = escH;
   const vs = routeVisits(), legs = routeLegs(vs), iso = routeNow(), nx = nextLegIdx(legs, iso), outs = routeOutings(vs);
-  const eye = (attr, i, hid, name) => `<button type="button" class="rl-eye" data-act="route.eye" data-${attr}="${i}" aria-pressed="${hid}" aria-label="${hid ? 'להציג במסלול: ' : 'להסתיר במסלול: '}${esc(name)}">${hid ? EYE_OFF : EYE_ON}</button>`;
+  const eye = (attr, i, hid, name) => `<button type="button" class="rl-eye" data-act="route.eye" data-${attr}="${i}" aria-pressed="${hid}" aria-label="${hid ? 'להציג במסלול: ' : 'להסתיר במסלול: '}${esc(name)}">${msi(hid ? 'visibility_off' : 'visibility', { size: attr === 'rhs' ? 18 : 16 })}</button>`; // one-way (6): the set's eye; the legs' eye a little smaller
   let h = '';
   vs.forEach((v, i) => { const st = visitState(v, iso), hid = stopHidden(v), tag = nav ? 'button type="button"' : 'div', end = nav ? 'button' : 'div';
     h += `<div class="rl-row${hid ? ' hid' : ''}"><${tag} class="rl-stop t-wrap ${st}"${nav ? ` data-act="route.stop" data-v="${i}"` : ''}><span class="rt-stop ${st}">${i + 1}</span><span><b>${esc(v.name)}${st === 'now' ? (SEP + 'היום') : ''}</b><small>${sepTie(visitSub(v))}${v.hotels.length ? SEP + msi('hotel', { size: 16, cls: 'msi-in' }) + '\u00a0' + esc(v.hotels.join(', ')) : ''}</small></span></${end}>${eye('rhs', i, hid, v.name)}</div>`;
@@ -77,7 +75,7 @@ function openRouteHidePicker() { layerNote(openRouteHidePicker, arguments);
   _rhDraw = () => { const n = routeHiddenCount();
     sheet.innerHTML = `${fmHead('🧭 מה מוצג במסלול ' + tipI('route.hidden'), 'rhClose')}
       <div class="sh-hint">העין מסתירה רק במפת המסלול. הטיול עצמו לא משתנה.</div>
-      <div class="route-list">${routeRowsHTML(false)}</div>${n ? `<button type="button" class="btn-nav rh-all" id="rhAll" data-act="route.showAll">${EYE_ON} הצגת הכל (${n})</button>` : ''}`;
+      <div class="route-list">${routeRowsHTML(false)}</div>${n ? `<button type="button" class="btn-nav rh-all" id="rhAll" data-act="route.showAll">${msi('visibility', { size: 18 })} הצגת הכל (${n})</button>` : ''}`;
   };
   _rhDraw(); showSheetBackdrop('openRouteHidePicker');
  
@@ -107,7 +105,7 @@ function routeBlockHTML() {
   const h = routeRowsHTML(true); // 4.16.1: the flights from home and back are not part of the route (they stay in ✈️ נסיעות); 4.24.0: 👁 per row
   return `<div class="accordion-item" data-open="true">
   <button class="accordion-header t-wrap" data-act="acc.toggle">${accLead('🧭 המסלול' + SEP + vs.length + ' תחנות')} <span class="accordion-arrow">${msi('expand_more')}</span></button>
-  <div class="accordion-body"><div class="route-list">${h}</div>${MAP_AVAILABLE ? '<button type="button" class="btn-nav" id="routeOnMap" data-act="route.map" style="width:100%">' + msi('map', { size: 18 }) + ' על המפה</button>' : '<p class="sh-hint">המפה עובדת באפליקציה המותקנת.</p>'}</div></div>`;
+  <div class="accordion-body"><div class="route-list">${h}</div>${MAP_AVAILABLE ? '<button type="button" class="btn-nav btn-wide" id="routeOnMap" data-act="route.map">' + msi('map', { size: 18 }) + ' על המפה</button>' : '<p class="sh-hint">המפה עובדת באפליקציה המותקנת.</p>'}</div></div>`;
 }
 function routeGo(i) { if (!MAP_AVAILABLE) return; resetFilter(); FP.route = true; _routeOpenStop = i; goTab('map'); }
 act('route.map', () => routeGo(null));
@@ -229,3 +227,117 @@ act('route.key', c => { const { hostId } = floatOf(c.el), p = POINTS.find(x => S
 act('route.hide', c => { const { box, hostId } = floatOf(c.el); closeFloatCard(hostId); if (box._stop) setRouteHidden('stops', stopKey(box._stop), box._stop.name, true); else setRouteHidden('legs', legKey(box._leg), legName(box._leg), true); });
 act('route.legEdit', c => { const f = floatOf(c.el).box._leg.travels[0]; openTravelEditor(f ? f.id : null); });
 
+// ================= map-side-view: A ROUTE'S SIDE VIEW - the height along a route (decisions 2026-11-21 · Review of the
+// `map-upgrades-review` report, Q2-Q3; notes/map-upgrades/c01-profile.md) =================
+// One component for four places: the day's plan and its day map (the day's walking and driving legs), a drive's travel card (its kept
+// road path) and the memory (a day's Timeline walk). Each place builds a route { key, name, segs: [[[lat, lng], ...], ...], via } and draws
+// svBtnHTML(route): a mountain icon tied to the word "גובה" - nothing is drawn and nothing is asked before the tap. The tap opens a window
+// (openSideView): the route's map above, the chart under it (the app's own SVG - no chart library), total climb and descent, the highest
+// point and the steepest stretch; a finger on the chart (TOUCH 'scrub') moves a dot on the map. Heights: the route sampled to at most
+// SV_MAX points by distance, asked once through elevMany (service "גובה", the `elev` row - kept with every other height, no expiry), so
+// the window opens offline afterwards; from then the button also carries the summary (svSumHTML). Credit: Open-Meteo's under the chart
+// (the heights) and the route's provider (FOSSGIS's routes) - the map's own tiles carry theirs.
+const SV_MAX = 100; // at most this many heights per route: one request (Open-Meteo takes up to 100 points)
+const SV_STEEP = { win: 0.2, min: 0.05 }; // km over which a grade is measured (at least one sample's step); a grade below min marks nothing
+const SV = { routes: {}, asked: new Set(), cur: null }; // key -> its route (the last drawn); keys asked this opening; the open window's state
+// the samples: { lat, lng, d } every step of the route's length (the jump between two segments adds no distance)
+function svSample(R) {
+  const pts = []; let d = 0;
+  (R.segs || []).forEach(g => { (g || []).forEach((p, i) => { const c = { lat: +p[0], lng: +p[1] }; if (!isFinite(c.lat) || !isFinite(c.lng)) return;
+    if (i && pts.length) d += distanceKm(pts[pts.length - 1], c); pts.push({ ...c, d }); }); });
+  if (pts.length < 2 || d < 0.05) return null;
+  const n = Math.min(SV_MAX, Math.max(2, pts.length)), step = d / (n - 1), out = []; let j = 0;
+  for (let k = 0; k < n; k++) { const t = k === n - 1 ? d : k * step; while (j < pts.length - 2 && pts[j + 1].d < t) j++;
+    const a = pts[j], b = pts[j + 1], f = b.d > a.d ? Math.max(0, Math.min(1, (t - a.d) / (b.d - a.d))) : 0;
+    out.push({ lat: +(a.lat + (b.lat - a.lat) * f).toFixed(5), lng: +(a.lng + (b.lng - a.lng) * f).toFixed(5), d: t }); }
+  return out;
+}
+// the kept heights of the samples, or null while any is missing
+function svHeights(S) { if (!S) return null; const h = S.map(knownElev); return h.every(v => v != null) ? h : null; }
+// climb, descent, the highest point and the steepest stretch (over SV_STEEP.win, a grade of SV_STEEP.min or more)
+function svStats(S, h) {
+  let up = 0, down = 0, top = 0; for (let i = 1; i < h.length; i++) { const x = h[i] - h[i - 1]; if (x > 0) up += x; else down -= x; if (h[i] > h[top]) top = i; }
+  const win = Math.max(SV_STEEP.win, S[S.length - 1].d / (S.length - 1)); let steep = null;
+  for (let i = 0; i < S.length - 1; i++) { let j = i + 1; while (j < S.length - 1 && S[j].d - S[i].d < win) j++;
+    const run = S[j].d - S[i].d, g = run > 0 ? Math.abs(h[j] - h[i]) / (run * 1000) : 0; if (g >= SV_STEEP.min && (!steep || g > steep.g)) steep = { i, j, g, up: h[j] > h[i] }; }
+  return { up: Math.round(up), down: Math.round(down), top, topH: h[top], km: S[S.length - 1].d, steep };
+}
+function svStatsOf(R) { const S = svSample(R), h = svHeights(S); return h ? svStats(S, h) : null; }
+function svSumHTML(st) { return `${msiT('north_east', fmtM(st.up))} ${msiT('south_east', fmtM(st.down))}`; }
+// the button of every place: the icon and its word in one chip (or a card's tag), which never breaks; the summary once the heights are kept
+function svBtnHTML(R, o) { if (!R || (!R.pending && !svSample(R))) return ''; SV.routes[R.key] = R; const st = R.pending ? null : svStatsOf(R); // o.tag: a card's tag (the card's tag size); otherwise a chip in its own row
+  return `<button type="button" class="${o && o.tag ? 'tl-tag' : 'chip'} sv-btn" data-act="side.open" data-v="${escH(R.key)}" aria-label="גובה לאורך הדרך${st ? `: עלייה ${st.up} מטר, ירידה ${st.down} מטר` : ''}">${o && o.tag ? tagIc('landscape') : msi('landscape', { size: 18 })}גובה${st ? `<span class="sv-sum">${svSumHTML(st)}</span>` : ''}</button>`; }
+function svRefreshBtns(key) { document.querySelectorAll('[data-act="side.open"]').forEach(b => { if (b.dataset.v !== key || !SV.routes[key]) return; const t = document.createElement('div'); t.innerHTML = svBtnHTML(SV.routes[key], { tag: b.classList.contains('tl-tag') }); if (t.firstElementChild && t.firstElementChild.outerHTML !== b.outerHTML) b.replaceWith(t.firstElementChild); }); }
+// ---- the four places' routes ----
+// the day's plan and its day map: the day's walking and driving legs with a found path, in the day's order (last night's hotel first,
+// tonight's last); a day with none has no button
+function svDayRoute(dKey) { const ls = Object.values(LEGS).filter(L => L.day === dKey), ord = L => L.hotel === 'from' ? 0 : L.hotel === 'to' ? 2 : 1;
+  const segs = [], via = new Set(); ls.map((L, i) => [L, i]).sort((a, b) => ord(a[0]) - ord(b[0]) || a[1] - b[1]).forEach(([L]) => { let m = legMode(L), v = legValue(L, m); if (v.none) { m = legNoTransit(L); v = legValue(L, m); }
+    if (m !== 'walk' && m !== 'car') return; const r = routeGet(m, L.a, L.b, ''); if (r && Array.isArray(r.g) && r.g.length > 1) { segs.push(r.g); via.add('fossgis'); } });
+  const d = dayByKey(dKey); return segs.length ? { key: 'd:' + dKey, name: d ? tmFmt('day', d.date) : '', segs, via: [...via] } : null; }
+function svDayRowHTML(dKey) { const b = svBtnHTML(svDayRoute(dKey)); return `<div class="sv-row" data-svday="${escH(dKey)}"${b ? '' : ' hidden'}>${b}</div>`; }
+// a leg's path that arrives after the day was drawn shows the button in place (routeTick), with nothing jumping above it
+function svDayRowsTick() { document.querySelectorAll('#main .sv-row[data-svday]').forEach(r => { const t = document.createElement('div'); t.innerHTML = svBtnHTML(svDayRoute(r.dataset.svday)); if (r.innerHTML !== t.innerHTML) { r.replaceChildren(...t.childNodes); r.hidden = !r.firstChild; } }); }
+// a drive's travel card: its road path as kept (never a straight line between its ends)
+// (a path not found yet - the day map asks for it - is asked at the tap: R.want, then the route is built again by R.again)
+function svTravelRoute(f, day) { if (!f || f.mode !== 'car') return null; const C = tvCtx(), x = tvCur(f, C), gc = (DAY_TV_FROM[day] || {})[x.id] || null, L = travelLine(x, C, gc); if (!L) return null;
+  const R = { key: 'tv:' + x.id, name: travelTitle(x), segs: L.approx ? [] : [L.pts], via: ['fossgis'], again: () => svTravelRoute(f, day) };
+  if (L.approx) { R.pending = true; R.want = () => travelPathWant(x, C, gc); } return R; }
+// the memory: a day's Timeline walk (its walking segments, cleaned as tlPaths reads them)
+function svTlRoute(id, date) { const tl = tlOf(id), x = tl && (tl.days || {})[date]; if (!x) return null;
+  const segs = Array.isArray(x.s) ? x.s.filter(g => g && g.m !== 'r' && Array.isArray(g.p) && g.p.length > 1).map(g => g.p) : Array.isArray(x.p) && x.p.length > 1 ? tlCleanOld(x.p) : [];
+  return segs.length ? { key: 'tl:' + id + '|' + date, name: 'הליכה' + SEP + tmFmt('day', date), segs, via: [] } : null; }
+// ---- the window ----
+act('side.open', c => openSideView(c.v));
+function openSideView(key) { const R = SV.routes[key]; if (!R) return; layerNote(openSideView, arguments); const sheet = document.getElementById('sheet');
+  sheet.innerHTML = `${fmHead(`${msiT('landscape', 'גובה')}${SEP}${nameB(R.name)}`, 'svClose')}<div class="sv-map" id="svMap"></div><div class="sv-body" id="svBody" data-sv="${escH(key)}"></div>
+    <p class="sh-hint sv-cr">${[svcCredit('openmeteo', { as: 'elev' })].concat((R.via || []).map(p => svcCredit(p))).join(SEP)}</p>`;
+  openSheet('openSideView'); svMap(R); svFill(R); }
+function svMap(R) { const box = document.getElementById('svMap'); SV.cur = null; if (!box || !MAP_AVAILABLE) { if (box) box.remove(); return; } if (!R.segs.length) return; // a drive's path still asked: the map comes with it
+  if (!leafGate(box, () => { if (document.getElementById('svMap') === box) svMap(R); })) return;
+  const map = mapTool('svMap'), all = [].concat(...R.segs); R.segs.forEach(g => L.polyline(g, { className: 'sv-line', weight: 4, interactive: false }).addTo(map));
+  map.fitBounds(all, { padding: [24, 24], maxZoom: 16 }); SV.cur = { key: R.key, map, dot: null }; }
+function svFill(R) { const box = document.getElementById('svBody'); if (!box || box.dataset.sv !== R.key) return;
+  if (R.pending) { const w = SV.asked.has('p|' + R.key) || !svcOnline() ? null : R.want(); SV.asked.add('p|' + R.key);
+    if (!w) { box.innerHTML = `<p class="sh-hint">${msi(svcOnline() ? 'route' : 'cloud_off', { cls: 'msi-in' })} ${svcOnline() ? 'הדרך עוד לא נמצאה. אפשר לנסות שוב אחר כך.' : 'הדרך והגבהים יגיעו כשתהיה רשת.'}</p>`; return; }
+    box.innerHTML = `<p class="sh-hint sv-wait">מחפש את הדרך…</p>`;
+    w.then(() => { const N = R.again && R.again(); if (!N || N.pending || document.getElementById('svBody') !== box) { if (document.getElementById('svBody') === box) box.innerHTML = `<p class="sh-hint">${warnIc()} הדרך לא נמצאה, ולכן אין גבהים לאורכה.</p>`; return; }
+      SV.routes[N.key] = N; svMap(N); svFill(N); }); return; }
+  const S = svSample(R), h = svHeights(S);
+  if (h) { svDraw(box, S, h); svRefreshBtns(R.key); return; }
+  if (SV.asked.has(R.key)) { box.innerHTML = `<p class="sh-hint">${warnIc()} הגבהים לא התקבלו מהשירות. אפשר לנסות שוב אחר כך.</p>`; return; }
+  if (!svcOnline()) { box.innerHTML = `<p class="sh-hint">${msi('cloud_off', { cls: 'msi-in' })} הגבהים יגיעו כשתהיה רשת. אחרי הפעם הראשונה הם נשמרים, וגם בלי רשת הם כאן.</p>`; return; }
+  SV.asked.add(R.key); box.innerHTML = `<p class="sh-hint sv-wait">מביא את הגבהים…</p>`;
+  elevMany(S).then(() => { svRefreshBtns(R.key); svFill(R); }); }
+// the chart: distance along (left to right, as every chart) and height up; labels in the text's size, the height grows with it
+// along-time-field (G121): the labels are right-to-left text (their unit is Hebrew; .sv-lab says so), so each is placed by the edge that
+// sits at x - 'r' its right edge, 'l' its left; the start's room is measured from the widest height label, so it never reaches the line
+function svDraw(box, S, h, padL) { const st = svStats(S, h), em = parseFloat(getComputedStyle(box).fontSize) || 16, W = Math.max(240, Math.round(box.clientWidth || 320)), H = Math.round(em * 8.5);
+  const pl = padL || Math.round(em * 3.6), pr = Math.round(em * .6), pt = Math.round(em * .8), pb = Math.round(em * 1.6), iw = W - pl - pr, ih = H - pt - pb;
+  let lo = Math.min(...h), hi = Math.max(...h); if (hi - lo < 20) { const m = (hi + lo) / 2; lo = m - 10; hi = m + 10; }
+  const X = d => pl + (st.km ? d / st.km : 0) * iw, Y = v => pt + (1 - (v - lo) / (hi - lo)) * ih, P = i => `${X(S[i].d).toFixed(1)},${Y(h[i]).toFixed(1)}`;
+  const line = S.map((s, i) => P(i)).join(' '), steep = st.steep ? S.slice(st.steep.i, st.steep.j + 1).map((s, k) => P(st.steep.i + k)).join(' ') : '';
+  const lab = (x, y, t, edge, k) => `<text class="sv-lab"${k ? ` data-sv="${escH(k)}"` : ''} x="${(+x).toFixed(1)}" y="${(+y).toFixed(1)}" text-anchor="${edge === 'r' ? 'start' : 'end'}">${escH(t)}</text>`;
+  box.innerHTML = `<div class="sv-read" id="svRead" aria-live="polite">${svReadHTML(S, h, st.top)}</div>
+    <svg class="sv-chart" id="svChart" dir="ltr" width="${W.toFixed(0)}" height="${H.toFixed(0)}" viewBox="0 0 ${W} ${H}" role="img" aria-label="גובה לאורך הדרך">
+      <line class="sv-axis" x1="${pl.toFixed(0)}" y1="${(pt + ih).toFixed(0)}" x2="${(pl + iw).toFixed(0)}" y2="${(pt + ih).toFixed(0)}"/>
+      ${lab(pl - em * .5, pt + em * .35, fmtM(hi), 'r', 'h')}${lab(pl - em * .5, pt + ih, fmtM(lo), 'r', 'h')}${lab(pl, H - em * .3, '0', 'l')}${lab(pl + iw, H - em * .3, fmtKm(st.km), 'r')}
+      <polygon class="sv-area"/><polyline class="sv-path"/>${steep ? '<polyline class="sv-steep"/>' : ''}
+      <circle class="sv-top" cx="${X(S[st.top].d).toFixed(1)}" cy="${Y(h[st.top]).toFixed(1)}" r="${(em * .3).toFixed(1)}"/>
+      <line class="sv-cur" id="svCur" x1="0" y1="${pt.toFixed(0)}" x2="0" y2="${(pt + ih).toFixed(0)}" visibility="hidden"/><circle class="sv-dot" id="svDot" r="${(em * .35).toFixed(1)}" visibility="hidden"/>
+    </svg>
+    <div class="tags sv-stats"><span>${msiT('north_east', 'עלייה ' + fmtM(st.up))}</span><span>${msiT('south_east', 'ירידה ' + fmtM(st.down))}</span><span>${msiT('landscape', 'הכי גבוה ' + fmtM(st.topH))}</span>${st.steep ? `<span class="sv-st">${msiT('warning', `הכי תלול ${Math.round(st.steep.g * 100)}% (${st.steep.up ? 'עלייה' : 'ירידה'})`)}</span>` : ''}</div>`;
+  const svg = box.querySelector('#svChart'), need = Math.ceil(Math.max(0, ...[...svg.querySelectorAll('.sv-lab[data-sv="h"]')].map(t => t.getBBox().width)) + em * .8);
+  if (!padL && need > pl) return svDraw(box, S, h, need);
+  const pts = (q, v) => { const e = svg.querySelector(q); if (e) e.setAttribute('points', v); }; // the lines' numbers set on the drawn elements
+  pts('.sv-area', `${pl},${pt + ih} ${line} ${pl + iw},${pt + ih}`); pts('.sv-path', line); pts('.sv-steep', steep);
+  scrubGesture(svg, x => { const r = svg.getBoundingClientRect(), d = Math.max(0, Math.min(1, (x - r.left - pl * r.width / W) / (iw * r.width / W))) * st.km; let i = 0; S.forEach((s, k) => { if (Math.abs(s.d - d) < Math.abs(S[i].d - d)) i = k; }); svAt(S, h, i, X, Y); }); }
+function svReadHTML(S, h, i) { return `${escH(fmtKm(S[i].d))}${SEP}${msiT('landscape', escH(fmtM(h[i])))}`; }
+// a point of the chart: the cursor, the reading, the dot on the map
+function svAt(S, h, i, X, Y) { const cur = document.getElementById('svCur'), dot = document.getElementById('svDot'), rd = document.getElementById('svRead'); if (!cur || !dot) return;
+  const x = X(S[i].d).toFixed(1); cur.setAttribute('x1', x); cur.setAttribute('x2', x); cur.setAttribute('visibility', 'visible'); dot.setAttribute('cx', x); dot.setAttribute('cy', Y(h[i]).toFixed(1)); dot.setAttribute('visibility', 'visible');
+  if (rd) rd.innerHTML = svReadHTML(S, h, i);
+  const M = SV.cur; if (!M || M.map._removed) return; const ll = [S[i].lat, S[i].lng];
+  if (M.dot) M.dot.setLatLng(ll); else M.dot = L.circleMarker(ll, { className: 'sv-mdot', radius: 7, weight: 3, fillOpacity: 1, interactive: false }).addTo(M.map);
+  if (M.map.getBounds && !M.map.getBounds().contains(ll)) M.map.panTo(ll); }
+// ================= END SIDE VIEW =================

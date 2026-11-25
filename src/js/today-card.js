@@ -11,7 +11,7 @@ function renderTodayHTML() {
     if (f0) rows.push(`<div class="tc-row">${ic(TRAVEL_MS[f0.mode] || 'flight')}<span><b>${esc(f0.from)} ← ${esc(f0.to)}</b><small>${tmFmt('date', f0.date)}${f0.depart ? SEP + esc(f0.depart) : ''}${f0.airline || f0.number ? SEP + esc([f0.airline, f0.number].filter(Boolean).join(' ')) : ''}${f0.terminal ? SEP + 'טרמינל ' + esc(f0.terminal) : ''}</small></span></div>`);
     rows.push(open.length ? `<button type="button" class="tc-row tc-btn t-wrap" id="tcMust" data-act="today.tcMust">${ic('event_available')}<span><b>${open.length} הזמנות חובה עוד פתוחות</b><small>${esc(open.slice(0, 3).map(p => p.name).join(SEP))}${open.length > 3 ? ' ועוד' : ''} ›</small></span></button>` : `<div class="tc-row">${ic('check_circle')}<span><b>כל הזמנות החובה סומנו ${SYM_BOOKED}</b></span></div>`);
     { const h = tlRemindRowHTML(t, ic); if (h) rows.push(h); } // 11.9.0 (timeline-import, Q3): turn Google Timeline on before the trip
-    rows.push(`<div class="tc-row" id="tcWx">${ic('partly_cloudy_day')}<span><b>מזג האוויר בתחנה הראשונה</b><small><span class="spin" aria-hidden="true"></span>טוען…</small></span></div>`);
+    rows.push(`<div class="tc-row" id="tcWx">${ic('partly_cloudy_day')}<span><b>מזג האוויר בתחנה הראשונה</b>${waitLineHTML('טוען')}</span></div>`);
     if (MAP_AVAILABLE) { try { const pk = OFF_PACKS[t.id], pl = offPlan(t.id); // 4.39.0
       if (pl && (pk ? pl.queue.length : pl.cost.tiles)) rows.push(`<button type="button" class="tc-row tc-btn t-wrap" id="tcOff" data-act="today.tcOff">${ic('download_for_offline')}<span><b>${pk ? 'יש אזור חדש להוריד למפות בלי רשת' : 'להוריד מפות לטיול?'}</b><small>≈ ${offMBh(pl.cost.bytes)}${SEP}מומלץ ב-Wi-Fi ›</small></span></button>`);
       else if (pk) rows.push(`<div class="tc-row">${ic('map')}<span><b>${offPackLine(t.id)}</b></span></div>`); } catch (e) {} }
@@ -21,7 +21,7 @@ function renderTodayHTML() {
   if (iso > t.end) return welcomeBackHTML(t); // 4.29.0: after the trip - welcome back, and an offer to close it
   const day = TRIP_DAYS.find(d => d.date === iso); if (!day) return '';
   const D = DESTS[(destsOfDay(day.key).slice(-1)[0])] || curDest(), now = tmNowHM(activeTripObj()), rows = [];
-  rows.push(`<div class="tc-row" id="tcWx">${ic('partly_cloudy_day')}<span><b>מזג האוויר</b><small><span class="spin" aria-hidden="true"></span>טוען…</small></span></div>`);
+  rows.push(`<div class="tc-row" id="tcWx">${ic('partly_cloudy_day')}<span><b>מזג האוויר</b>${waitLineHTML('טוען')}</span></div>`);
   // the plan: the organized schedule and my items, the next one by time, and how many are left today
   const d = ensureDay(day.key), mine = ['morning', 'afternoon', 'evening', 'unassigned'].flatMap(k => d[k]).map(id => ({ id, p: planItem(id), t: getTime(day.key, id) })).filter(x => x.p);
   const sch = scheduleOf(iso).map(x => ({ title: x.title, start: x.start || '', org: true }));

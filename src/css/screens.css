@@ -49,6 +49,7 @@
 .accordion-item[data-open="true"] .accordion-arrow { transform: rotate(180deg); }
 .accordion-body { padding: 0 16px 14px; display: none; }
 .accordion-item[data-open="true"] .accordion-body { display: block; }
+.accordion-item:not([data-open="true"]) > .accordion-body { display: none; } .accordion-item:not([data-open="true"]) > :not(.accordion-body) .accordion-arrow { transform: none; } /* kit-install (1, G108): a block inside an open one folds by its own mark, not its parent's */
 .accordion-body h3 { font-size: var(--fs-title-small); margin: 10px 0 6px; }
 .accordion-body p, .accordion-body ul { font-size: var(--fs-body); line-height: 1.6; margin: 0 0 8px; padding-inline-start: 20px; }
 .accordion-body p { padding-inline-start: 0; }
@@ -61,7 +62,7 @@
 .map-legend span { display: inline-flex; align-items: center; gap: var(--icon-gap); }
 .map-legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
 .clear-wrap { position: relative; flex: 1; display: flex; }
-.clear-wrap input { padding-left: 34px !important; }
+.clear-wrap input:not(:placeholder-shown) { padding-left: 34px !important; } /* whatsnew-split (5; t1041): the ✕'s room only while it shows - an empty field's placeholder keeps the field's own end padding */
 .field-clear { position: absolute; left: 4px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border: none; background: none; color: var(--on-surface-variant); cursor: pointer; }
 .field-clear[hidden] { display: none; }
 .net-badge { border: none; background: none; color: var(--on-today); width: 34px; height: 34px; border-radius: 50%; padding: 0; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: 0 0 auto; } /* 10.1.0 (design-1): a small warm cloud_off icon */
@@ -103,7 +104,18 @@ body.no-trip #bottomNav, body.no-trip #tabs, body.no-trip #searchToggle { displa
 .dest-info-head{margin-top:18px;border-top:2px solid var(--outline-variant);padding-top:12px}
 /* 11.43.0 (info-complete, item 2): the row under a destination's info while a fixed section is missing - the schedule proposal's row (Claude's colors) and a ⋮ beside it; the titles wrap */
 .info-miss { display: flex; align-items: center; gap: var(--sp-2); margin: 10px 0; } .info-miss > .prop-row { flex: 1 1 auto; min-width: 0; margin: 0; } .info-miss .prop-row-t b { overflow-wrap: anywhere; }
-.info-miss-more { flex: none; color: var(--on-claude); }
+
+/* survival-words (Q4): the language section's dictionary - each row the meaning in bold, under it how it is said beside how it is written (the
+   local script in its own direction); a row is a button that opens "להראות"; the text follows the app's size, nothing is cut */
+.sw-dict { display: flex; flex-direction: column; gap: 2px; }
+.sw-lang { display: flex; align-items: center; gap: 6px; margin: 0 0 2px; color: var(--on-surface); } .sw-lang .msi { color: var(--primary); }
+.sw-hint { margin: 0 0 4px; }
+.sw-row { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; min-height: 48px; padding: 8px 10px; border: 0; border-radius: var(--r-tile); background: transparent; color: inherit; font: inherit; text-align: start; cursor: pointer; }
+.sw-row:nth-of-type(2n+1) { background: var(--surface-container); } .sw-row:active { background: var(--surface-container-high); }
+.sw-he { font-weight: 600; overflow-wrap: anywhere; }
+.sw-sub { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 14px; min-width: 0; max-width: 100%; color: var(--on-surface-variant); }
+.sw-say, .sw-loc { overflow-wrap: anywhere; min-width: 0; } .sw-loc { unicode-bidi: isolate; color: var(--on-surface); font-size: 1.08em; }
+.sw-more { margin: 10px 0 2px; font-size: var(--fs-label); font-weight: 600; color: var(--on-surface-variant); }
 .dest-clock{font-size:var(--fs-body);color:var(--on-surface-variant);margin:2px 0 0}
 #tripAccordion{margin-bottom:6px}
 /* 4.2.0: draft of incoming content, per-day suggestions, Claude screen */
@@ -231,6 +243,11 @@ body.no-trip #bottomNav, body.no-trip #tabs, body.no-trip #searchToggle { displa
 /* 10.3.0 (design-3): the general screen's top card - before / during / after, line icons in a tinted circle, the next item highlighted */
 .today-card { border: none !important; border-radius: var(--r-card) !important; padding: 12px 14px !important; }
 .today-card .tc-title { display: flex; align-items: center; gap: 8px; } .today-card .tc-title > .msi { color: var(--primary); }
+/* skill-install (decisions 2026-11-23 · Installing the skill, Q5): the card of new AI instructions on the trips screen (the welcome-back card's shape), and the ⋮ menu's dot beside "ההוראות ל-AI" */
+.kit-card { margin-top: -30px; position: relative; } .kit-card + .ent-tiles { margin-top: 0; } /* the card takes the tiles' place over the hero; the tiles follow it */
+.mi-dot { display: inline-block; width: .5em; height: .5em; border-radius: 50%; background: var(--error); margin-inline-start: .4em; vertical-align: middle; flex: none; }
+.mi-dot[hidden] { display: none; }
+.cl-other .pw-link { min-height: 24px; } /* the install window's link to "עבודה עם AI" keeps its touch height at a small text size */
 .tcd-before { background: color-mix(in srgb, var(--secondary-container) 55%, var(--surface-container)) !important; }
 .tcd-after, .wb-thin { background: var(--today-container) !important; color: var(--on-surface); } .tcd-after .tc-title > .msi, .wb-thin > .msi:first-child { color: var(--on-today); }
 .wb-thin { display: flex !important; align-items: center; gap: 8px; } .wb-thin > span { flex: 1; min-width: 0; }
@@ -353,10 +370,11 @@ mark.sf-hit { background: var(--key-container); color: inherit; border-radius: v
 .fs-pill.ffunnel { position: absolute; gap: var(--icon-gap); display: none; } .map-fs .fs-pill.ffunnel { display: flex; } /* P21 (11.14.0): .ffunnel's display (later) also showed the pill, empty and nameless, over a map that is not full screen */ /* phone-round-1-fixes P9 (11.14.0): the pill is also the funnel (.ffunnel), whose `position: relative` (same weight, later) put it back in the flow - under the full-screen map, off the screen; the pill's own place wins here */
 .fs-pill.ffunnel small { color: var(--on-surface-variant); font-size: var(--fs-label-small); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fs-pill.ffunnel { overflow: visible; } /* phone-round-2-fixes P1 (11.21.6, G34): the pill's overflow: hidden cut the filter's count badge (.fbadge, above the corner) to a sliver; the count's text keeps its own ellipsis */
-.sfield { display: block; }
+.ap-search .clear-wrap, .guide-search .clear-wrap { display: block; } /* one-way (1): the search kind's box in a list's search (was .sfield, the old builder's own class) */
 /* 5.15.0: screens diet */
 .trip-line { margin: 8px 0 6px; font-size: var(--fs-body); color: var(--on-surface-variant); }
 .dest-hbtn { display: inline-flex; max-width: 100%; font-size: var(--fs-title-medium); font-weight: 700; padding: 6px 12px; }
+.dest-hbtn { height: auto; min-height: var(--h-chip); text-align: start; } .dest-hbtn > span:first-child { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; } /* review-fixes-11471 (2): the destination's name is the screen's title - it wraps whole (a mixed Hebrew / Latin name cut with "…" lost its middle) */
 .wx-sub { margin: 6px 0 4px; font-size: var(--fs-body-small); color: var(--on-surface-variant); }
 .menu-install { font-weight: 600; color: var(--primary); } /* 5.15.0 */
 

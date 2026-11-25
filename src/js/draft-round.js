@@ -4,7 +4,6 @@
 // what I removed stays removed (sent as draftRemoved), my fixes stay (a field Claude changed anyway is marked
 // "📝 ה-AI הציע אחרת"), my additions keep name, layer and point and only get empty fields filled. Notes 💬 can be written
 // on anything in the draft (by target id, so anything added later gets notes for free) and Claude answers each one.
-const _qe = escH;
 // every file the app sends for Claude carries a short English note at its top (ignored on import) - standard 4.27.0
 // 10 (ה5, ה6, ה9): the line is built from the goals table; the file also carries kitVersion, the instructions version it needs
 function claudeHeader(goal, kind) { const g = goal && kitGoal(goal);
@@ -18,11 +17,11 @@ function noteOf(D, t) { return dNotes(D)[t] || null; }
 function openNotes(D) { return Object.entries(dNotes(D)).filter(([, n]) => n.state === 'open'); }
 function noteBtnHTML(target, label, text) {
   const n = noteOf(DRAFT, target), st = n ? n.state : '';
-  return `<button type="button" class="note-btn${text ? ' note-btn-text' : ''}" data-act="note.open" data-v="${_qe(target)}" data-nlabel="${_qe(label)}" data-st="${st}" title="הערה ל-${AI}" aria-label="הערה ל-${AI}">${msi('chat', { size: 18 })}${text ? ' ' + text : ''}</button>`; // 10.15.0 (F37): the line icon
+  return `<button type="button" class="note-btn${text ? ' note-btn-text' : ''}" data-act="note.open" data-v="${escH(target)}" data-nlabel="${escH(label)}" data-st="${st}" title="הערה ל-${AI}" aria-label="הערה ל-${AI}">${msi('chat', { size: 18 })}${text ? ' ' + text : ''}</button>`; // 10.15.0 (F37): the line icon
 }
 function notePreviewHTML(target) {
   const n = noteOf(DRAFT, target); if (!n) return '';
-  return `<small class="note-prev" data-st="${n.state}">${msi('chat', { cls: 'msi-in' })} ${_qe(n.text)}${n.state === 'answered' ? `<br><b>${n.done === false ? warnIc() : '✓ טופל'}</b>${SEP}${claudeMark()} ${_qe(n.reply)}` : n.sentIn && DRAFT.round && n.sentIn === DRAFT.round.n ? (SEP + '<i>נשלחה, מחכה לתשובה</i>') : ''}</small>`;
+  return `<small class="note-prev" data-st="${n.state}">${msi('chat', { cls: 'msi-in' })} ${escH(n.text)}${n.state === 'answered' ? `<br><b>${n.done === false ? warnIc() : '✓ טופל'}</b>${SEP}${claudeMark()} ${escH(n.reply)}` : n.sentIn && DRAFT.round && n.sentIn === DRAFT.round.n ? (SEP + '<i>נשלחה, מחכה לתשובה</i>') : ''}</small>`;
 }
 // 10.15.0 (design-review F22): "על:" shows the place's circle, as its card - a place of the draft only (the rest are named in words)
 function noteTargetLead(D, target) { const x = draftItems(D).find(i => itemTarget(i) === target); return x ? leadHTML('place', typeIcon(x.p.icon || x.L.icon, { size: 18 }), x.L.color) : ''; }
@@ -30,10 +29,10 @@ function openNoteSheet(target, label) { layerNote(openNoteSheet, arguments);
   if (!DRAFT) return; const D = DRAFT; D.notes = D.notes || {};
   const n = D.notes[target], sheet = document.getElementById('sheet'), F = fmNew({ target, label });
   sheet.innerHTML = `${fmHead('💬 הערה ל-' + AI + ' ' + tipI('note.claude'))}
-    <p class="sh-hint note-on">על: ${noteTargetLead(D, target)}<b>${_qe(label || target)}</b></p>
-    ${n && n.state === 'answered' ? `<div class="callout note-reply">${n.done === false ? warnIc() + ' לא הצליח' : '✓ טופל'}${SEP}<b>ה-${AI}:</b> ${_qe(n.reply)}</div>
-      <div class="brow export-actions"><button class="btn-nav" data-act="noteWin.done">✓ סגירת ההערה</button><button class="icon-btn btn-copy" data-act="noteWin.again" style="width:auto;padding:0 12px;">${msi('restart_alt', { size: 18 })} להשאיר פתוחה לסבב הבא</button></div>` : ''}
-    ${n && n.state === 'closed' ? `<div class="callout note-reply">✓ סגורה${n.reply ? SEP + '<b>ה-' + AI + ':</b> ' + _qe(n.reply) : ''}</div>` : ''}
+    <p class="sh-hint note-on">על: ${noteTargetLead(D, target)}<b>${escH(label || target)}</b></p>
+    ${n && n.state === 'answered' ? `<div class="callout note-reply">${n.done === false ? warnIc() + ' לא הצליח' : '✓ טופל'}${SEP}<b>ה-${AI}:</b> ${escH(n.reply)}</div>
+      ${cardActionsHTML({ act: 'noteWin.done', label: '✓ סגירת ההערה' }, [{ act: 'noteWin.again', label: `${msi('restart_alt', { size: 18 })} להשאיר פתוחה לסבב הבא` }])}` : ''}
+    ${n && n.state === 'closed' ? `<div class="callout note-reply">✓ סגורה${n.reply ? SEP + '<b>ה-' + AI + ':</b> ' + escH(n.reply) : ''}</div>` : ''}
     ${fmText(F, 'text', { label: 'ההערה', note: n && n.sentIn && D.round && n.sentIn === D.round.n && n.state === 'open' ? '(נשלחה בסבב ' + n.sentIn + ', מחכה לתשובה. שינוי יישלח בסבב הבא)' : '', para: true, rows: 4, value: n ? n.text : '', placeholder: 'למשל: יש משהו דומה לילדים? / לבדוק אם עדיין פתוח / חסרה מסעדה צמחונית באזור' })}
     ${n ? fmEndActs([{ act: 'noteWin.del', label: 'מחיקה', del: true }]) : ''}
     ${fmSaveBar({ act: 'noteWin.save' })}`;
@@ -68,16 +67,16 @@ function draftMoreHTML(D) {
   if (FILTER.draft.notes) rows = rows.filter(r => noteOf(D, r.t)); if (!rows.length) return '';
   let html = '', g = null;
   rows.forEach(r => { if (r.group !== g) { html += `<div class="draft-lhead">${sepTie(icText(r.group))}</div>`; /* 10.15.0: the group's symbol as its line icon */ g = r.group; }
-    html += `<div class="draft-row more-row"><div class="draft-txt"><b>${_qe(r.label)}</b>${notePreviewHTML(r.t)}</div>${noteBtnHTML(r.t, r.label)}</div>`; });
+    html += `<div class="draft-row more-row"><div class="draft-txt"><b>${escH(r.label)}</b>${notePreviewHTML(r.t)}</div>${noteBtnHTML(r.t, r.label)}</div>`; });
   return accHTML('dr-more', `📋 עוד בטיוטה (${total})${withNote ? `${SEP}${msi('chat', { cls: 'msi-in' })} ${withNote}` : ''}`, `<p class="sh-hint">שכבות, מידע כללי${D.data.kind === 'trip' ? ', נסיעות, לינות ולו"ז' : ''}: ${msi('chat', { cls: 'msi-in' })} מוסיף הערה ל-${AI} לסבב השיפורים.</p><div class="draft-list">${html}</div>`, !!FILTER.draft.notes);
 }
 // summary block of the draft: the round that is out, the last round that came back, the general note
 function draftRoundHTML(D) {
   let h = '';
   const on = openNotes(D).length, gen = noteOf(D, 'general');
-  if (D.round) h += `<div class="callout round-out">${claudeMark()} <b>נשלחה ל-${AI}${SEP}סבב ${D.round.n}</b>${SEP}${tmFmt('date', D.round.sentAt)} ${tmFmt('stamp', D.round.sentAt)}<br><small>ממשיכים לעבוד כרגיל. מה שתשנו בינתיים נשמר.</small> <button type="button" class="icon-btn btn-copy" id="drRoundStop" data-act="draft.drRoundStop" style="width:auto;padding:0 10px;">✕ לא מחכים לסבב</button></div>`;
+  if (D.round) h += `<div class="callout round-out">${claudeMark()} <b>נשלחה ל-${AI}${SEP}סבב ${D.round.n}</b>${SEP}${tmFmt('date', D.round.sentAt)} ${tmFmt('stamp', D.round.sentAt)}<br><small>ממשיכים לעבוד כרגיל. מה שתשנו בינתיים נשמר.</small> <button type="button" class="btn-sec" id="drRoundStop" data-act="draft.drRoundStop">✕ לא מחכים לסבב</button></div>`;
   if (D.last) { const L = D.last;
-    h += `<div class="callout round-back">${claudeMark()} <b>סבב ${L.n} חזר</b>: ה-${AI} עדכן ${L.upd}, הוסיף ${L.added}, טיפל ב-${L.replies} הערות${L.removed ? `, הוריד ${L.removed} שנסגרו` : ''}${L.suggest ? `, ממליץ להוריד ${L.suggest}` : ''}.${L.summary ? `<br><small>${_qe(L.summary)}</small>` : ''}${L.conflicts ? `<br><small>${msi('edit_note', { size: 16, cls: 'msi-in' })} ב-${L.conflicts} מקומות ה-${AI} הציע אחרת ממה שתיקנתם - התיקון שלכם נשאר עד שתחליטו.</small>` : ''}</div>`; }
+    h += `<div class="callout round-back">${claudeMark()} <b>סבב ${L.n} חזר</b>: ה-${AI} עדכן ${L.upd}, הוסיף ${L.added}, טיפל ב-${L.replies} הערות${L.removed ? `, הוריד ${L.removed} שנסגרו` : ''}${L.suggest ? `, ממליץ להוריד ${L.suggest}` : ''}.${L.summary ? `<br><small>${escH(L.summary)}</small>` : ''}${L.conflicts ? `<br><small>${msi('edit_note', { size: 16, cls: 'msi-in' })} ב-${L.conflicts} מקומות ה-${AI} הציע אחרת ממה שתיקנתם - התיקון שלכם נשאר עד שתחליטו.</small>` : ''}</div>`; }
   h += `<div class="brow export-actions round-acts"><button type="button" class="claude-btn" id="drRound" data-act="draft.drRound">${claudeH(TX.claude.round.btn)}</button>${tipI('claude.round')}</div>`; // 5.15.0 (ד7): 💬 הערה כללית moved into the round's window
   return h;
 }
@@ -95,18 +94,18 @@ function draftRoundFilter(D, list) {
 function roundMarksHTML(D, x) {
   const k = x.key, out = [];
   const c = (D.changed || {})[k]; if (c) out.push(`<span class="rmark">${c === 'new' ? claudeMark() + ' חדש מה-' + AI : claudeMark() + ' עודכן בסבב'}</span>`);
-  if ((D.byClaude || {})[k]) out.push(`<span class="rmark rm-off">✕ הוצא על ידי ה-${AI}: ${_qe(D.byClaude[k])}${D.off[k] ? '' : (SEP + 'הוחזר')}</span>`);
-  if ((D.suggest || {})[k] && !D.off[k]) out.push(`<span class="rmark rm-sugg">${claudeMark()} מומלץ להוריד: ${_qe(D.suggest[k])} <button type="button" class="mini-btn" data-sugg="${_qe(k)}" data-act="draft.sugg" data-v="off">להוריד</button><button type="button" class="mini-btn" data-sugg="${_qe(k)}" data-act="draft.sugg" data-v="keep">להשאיר</button></span>`);
-  if ((D.conflict || {})[k] && Object.keys(D.conflict[k]).length) out.push(`<button type="button" class="rmark rm-conf" data-act="draft.conflict" data-v="${_qe(k)}">${msi('edit_note', { size: 16 })} ה-${AI} הציע אחרת ›</button>`);
+  if ((D.byClaude || {})[k]) out.push(`<span class="rmark rm-off">✕ הוצא על ידי ה-${AI}: ${escH(D.byClaude[k])}${D.off[k] ? '' : (SEP + 'הוחזר')}</span>`);
+  if ((D.suggest || {})[k] && !D.off[k]) out.push(`<span class="rmark rm-sugg">${claudeMark()} מומלץ להוריד: ${escH(D.suggest[k])} <button type="button" class="mini-btn" data-sugg="${escH(k)}" data-act="draft.sugg" data-v="off">להוריד</button><button type="button" class="mini-btn" data-sugg="${escH(k)}" data-act="draft.sugg" data-v="keep">להשאיר</button></span>`);
+  if ((D.conflict || {})[k] && Object.keys(D.conflict[k]).length) out.push(`<button type="button" class="rmark rm-conf" data-act="draft.conflict" data-v="${escH(k)}">${msi('edit_note', { size: 16 })} ה-${AI} הציע אחרת ›</button>`);
   return out.length ? `<div class="rmarks">${out.join('')}</div>` : '';
 }
 const FIELD_LABEL = { name: 'שם', layer: 'שכבה', address: 'כתובת', description: 'תיאור', manualCoord: 'מיקום', region: 'אזור', transit: 'איך מגיעים', reservation: 'הזמנה', price: 'מחיר' };
 function openConflictSheet(key) { const ctl = {}; layerNote(openConflictSheet, arguments);
   const D = DRAFT, cf = (D.conflict || {})[key]; if (!cf) return;
   const x = draftItems(D).find(i => i.key === key); if (!x) return;
-  const show = (f, v) => f === 'manualCoord' ? (v ? `${v.lat}, ${v.lng}` : '—') : f === 'layer' ? draftLayer(x.dp, v).name : bpFieldText(f, v) != null ? _qe(bpFieldText(f, v) || '—') /* 11.42.0: a booking or price in words */ : _qe(v == null || v === '' ? '—' : v);
+  const show = (f, v) => f === 'manualCoord' ? (v ? `${v.lat}, ${v.lng}` : '—') : f === 'layer' ? draftLayer(x.dp, v).name : bpFieldText(f, v) != null ? escH(bpFieldText(f, v) || '—') /* 11.42.0: a booking or price in words */ : escH(v == null || v === '' ? '—' : v);
   const sheet = document.getElementById('sheet');
-  sheet.innerHTML = `${fmHead(`📝 ה-${AI} הציע אחרת${SEP}${_qe(x.p.name)}`, 'cfClose')}
+  sheet.innerHTML = `${fmHead(`📝 ה-${AI} הציע אחרת${SEP}${escH(x.p.name)}`, 'cfClose')}
     <p class="sh-hint">תיקנתם את השדות האלה בעצמכם, וה-${AI} שינה אותם בקובץ שחזר. התיקון שלכם נשאר עד שתבחרו - נגיעה בכרטיס בוחרת.</p>
     ${Object.entries(cf).map(([f, v]) => twoCardsHTML(FIELD_LABEL[f] || f, [{ cap: 'שלכם', val: show(f, (D.fix[key] || {})[f]), on: true, act: 'conflict.cfk', data: ` data-cfk="${f}"` },
       { cap: `${claudeMark({ size: 16 })} ${AI}`, val: show(f, v), act: 'conflict.cfa', data: ` data-cfa="${f}"` }])).join('')}
@@ -241,10 +240,10 @@ function showRoundReplies(data) { layerNote(showRoundReplies, arguments);
   const sheet = document.getElementById('sheet');
   sheet.innerHTML = `${fmHead(`${claudeMark()} תשובות ה-${AI} מסבב ${rd.n || ''} ${tipI('claude.round')}`, 'rrClose')}
     <p class="sh-hint">הטיוטה כבר לא פתוחה, ולכן הקובץ נקלט כעדכון רגיל. מה שאישרתם לא נדרס: ההורדות והתיקונים שלכם נשארו. המלצות ההורדה לא הוחלו - אפשר להסתיר מקום מהכרטיס שלו.</p>
-    ${rd.summary ? `<div class="callout">${_qe(rd.summary)}</div>` : ''}
-    ${(rd.replies || []).length ? `<h3>תשובות להערות</h3>${rd.replies.map(r => `<div class="rr-row rr-card"><b>${_qe(nl(r.note).label || r.target)}</b><small>ביקשתם: ${_qe(nl(r.note).text || '')}</small><div class="rr-ans">${r.done === false ? warnIc() : claudeMark({ size: 16 })} ${_qe(r.reply)}</div></div>`).join('')}` : ''}
-    ${(rd.removed || []).length ? `<h3>${msi('block', { cls: 'msi-in' })} נסגרו (לפי ה-${AI})</h3>${rd.removed.map(r => `<div class="rr-row">${_qe(r.target)}${SEP}${_qe(r.reason)}</div>`).join('')}` : ''}
-    ${(rd.suggestRemove || []).length ? `<h3>${claudeMark()} מומלץ להוריד</h3>${rd.suggestRemove.map(r => `<div class="rr-row">${_qe(r.target)}${SEP}${_qe(r.reason)}</div>`).join('')}` : ''}`;
+    ${rd.summary ? `<div class="callout">${escH(rd.summary)}</div>` : ''}
+    ${(rd.replies || []).length ? `<h3>תשובות להערות</h3>${rd.replies.map(r => `<div class="rr-row rr-card"><b>${escH(nl(r.note).label || r.target)}</b><small>ביקשתם: ${escH(nl(r.note).text || '')}</small><div class="rr-ans">${r.done === false ? warnIc() : claudeMark({ size: 16 })} ${escH(r.reply)}</div></div>`).join('')}` : ''}
+    ${(rd.removed || []).length ? `<h3>${msi('block', { cls: 'msi-in' })} נסגרו (לפי ה-${AI})</h3>${rd.removed.map(r => `<div class="rr-row">${escH(r.target)}${SEP}${escH(r.reason)}</div>`).join('')}` : ''}
+    ${(rd.suggestRemove || []).length ? `<h3>${claudeMark()} מומלץ להוריד</h3>${rd.suggestRemove.map(r => `<div class="rr-row">${escH(r.target)}${SEP}${escH(r.reason)}</div>`).join('')}` : ''}`;
   
   showSheetBackdrop('showRoundReplies');
  

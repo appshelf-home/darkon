@@ -50,23 +50,23 @@ function picPtsTab(m) {
     .filter(x => !(m.kind === 'city' && x.type === 'city' && !x.extra && x.lv === 'out'));
   const hit = x => !q || String(x.name).toLowerCase().includes(q) || String(x.foreign || '').toLowerCase().includes(q) || String(x.text || '').toLowerCase().includes(q);
   const ov = ((m.P.ov || {}).pts) || {}, rank = x => x.type === 'city' ? 0 : x.type === 'hotel' ? 1 : x.visited ? 2 : x.planned ? 3 : 4;
-  const row = x => { const mine = ov[x.key] && (ov[x.key].lv || typeof ov[x.key].label === 'boolean' || ov[x.key].text), th = x.img ? `<img src="${_escH(x.img.url)}" alt="">` : `<span>${x.type === 'city' ? msi('location_city') : x.type === 'hotel' ? msi('hotel') : typeIcon(x.icon)}</span>`; // final-review-fixes (finding 12): the kind as a line icon, as in the location's own window
-    return `<div class="tp-row" data-k="${_qe(x.key)}"><button type="button" class="tp-th" data-act="picBody.tpcard" data-tpcard="${_qe(x.key)}" aria-label="פרטים">${th}</button><button type="button" class="tp-name t-wrap" data-act="picBody.tpcard" data-tpcard="${_qe(x.key)}">${_qe(x.text || x.name)}${x.rt === 'love' ? ' ❤️' : x.rt === 'like' ? ' 👍' : ''}${x.hl ? ' ' + msi('celebration', { size: 16, cls: 'msi-in' }) : ''}${x.star ? ' ' + msi('star', { size: 16, cls: 'msi-in' }) : ''}${mine ? ` <i class="tp-mine">${msi('back_hand', { size: 16 })}</i>` : ''}<small>${x.type === 'city' ? 'עיר' : x.type === 'hotel' ? 'לינה' : x.type === 'extra' ? 'מיקום לתמונה' : x.visited ? TX.visited : x.planned ? 'תוכנן' : 'ביעד'}</small></button>
-      <span class="tp-lvs">${PIC_LV.map(l => `<button type="button" class="tp-lv" data-act="picBody.tplv" data-tplv="${l}" data-k="${_qe(x.key)}" aria-pressed="${x.lv === l}" title="${PIC_LV_HE[l]}" aria-label="${PIC_LV_HE[l]}">${l === 'out' ? msi('visibility_off', { size: 18 }) : { L: 'ג', M: 'ב', S: 'ק' }[l]}</button>`).join('')}</span></div>`; };
+  const row = x => { const mine = ov[x.key] && (ov[x.key].lv || typeof ov[x.key].label === 'boolean' || ov[x.key].text), th = x.img ? `<img src="${escH(x.img.url)}" alt="">` : `<span>${x.type === 'city' ? msi('location_city') : x.type === 'hotel' ? msi('hotel') : typeIcon(x.icon)}</span>`; // final-review-fixes (finding 12): the kind as a line icon, as in the location's own window
+    return `<div class="tp-row" data-k="${escH(x.key)}"><button type="button" class="tp-th" data-act="picBody.tpcard" data-tpcard="${escH(x.key)}" aria-label="פרטים">${th}</button><button type="button" class="tp-name t-wrap" data-act="picBody.tpcard" data-tpcard="${escH(x.key)}">${escH(x.text || x.name)}${x.rt === 'love' ? ' ❤️' : x.rt === 'like' ? ' 👍' : ''}${x.hl ? ' ' + msi('celebration', { size: 16, cls: 'msi-in' }) : ''}${x.star ? ' ' + msi('star', { size: 16, cls: 'msi-in' }) : ''}${mine ? ` <i class="tp-mine">${msi('back_hand', { size: 16 })}</i>` : ''}<small>${x.type === 'city' ? 'עיר' : x.type === 'hotel' ? 'לינה' : x.type === 'extra' ? 'מיקום לתמונה' : x.visited ? TX.visited : x.planned ? 'תוכנן' : 'ביעד'}</small></button>
+      <span class="tp-lvs">${PIC_LV.map(l => `<button type="button" class="tp-lv" data-act="picBody.tplv" data-tplv="${l}" data-k="${escH(x.key)}" aria-pressed="${x.lv === l}" title="${PIC_LV_HE[l]}" aria-label="${PIC_LV_HE[l]}">${l === 'out' ? msi('visibility_off', { size: 18 }) : { L: 'ג', M: 'ב', S: 'ק' }[l]}</button>`).join('')}</span></div>`; };
   const groups = ['L', 'M', 'S'].map(l => { const xs = list.filter(x => x.lv === l && hit(x)).sort((a, b) => rank(a) - rank(b));
     return xs.length ? `<h4 class="tp-gh">${PIC_LV_HE[l]} <small>${xs.length}</small></h4>${xs.map(row).join('')}` : ''; }).join('');
   const outs = list.filter(x => x.lv === 'out' && hit(x)).sort((a, b) => rank(a) - rank(b)), open = PIC_ED.outOpen || !!q;
-  return `<div class="tp-search">${searchFieldHTML('tpQ', 'חיפוש מיקום', PIC_ED.q)}<button type="button" class="tp-add" id="tpAdd" data-act="picBody.tpAdd">${msi('add', { size: 18 })} מיקום</button></div>
+  return `<div class="tp-search">${searchFieldHTML('tpQ', 'חיפוש מיקום', PIC_ED.q)}<button type="button" class="tp-add" id="tpAdd" data-act="picBody.tpAdd">${msi('add', { size: 18 })} מיקום</button></div><div id="tpPtsList">
     <small class="sh-hint">ג גדול${SEP}ב בינוני${SEP}ק קטן${SEP}${msi('visibility_off', { size: 14 })} בחוץ ${tipI('pic.levels')}</small>
     ${groups || '<p class="sh-hint">אין עדיין מיקומים בתמונה. בוחרים מ"בחוץ" או מוסיפים ＋ מיקום.</p>'}
     <button type="button" class="tp-gh tp-out t-wrap" id="tpOut" data-act="picBody.tpOut" aria-expanded="${open}"><span class="tp-outt">בחוץ${SEP}${outs.length}<small>מיקומים שלא מוצגים בתמונה</small></span>${msi(open ? 'expand_less' : 'expand_more')}</button>
     ${open ? (outs.length ? outs.slice(0, 300).map(row).join('') + (outs.length > 300 ? `<p class="sh-hint">ועוד ${outs.length - 300} - חיפוש מצמצם.</p>` : '') : '<p class="sh-hint">אין.</p>') : ''}
-    ${PIC_ED.all ? '' : '<p class="sh-hint"><span class="spin" aria-hidden="true"></span>טוען את כל המקומות של היעדים…</p>'}`;
+    ${PIC_ED.all ? '' : '<p class="sh-hint"><span class="spin" aria-hidden="true"></span>טוען את כל המקומות של היעדים…</p>'}</div>`;
 }
 // 🖼️ the frame: blocks that switch on and off, or no frame at all
 function picFrameTab(m) {
   const f = m.frame, D = m.D, sw = (k, label, on, extra) => `<label class="bk-part">${fmCheck({ act: 'picBody.tpf', data: `data-tpf="${k}"`, checked: on })} ${label}${extra || ''}</label>`;
-  const nums = Object.keys(PIC_NUMS).filter(k => k !== 'walk' || m.kind === 'city').filter(k => k !== 'dests' || D.dests.length > 1);
+  const nums = Object.keys(PIC_NUMS).filter(k => k !== 'walk' || m.kind === 'city').filter(k => k !== 'dests' || D.dests.length > 1).filter(k => k !== 'ride' || D.ride.km > 0); // ride-km (Q3): in both kinds when there is any
   return `<div class="chips-row tp-chips"><button type="button" class="chip" data-act="picBody.tpnone" data-tpnone="0" data-active="${!f.none}">עם מסגרת</button><button type="button" class="chip" data-act="picBody.tpnone" data-tpnone="1" data-active="${f.none}">בלי מסגרת</button></div>
     ${f.none ? `<p class="sh-hint">המפה מקצה לקצה.</p><div class="chips-row tp-chips"><button type="button" class="chip" data-act="picBody.tpsmall" data-tpsmall="small" data-active="${f.small === 'small'}">כותרת קטנה</button><button type="button" class="chip" data-act="picBody.tpsmall" data-tpsmall="none" data-active="${f.small === 'none'}">בלי כותרת</button></div>
       <label class="sh-field">כותרת${fmInput({ id: 'tpTitle', act: 'picBody.frText', value: f.title, placeholder: String(D.t.name).split(' · ')[0] })}</label>${sw('dates', 'תאריכים', f.dates)}` : `
@@ -76,7 +76,7 @@ function picFrameTab(m) {
       ${sw('dates', 'תאריכים', f.dates)}${D.flags.length ? sw('flags', 'דגלים', f.flags) : ''}` : ''}
     <h4 class="tp-gh">מספרים <small>עד ${PIC_NUM_MAX}${SEP}${f.nums.length} נבחרו</small></h4>
     <div class="chips-row tp-chips wrap">${nums.map(k => `<button type="button" class="chip" data-act="picBody.tpnum" data-tpnum="${k}" data-active="${f.nums.includes(k)}">${PIC_NUMS[k][0]}</button>`).join('')}</div>
-    <h4 class="tp-gh">עוד בתמונה</h4>${D.hs.length ? sw('hl', `רגעי השיא (${D.hs.length})`, f.hl) : ''}${D.cols[0] ? sw('col', msiT('checklist', 'מונה האוסף', { size: 18 }), f.col) : ''}${m.kind === 'route' && D.records.some(r => r[0] === '⛰️') ? sw('elev', msiT('elevation', 'פרופיל גובה', { size: 18 }), f.elev) : ''}${sw('foot', 'שורה תחתונה (שם האפליקציה, תאריך וגרסה)', f.foot)}`}
+    <h4 class="tp-gh">עוד בתמונה</h4>${D.hs.length ? sw('hl', `רגעי השיא (${D.hs.length})`, f.hl) : ''}${D.cols[0] ? sw('col', msiT('checklist', 'מונה האוסף', { size: 18 }), f.col) : ''}${m.kind === 'route' && D.records.some(r => r[0] === '⛰️') ? sw('elev', msiT('elevation', 'פרופיל גובה', { size: 18 }), f.elev) : ''}${tlPaths(m.id).length ? sw('path', msiT('route', 'המסלול שהלכנו', { size: 18 }), f.path) : ''}${sw('foot', 'שורה תחתונה (שם האפליקציה, תאריך וגרסה)', f.foot)}`}
     <small class="sh-hint">קרדיט המפה ${m.pts.some(x => x.img && x.img.src === 'wiki') ? 'וויקיפדיה ' : ''}תמיד מופיע, קטן בפינה.</small>`;
 }
 // 🎨 style: route/city, ready styles, orientation, language, real/drawn, the map's background
@@ -97,12 +97,15 @@ function picWireBody(m) { const ctl = ctlOn('tpEd', 'picBody');
   const id = m.id, body = document.getElementById('tpBody'), $$ = q => body.querySelectorAll(q), $ = q => body.querySelector(q);
   ctl.tpcard = b => picCard(b.dataset.tpcard);
   ctl.tplv = b => picSetLv(id, b.dataset.k, b.dataset.tplv);
-  const q = $('#tpQ'); if (q) { const pos0 = q.value.length; wireSearchField(q, v => { PIC_ED.q = v; const pos = q.selectionStart ?? pos0; picEdBody(false); const q2 = document.getElementById('tpQ'); q2.focus(); try { q2.setSelectionRange(pos, pos); } catch (e) {} }); }
-  if (PIC_ED.q) markSearch(document.getElementById('tpBody'), PIC_ED.q);
+  // ride-no-home item 3 (G133 sweep): typing redraws the list under the search only - the field itself stays (the whole tab was drawn
+  // again on every letter and the new field focused: the keyboard could close)
+  const q = $('#tpQ'); if (q) fmOnInput(q, v => { PIC_ED.q = v; const L = $('#tpPtsList'); if (!L) { picEdBody(false); return; }
+    const nl = htmlFrag(picPtsTab(picModel(id))).querySelector('#tpPtsList'); if (nl) L.replaceChildren(...nl.childNodes); picWireBody(picModel(id)); });
+  if (PIC_ED.q) markSearch($('#tpPtsList') || body, PIC_ED.q);
   if ($('#tpOut')) ctl.tpOut = () => { PIC_ED.outOpen = !PIC_ED.outOpen; picEdBody(false); };
   if ($('#tpAdd')) ctl.tpAdd = () => openPicAdd(id);
   const fr = (k, v, label) => picChange(id, label, p => { const f = picOv(p).frame, def = picFrameDefaults(m.D, m.kind)[k]; if (JSON.stringify(v) === JSON.stringify(def)) delete f[k]; else f[k] = v; }, true);
-  ctl.tpf = c => fr(c.dataset.tpf, c.checked, '🖼️ המסגרת עודכנה');
+  ctl.tpf = c => { const k = c.dataset.tpf; if (k === 'path') { picChange(id, '🖼️ המסגרת עודכנה', p => { p.pathNew = 1; const f = picOv(p).frame; if (c.checked === picFrameDefaults(m.D, m.kind).path) delete f.path; else f.path = c.checked; }, true); return; } fr(k, c.checked, '🖼️ המסגרת עודכנה'); }; // tl-paths (Q4): the switch also ends an old picture's kept look
   ctl.tpnone = b => fr('none', b.dataset.tpnone === '1', b.dataset.tpnone === '1' ? 'בלי מסגרת' : '🖼️ עם מסגרת');
   ctl.tpsmall = b => fr('small', b.dataset.tpsmall, '🖼️ הכותרת עודכנה');
   ctl.frText = el => fr(el.id === 'tpTitle' ? 'title' : 'sub', el.value.trim(), '🖼️ הכותרת עודכנה'); // saved on leaving the field
@@ -110,7 +113,7 @@ function picWireBody(m) { const ctl = ctlOn('tpEd', 'picBody');
     if (!on && cur.length >= PIC_NUM_MAX) { showToast(`עד ${PIC_NUM_MAX} מספרים - מורידים אחד קודם`); return; }
     fr('nums', on ? cur.filter(x => x !== k) : cur.concat(k), '🔢 המספרים עודכנו'); };
   const setP = (label, fn) => picChange(id, label, fn, true);
-  ctl.tpkind = b => { if (b.dataset.tpkind === m.kind) return; setP(b.dataset.tpkind === 'city' ? 'עירוני' : 'מסלול', p => { p.kind = b.dataset.tpkind; }); };
+  ctl.tpkind = b => { if (b.dataset.tpkind === m.kind) return; setP(b.dataset.tpkind === 'city' ? 'עירוני' : 'מסלול', p => { p.kind = b.dataset.tpkind; p.pathNew = 1; }); }; // tl-paths (Q4): a changed kind takes the new path default
   ctl.tppreset = b => { if (b.dataset.tppreset === m.preset) return; setP('🎨 ' + b.textContent.trim(), p => { p.presets = { ...(p.presets || {}), [m.kind]: b.dataset.tppreset }; }); };
   ctl.tporient = b => { if (b.dataset.tporient === m.orient) return; setP(b.textContent.trim(), p => { p.orient = b.dataset.tporient; }); };
   ctl.tplang = b => { if (b.dataset.tplang === m.lang) return; setP(b.dataset.tplang === 'en' ? '🔤 English' : '🔤 עברית', p => { p.lang = b.dataset.tplang; }); };
@@ -145,15 +148,15 @@ function picCard(key, refresh) { const ctl = {}; // 9.8.0: the card's controller
     ${x.def && x.lv !== x.def ? `<small class="sh-hint">${msi('back_hand', { cls: 'msi-in' })} שיניתם (בסגנון: ${PIC_LV_HE[x.def]}) <button type="button" class="link-btn" data-act="picCard.pcreset" data-pcreset="lv" aria-label="חזרה לברירת המחדל" title="חזרה לברירת המחדל">${msi('restart_alt', { size: 18 })}</button></small>` : ''}
     ${inPic ? `<label class="bk-part">${fmCheck({ id: 'pcLabel', act: 'picCard.pcLabel', checked: x.label === true })} שם בתמונה${x.label === 'auto' ? ' <small>(בינוני: כשיש מקום)</small>' : ''}</label>
     <label class="sh-field">השם בתמונה בלבד${fmInput({ id: 'pcText', act: 'picCard.pcText', value: o.text || '', placeholder: x.auto || x.name })}</label>
-    ${x.foreign && x.foreign !== x.name ? `<small class="sh-hint">לועזי: ${_qe(x.foreign)}</small>` : ''}
+    ${x.foreign && x.foreign !== x.name ? `<small class="sh-hint">לועזי: ${escH(x.foreign)}</small>` : ''}
     <h4 class="tp-gh">תמונה של המקום</h4>
     <div class="tp-imgrow">${x.img ? `<span class="tp-imgcol">${photoThumbHTML(`pimg:${id}:${x.img.key || key}`, { cls: 'tp-imgprev', label: 'הגדלה' })}<button type="button" class="tp-ib" id="pcCrop" data-act="picCard.pcCrop" aria-label="חיתוך" title="חיתוך">${msi('crop', { size: 18 })}</button></span>` : '<span class="tp-imgprev tp-noimg">—</span>'}
       <div class="tp-imgsrc"><div class="chips-row tp-chips wrap">${photoAddHTML('picCard.pcown')}${wiki && wiki.u ? `<button type="button" class="chip" data-act="picCard.pcsrc" data-pcsrc="wiki" data-active="${x.img && x.img.src === 'wiki'}">${msi('auto_stories', { size: 16 })} ויקיפדיה</button>` : ''}<button type="button" class="chip" data-act="picCard.pcsrc" data-pcsrc="none" data-active="${imgO.src === 'none' || !x.img}">בלי</button></div>
-      <small class="sh-hint">${wiki === undefined ? (PIC_WIKI_TRIED.has(id + '|' + picWikiCK(x)) && !PIC_WIKI_RUN ? (svcNetDown() ? svcOffHTML() + ' לבדיקה בוויקיפדיה.' : 'לא הצלחתי לבדוק בוויקיפדיה עכשיו. ננסה שוב בפתיחה הבאה.') : 'מחפש בוויקיפדיה…') : wiki && wiki.u ? `${msi('auto_stories', { cls: 'msi-in' })} ${_qe(wiki.t)}` : 'אין תמונה בוויקיפדיה למקום הזה; אפשר תמונה שלכם.'}</small></div></div>
+      <small class="sh-hint">${wiki === undefined ? (PIC_WIKI_TRIED.has(id + '|' + picWikiCK(x)) && !PIC_WIKI_RUN ? (svcNetDown() ? svcOffHTML() + ' לבדיקה בוויקיפדיה.' : 'לא הצלחתי לבדוק בוויקיפדיה עכשיו. ננסה שוב בפתיחה הבאה.') : 'מחפש בוויקיפדיה…') : wiki && wiki.u ? `${msi('auto_stories', { cls: 'msi-in' })} ${escH(wiki.t)}` : 'אין תמונה בוויקיפדיה למקום הזה; אפשר תמונה שלכם.'}</small></div></div>
     <h4 class="tp-gh">מקום בתמונה</h4>
-    ${mem ? `<p class="sh-hint">${msi('link', { cls: 'msi-in' })} מאוחד עם: ${mem.filter(k => k !== key).map(k => _qe((m.pts.find(c => c.key === k) || {}).name || k)).join(', ')}</p><button type="button" class="icon-btn btn-copy" id="pcSplit" data-act="picCard.pcSplit" style="width:auto;padding:0 12px;">${msi('call_split', { size: 18 })} פיצול</button>`
+    ${mem ? `<p class="sh-hint">${msi('link', { cls: 'msi-in' })} מאוחד עם: ${mem.filter(k => k !== key).map(k => escH((m.pts.find(c => c.key === k) || {}).name || k)).join(', ')}</p><button type="button" class="btn-sec" id="pcSplit" data-act="picCard.pcSplit">${msi('call_split', { size: 18 })} פיצול</button>`
       : `<div class="tp-move"><button type="button" class="tp-ib" data-act="picCard.pcmv" data-pcmv="0,-12" aria-label="למעלה">${msi('north', { size: 18 })}</button><button type="button" class="tp-ib" data-act="picCard.pcmv" data-pcmv="0,12" aria-label="למטה">${msi('south', { size: 18 })}</button><button type="button" class="tp-ib" data-act="picCard.pcmv" data-pcmv="12,0" aria-label="ימינה">${msi('east', { size: 18 })}</button><button type="button" class="tp-ib" data-act="picCard.pcmv" data-pcmv="-12,0" aria-label="שמאלה">${msi('west', { size: 18 })}</button>${o.dx || o.dy ? '<button type="button" class="link-btn" data-act="picCard.pcreset" data-pcreset="move">' + msi('restart_alt', { size: 18 }) + ' <span class="lk-tx">למקום</span></button>' : ''}</div>
-      ${near.length ? `<small class="sh-hint">${msi('link', { cls: 'msi-in' })} איחוד עם:</small><div class="chips-row tp-chips wrap">${near.map(n => `<button type="button" class="chip" data-act="picCard.pcmerge" data-pcmerge="${_qe(n.q.key)}">${_qe(String(n.q.text).slice(0, 22))}</button>`).join('')}</div>` : ''}`}` : '<small class="sh-hint">המיקום בחוץ. בוחרים גודל כדי להכניס אותו לתמונה.</small>'}
+      ${near.length ? `<small class="sh-hint">${msi('link', { cls: 'msi-in' })} איחוד עם:</small><div class="chips-row tp-chips wrap">${near.map(n => `<button type="button" class="chip" data-act="picCard.pcmerge" data-pcmerge="${escH(n.q.key)}">${escH(String(n.q.text).slice(0, 22))}</button>`).join('')}</div>` : ''}`}` : '<small class="sh-hint">המיקום בחוץ. בוחרים גודל כדי להכניס אותו לתמונה.</small>'}
     </div>${x.type === 'extra' || (x.type === 'city' && x.extra) ? fmEndActs([{ act: 'picCard.pcDel', id: 'pcDel', label: 'מחיקת המיקום מהתמונה', del: true }]) : ''}`;
   const $ = q => sheet.querySelector(q), $$ = q => sheet.querySelectorAll(q);
   
@@ -180,7 +183,7 @@ function openPicChanges(id) { const ctl = {};
   const list = picChanges(id), sheet = document.getElementById('sheet');
   sheet.innerHTML = `${fmHead(`✋ השינויים שלך (${list.length})`, 'pchX')}
     <p class="sh-hint">השינויים שעשיתם ביד. ${msi('restart_alt', { cls: 'msi-in' })} מחזיר שינוי אחד לברירת המחדל.</p>
-    ${list.length ? `<div class="tp-chlist">${list.map((c, i) => `<div class="tp-ch"><span>${_qe(c.text)}</span><button type="button" class="tp-ib" data-act="picChanges.pchi" data-pchi="${i}" aria-label="ביטול השינוי" title="ביטול השינוי">${msi('restart_alt', { size: 20 })}</button></div>`).join('')}</div>
+    ${list.length ? `<div class="tp-chlist">${list.map((c, i) => `<div class="tp-ch"><span>${escH(c.text)}</span><button type="button" class="tp-ib" data-act="picChanges.pchi" data-pchi="${i}" aria-label="ביטול השינוי" title="ביטול השינוי">${msi('restart_alt', { size: 20 })}</button></div>`).join('')}</div>
     ${fmEndActs([{ act: 'picChanges.pchAll', id: 'pchAll', ic: 'restart_alt', label: 'חזרה לסידור האוטומטי' }])}` : emptyHTML(msi('back_hand', { size: 40 }), `מה שמשנים ביד בעריכת התמונה מופיע כאן, עם ${msi('restart_alt', { cls: 'msi-in' })} לכל שינוי.`, '', 'אין שינויים')}`; // 10.5.0 (design-4 part 2): rows with ↺, or the empty state
   const $ = q => sheet.querySelector(q); 
   ctl.pchi = b => { const c = list[Number(b.dataset.pchi)]; picChange(id, 'בוטל: ' + c.text, p => picUndoOne(p, c)); openPicChanges(id); };
@@ -194,12 +197,11 @@ function openPicAdd(id, back) { const ctl = {}; // back (11.21.0, Q3): the form 
   const D = mementoData(id), ctr = D.stops[0] ? D.stops[0].c : (D.visited[0] ? snapCoord(D.visited[0]) : { lat: 32, lng: 34.8 }), sheet = document.getElementById('sheet');
   sheet.innerHTML = `${fmHead('＋ מיקום לתמונה', 'paX')}
     <p class="sh-hint">נשמר לתמונה בלבד, לא ליעד.</p>
-    <div class="tp-search">${fmSearch({ id: 'paQ', enter: true, placeholder: 'שם מקום או כתובת', clear: { id: 'paQx', act: 'picAdd.paQx' } })}<button type="button" class="btn-nav" id="paGo" data-act="picAdd.paGo">חיפוש</button></div>
+    <div class="tp-search">${searchFieldHTML('paQ', 'שם מקום או כתובת', '')}<button type="button" class="btn-nav" id="paGo" data-act="picAdd.paGo">חיפוש</button></div>
     <label class="bk-part pa-city">${fmCheck({ id: 'paCity', act: 'picAdd.paCity' })} <span>עיר שעברנו בה<small>נכנסת למסלול במקום המתאים</small></span></label>
     <div id="paRes" class="tp-res"></div>`;
   const $ = q => sheet.querySelector(q), q = $('#paQ');
   
-  q.addEventListener('input', () => { $('#paQx').hidden = !q.value; }); ctl.paQx = () => { q.value = ''; $('#paQx').hidden = true; q.focus(); };
   // 11.20.0 (place-search-upgrade): the one place search (typing pauses: Photon; "חיפוש" / Enter: both); a pasted Google Maps link adds its point
   const add = r => { const city = $('#paCity').checked, key = 'x:' + Date.now().toString(36);
     closeSheet(); picChange(id, `＋ ${r.name}`, p => { p.extra = (p.extra || []).concat({ key, name: r.name, foreign: HEB_CH.test(r.name) ? '' : r.name, lat: +r.c.lat.toFixed(6), lng: +r.c.lng.toFixed(6), city }); });
@@ -216,10 +218,10 @@ function openPicAdd(id, back) { const ctl = {}; // back (11.21.0, Q3): the form 
     psRun(ps, t, 'explicit'); };
   ctl.paGo = () => { go(); return 'quiet'; }; q.dataset.actEnter = 'picAdd.paGo';
   showSheetBackdrop('picAdd'); layerTop().ctl = ctl;
-  if (back) { q.value = back.q || ''; $('#paQx').hidden = !q.value; $('#paCity').checked = !!back.city; const H = PS_HOSTS[ps]; // waits for a tap, like any result
+  if (back) { q.value = back.q || ''; $('#paQX').hidden = !q.value; $('#paCity').checked = !!back.city; const H = PS_HOSTS[ps]; // waits for a tap, like any result
     if (H && back.r) { H.st = { q: back.q || '', list: [{ name: back.r.name, coord: back.r.coord, sub: 'מגוגל מפות', ic: 'location_on', km: null }], kind: '', more: false, anywhere: true }; psDraw(H); } }
 }
-ctlActs('picAdd', ['paQx', 'paGo', 'paCity']);
+ctlActs('picAdd', ['paGo', 'paCity']);
 // turning the phone: a landscape picture opens full screen; turning back closes it only if turning opened it
 let _picOrMq = null;
 function picOrientWatch(on) {
@@ -248,15 +250,15 @@ async function wikiPages(lang, q) {
   if (r.kind !== 'ok') throw new Error('wiki ' + r.kind); return r.value; }
 // legal-credits (C5): free pictures only, said explicitly; the file's name for its facts
 function picWikiApi(lang, params) { return wikiPages(lang, `prop=pageimages&piprop=thumbnail%7Cname&pithumbsize=480&pilicense=free&redirects=1&${params}`); }
-// legal-credits (Q8, C1): a Commons picture's facts, asked with the picture - its author (plain text), licence, the licence's address, whether
+// legal-credits (Q8, C1): a Commons picture's facts, asked with the picture - its author (plain text; legal-credits-2: the licensor's requested attribution when there is one), licence, the licence's address, whether
 // attribution is required, and the file page. A picture whose licence is unknown or not free gets null: it is never used. Throws on no answer.
 async function wikiFileCredit(lang, file) { if (!file) return null;
-  const pg = (await wikiPages(lang, `prop=imageinfo&iiprop=extmetadata&iiextmetadatafilter=Artist%7CLicenseShortName%7CLicenseUrl%7CAttributionRequired%7CNonFree&titles=${encodeURIComponent('File:' + String(file).replace(/^(File|קובץ):/i, ''))}`))[0];
+  const pg = (await wikiPages(lang, `prop=imageinfo&iiprop=extmetadata&iiextmetadatafilter=Artist%7CAttribution%7CLicenseShortName%7CLicenseUrl%7CAttributionRequired%7CNonFree&titles=${encodeURIComponent('File:' + String(file).replace(/^(File|קובץ):/i, ''))}`))[0];
   return wikiCreditOf(pg && pg.imageinfo && pg.imageinfo[0] && pg.imageinfo[0].extmetadata, file, lang); }
 // the file page (fp): on the wiki the picture was found on - it shows the Commons file and its licence
 function wikiCreditOf(md, file, lang) { if (!md || md.empty) return null; const v = k => md[k] && md[k].value != null ? String(md[k].value) : '';
   const lic = htmlText(v('LicenseShortName')).trim(); if (!lic || /non-?free|fair use/i.test(lic) || /^true$/i.test(v('NonFree'))) return null;
-  const a = htmlText(v('Artist')).replace(/\s+/g, ' ').trim().slice(0, 80);
+  const a = htmlText(v('Attribution') || v('Artist')).replace(/\s+/g, ' ').trim().slice(0, 80); // legal-credits-2 (C17): the attribution the licensor asks for (Commons' "Attribution" field), when the file has one, in place of the author
   return { a, lic: lic.slice(0, 40), lu: /^https?:\/\//.test(v('LicenseUrl')) ? v('LicenseUrl') : '', req: !/^false$/i.test(v('AttributionRequired')), fp: `https://${/^[a-z-]{2,12}$/.test(lang || '') ? lang : 'he'}.wikipedia.org/wiki/File:` + encodeURIComponent(String(file).replace(/^(File|קובץ):/i, '').replace(/ /g, '_')) }; }
 // the found picture with its facts, or null when its licence is not known to be free
 async function picWikiWithCredit(found) { if (!found) return null; const cr = await wikiFileCredit(found.l, found.f); return cr ? { ...found, cr } : null; }
@@ -287,8 +289,6 @@ async function picWikiFill(x) { const have = picWikiVal(picWikiCK(x)); if (!have
 async function picLoadImg(url) { // 7.1.0: Wikipedia's picture through the client; my own picture (data:/blob:) loads locally
   if (/^(data|blob):/.test(String(url))) return localImg(url);
   const r = await svcAsk('pointImage', { key: url, prio: 'screen', build: () => ({ url, as: 'img' }), parse: d => d }); return r.kind === 'ok' ? r.value : null; }
-function localImg(url) { return new Promise(res => { const im = new Image(); let done = false; const fin = ok => { if (done) return; done = true; res(ok ? im : null); }; // only data: / blob: - nothing leaves the phone
-  im.onload = () => fin(im.naturalWidth > 0); im.onerror = () => fin(false); setTimeout(() => fin(false), 20000); im.src = url; }); }
 // an image change keeps both the choice (td.pic.img) and the small image, so undo brings back both
 async function picImgChange(id, key, label, choice, url) {
   picBurstEnd(); const mk = `pimg:${id}:${key}`;

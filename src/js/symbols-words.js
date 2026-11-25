@@ -4,7 +4,7 @@ const MS_SZ = { 16: ' s16', 18: ' s18', 20: '', 22: ' s22', 24: ' s24' };
 // the icon as in a left-to-right UI (arrow_back = back, chevron_right = onward, send ...; undo is the symbol of undoing, not a direction - the owner, 8.11.2026 - and compass arrows are physical) and every icon of this set is drawn mirrored
 // (.msi-dir). The one list; guard t1054.
 const MS_DIR = new Set(['arrow_back', 'arrow_forward', 'chevron_right', 'chevron_left', 'send', 'reply', 'login', 'logout', 'flight_takeoff', 'flight_land', 'directions_walk']);
-function msi(name, o) { o = o || {}; const g = name === 'giraffe' ? GIRAFFE_SVG : MS_CP[name] ? '&#x' + MS_CP[name] + ';' : ''; // one icon: o.fill (filled = on), o.size 16-24, o.cls
+function msi(name, o) { o = o || {}; const g = name === 'giraffe' ? GIRAFFE_SVG : name === 'israel_flag' ? IL_FLAG_SVG : MS_CP[name] ? '&#x' + MS_CP[name] + ';' : ''; // one icon: o.fill (filled = on), o.size 16-24, o.cls
   return `<span class="msi${MS_DIR.has(name) ? ' msi-dir' : ''}${o.fill ? ' fill' : ''}${MS_SZ[o.size] || ''}${o.cls ? ' ' + o.cls : ''}" aria-hidden="true">${g}</span>`; }
 // final-review-fixes (finding 20): a button while it waits - its line icon stays in every state (waiting, done, failed), only the words
 // change (text; null = an icon-only button keeps its icon and shows aria-busy). Returns the way back to the button as it was.
@@ -15,7 +15,7 @@ function btnBusy(b, text) { const h = b.innerHTML, ic = b.querySelector(':scope 
 function msiT(name, word, o) { o = o || {}; return msiTie(msi(name, { ...o, cls: 'msi-in' + (o.cls ? ' ' + o.cls : '') }), word); }
 // size-fixes-2 (2): an icon already drawn (typeIcon, itemIcon - a name known only at run time) tied to its word the same way; its first
 // word is plain text up to its first space; a word that starts with markup (a time in its <bdi>) is tied whole - pass it alone
-function msiTie(ic, word) { if (!ic.includes(' msi-dir') && !ic.includes('<svg')) return ic + '\u00a0' + word; // a box: a mirrored icon, or a drawn one (the giraffe's SVG) - Chrome breaks after either
+function msiTie(ic, word) { if (!ic.includes(' msi-dir') && !ic.includes('<svg')) return ic + '\u00a0' + word; // a box: a mirrored icon, or a drawn one (the giraffe's or the flag's SVG) - Chrome breaks after either
   const m = /^([^\s<]+)([\s\S]*)$/.exec(String(word)); return m ? `<span class="msi-tie">${ic}\u00a0${m[1]}</span>${m[2]}` : `<span class="msi-tie">${ic}\u00a0${word}</span>`; } // size-fixes (2): a mirrored icon is a box (msi-dir), and Chrome breaks a line after a box even before a no-break space ("🚶" alone at a line's end from "גדול") - so it is tied to its first word // final-review-fixes (family C): a line icon and its word inside a line of text - one word space, never broken apart (look/icons.md "An icon beside its word")
 function emptyHTML(ic, line, cls, title) { return `<div class="empty${cls ? ' ' + cls : ''}">${ic}${title ? `<div class="empty-t">${title}</div>` : ''}<div class="empty-l">${line}</div></div>`; } // 10.3.0: an optional title // 10.1.0 (design-1): an empty state - a large quiet icon (an msi) and its line
 function claudeMark(o) { return msi('auto_awesome', { cls: 'cl-mark', ...(o || {}) }); } // 10.1.0 (design-1): Claude's one symbol (sparkles), in Claude's color
@@ -55,7 +55,11 @@ const TX = Object.freeze({
   travel: 'נסיעה', travels: 'נסיעות',    // a flight is a kind of travel
   visited: 'היינו',                      // the app speaks in plural; 10.2.0 (design-2): "היינו" replaces "ביקרנו" everywhere
   actFailed: 'משהו השתבש בפעולה, נסו שוב',   // 6.1.0: an action that failed (the rest of the app goes on)
-  tooOld: 'הקובץ מגרסה ישנה מדי ולא נפתח',   // 9.0.0 (נ6 ג-ד): a backup or file of a format this version does not read
+  tooOld: 'הקובץ מגרסה ישנה מדי ולא נפתח',
+  storage: 'אחסון במכשיר',               // storage (decisions 2026-11-23 · Storage on the phone, Q4): the settings section - "device", not "phone"
+  noSpace: 'אין מספיק מקום במכשיר',      // storage (Q6): the one message of a write refused for space
+  notSaved: 'השינוי לא נשמר במכשיר',     // a write that failed for another reason
+  reload: 'נטענים שוב מהרשת כשצריך',   // what can be cleared (Q5)   // 9.0.0 (נ6 ג-ד): a backup or file of a format this version does not read
   // 8.0.0 (ק17, ה12, ה15, ה16): the texts of each Claude goal - the button, the line under a screen button, what Claude will do
   // (two lines, the first opens "בשיחה עם ה-AI"), what to write or attach, and where the file that comes back lands
   aiTested: 'אפשר לעבוד עם כל צ\'אט ' + AI + '. האפליקציה נבדקה עם קלוד ועובדת איתו הכי טוב.', // 11.44.0 (any-ai, Q1): every AI window's explanation line (claudePartHTML) - with the guide's chapter, the only places that name Claude

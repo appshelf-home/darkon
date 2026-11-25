@@ -18,11 +18,13 @@ function destCenterC(id) { const d = DESTS[id] || curDest(); return d && d.meta.
 function wxDayLocs(day) { // where the day's weather is for: [{ name, coord, role }]
   const vs = routeVisits(), date = day.date, out = [];
   const coordOf = v => v.coord || routeCoordOf(v.places[0]) || destCenterC(v.dest);
+  // kit-install (6): the one rule of a day's place name - a destination's only stop by the destination, several stops each by its own (the plan's titles too)
+  const nm = v => v.dest && DESTS[v.dest] && vs.filter(x => x.dest === v.dest).length <= 1 ? destName(v.dest) : v.name;
   const stay = vs.find(v => v.from <= date && date < v.to), leave = vs.find(v => v.to === date && v !== stay);
-  if (leave && stay) { out.push({ name: leave.name, coord: coordOf(leave), role: 'leave' }); out.push({ name: stay.name, coord: coordOf(stay), role: 'arrive' }); }
-  else if (stay) out.push({ name: stay.name, coord: coordOf(stay), role: 'sleep' });
-  else if (leave) out.push({ name: leave.name, coord: coordOf(leave), role: 'leave' });
-  if (!out.length) { const ds = destsOfDay(day.key), d = DESTS[ds[ds.length - 1]] || curDest(); out.push({ name: d.meta.name, coord: destCenterC(d.id), role: 'dest' }); }
+  if (leave && stay) { out.push({ name: nm(leave), coord: coordOf(leave), role: 'leave', dest: leave.dest }); out.push({ name: nm(stay), coord: coordOf(stay), role: 'arrive', dest: stay.dest }); }
+  else if (stay) out.push({ name: nm(stay), coord: coordOf(stay), role: 'sleep', dest: stay.dest });
+  else if (leave) out.push({ name: nm(leave), coord: coordOf(leave), role: 'leave', dest: leave.dest });
+  if (!out.length) { const ds = destsOfDay(day.key), d = DESTS[ds[ds.length - 1]] || curDest(); out.push({ name: d.meta.name, coord: destCenterC(d.id), role: 'dest', dest: d.id }); }
   return out.filter(l => l.coord);
 }
 function wxPlanExtras(day, locs) { // planned places whose weather may differ: far away, or much higher/lower
@@ -134,11 +136,11 @@ function weatherBlockHTML() {
   const rows = ds.map(d => ({ d, k: t.id && Array.isArray(d.meta.center) ? d.meta.center.map(v => (+v).toFixed(2)).join(',') : '', words: wxWordsHTML(d) })).filter(r => r.k || r.words);
   const m = rows.some(r => r.k), hasW = rows.some(r => r.words), w = !!wxDays().length; if (!m && !hasW && !w) return '';
   const o = 'wx' in ACC_OPEN ? ACC_OPEN.wx : false, multi = rows.length > 1;
-  const destRow = r => `<div class="mc-dest" data-mck="${r.k}">${multi ? `<b>${withFlag(destFlagMeta(r.d.meta), _escH(r.d.meta.name))}</b>` : ''}${r.k ? '<div class="mc-grid"></div>' : ''}${r.words}</div>`;
+  const destRow = r => `<div class="mc-dest" data-mck="${r.k}">${multi ? `<b>${withFlag(destFlagMeta(r.d.meta), escH(r.d.meta.name))}</b>` : ''}${r.k ? '<div class="mc-grid"></div>' : ''}${r.words}</div>`;
   return `<div class="accordion-item" data-open="${o}" id="wxItem"><button class="accordion-header t-wrap" data-act="acc.toggle" data-acc="wx">${accLead('🌦️ מזג אוויר ולבוש' + (w ? ' ' + tipI('info.wx', true) : ''))} <span class="accordion-arrow">${msi('expand_more')}</span></button><div class="accordion-body">`
-    + (m ? `<div class="wx-sub"><b>רגיל לפי חודש</b></div><div id="mclimBox"><p class="sh-hint" id="mcHint"><span class="spin" aria-hidden="true"></span>טוען…</p>${rows.map(destRow).join('')}<p class="sh-hint" id="mcNote"></p></div>`
+    + (m ? `<div class="wx-sub"><b>רגיל לפי חודש</b></div><div id="mclimBox"><p class="sh-hint" id="mcHint">${waitLineHTML('טוען')}</p>${rows.map(destRow).join('')}<p class="sh-hint" id="mcNote"></p></div>`
       : hasW ? `<div class="wx-words-box">${rows.map(destRow).join('')}</div>` : '')
-    + (w ? `<div class="wx-sub"><b>בימי הטיול</b></div><div id="tripWeather"><p class="sh-hint"><span class="spin" aria-hidden="true"></span>טוען תחזית…</p></div><p class="sh-hint" style="font-size:var(--fs-micro)"><span id="wxAge"></span>${svcCredit('openmeteo')}${SEP}ממוצעים: ERA5 (Copernicus)</p>` : '')
+    + (w ? `<div class="wx-sub"><b>בימי הטיול</b></div><div id="tripWeather"><p class="sh-hint">${waitLineHTML('טוען תחזית')}</p></div><p class="sh-hint" style="font-size:var(--fs-micro)"><span id="wxAge"></span>${svcCredit('openmeteo')}${SEP}ממוצעים: ERA5 (Copernicus)</p>` : '')
     + (m && !w ? `<p class="sh-hint" style="font-size:var(--fs-micro)">${svcCredit('openmeteo')}${SEP}ERA5 (Copernicus)</p>` : '') + `</div></div>`; // 7.1.0 (ש6): the provider's attribution where its data is shown
 }
 // 11.30.0 (wx-one-place, Q2): Claude's weather section is found by its icon (data-icon="thermostat"), or - in a file older than the icons

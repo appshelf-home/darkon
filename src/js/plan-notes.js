@@ -4,7 +4,7 @@
 function noteLayerField(F, day) { const seg = destOfDayIn(activeTripObj(), day), d = seg && DESTS[seg.dest];
   if (!d) { delete F.kinds.nlayer; return '<div class="sh-field fm-f" data-fmw="nlayer" hidden></div>'; }
   const ls = destLayersEff(d).filter(l => !l.hidden), v = ls.some(l => String(l.id) === String(F.vals.nlayer)) ? String(F.vals.nlayer) : '';
-  return fmChips(F, 'nlayer', { label: 'שכבה', req: true, value: v, hint: `עם כתובת זה מקום בטיול - על המפה, במסלול היום וב-${msi('location_on', { cls: 'msi-in' })} מקומות`, options: ls.map(l => [String(l.id), `<span class="dd-dot" style="background:${l.color}"></span>${ICON_EMOJI[l.icon] || ''} ${_escH(l.label || l.name)}`]) }); }
+  return fmChips(F, 'nlayer', { label: 'שכבה', req: true, value: v, hint: `עם כתובת זה מקום בטיול - על המפה, במסלול היום וב-${msi('location_on', { cls: 'msi-in' })} מקומות`, options: ls.map(l => [String(l.id), `<span class="dd-dot" style="background:${l.color}"></span>${ICON_EMOJI[l.icon] || ''} ${escH(l.label || l.name)}`]) }); }
 function noteLayerSync(F) { const w = fmW(F, 'nlayer'); if (w) { w.hidden = !fmGet(F, 'addr'); F.req.nlayer = !w.hidden; if (!w.hidden) fmFit(w); } }
 // the place a note becomes: in the trip, the destination of its day; my plan keeps pointing at it (fromFid: the note it replaces)
 function notePlaceChange(o) {

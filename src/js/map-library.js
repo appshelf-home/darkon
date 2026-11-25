@@ -38,4 +38,4 @@ function leafGate(box, again) {
 function leafThen(fn) { if (leafOk()) return fn(); if (!MAP_AVAILABLE) return;
   LEAF.then = { fn, at: Date.now() }; if (LEAF.st === 'failed') { LEAF.then = null; showToast(SY.warn + ' המפה תיטען כשתחזור הרשת'); return; }
   showToast('טוען מפה…'); leafLoad(); }
-window.addEventListener('online', () => { if (LEAF.st === 'failed') { LEAF.st = 'idle'; if (LEAF.wait.size) leafLoad(); } });
+svcOnBack(() => { if (LEAF.st === 'failed') { LEAF.st = 'idle'; if (LEAF.wait.size) leafLoad(); } });

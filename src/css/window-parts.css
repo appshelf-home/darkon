@@ -140,7 +140,7 @@
 .fsp-res .ps-rows { max-height: none; }
 .ps-line { display: block; color: var(--on-surface-variant); padding: 6px 2px; font-size: var(--fs-body-small); }
 /* 11.46.0 (phone-round-4c-fixes P3; standard ui-look-layout "Waiting on an outside service"): "in progress" - the one indicator of a screen
-   waiting on an outside service (js/services.js waitOn, waitLineHTML): a moving bar under the window's or screen's head, the stage line
+   waiting on an outside service (js/wait-on.js waitOn, waitLineHTML): a moving bar under the window's or screen's head, the stage line
    with moving dots, and a map it waits for dimmed with a pulsing ring on the estimated area. Done - all of it leaves; failed - the screen's
    own failure line takes the stage line's place */
 .wait-bar { position: sticky; top: 0; z-index: 3; height: 3px; margin: 0 0 -3px; overflow: hidden; background: color-mix(in srgb, var(--primary) 18%, transparent); border-radius: var(--r-xs); }
@@ -150,9 +150,12 @@
 .wait-dots { display: inline-block; animation: waitDots 1.2s steps(4, jump-none) infinite; } /* the "…" itself (read as text), shown one dot at a time from the word on */
 @keyframes waitDots { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0 0 0 0); } }
 .wait-map { position: relative; }
-.wait-map > :not(.wait-ring) { filter: grayscale(.5) brightness(.85); opacity: .7; transition: opacity var(--motion) var(--ease); }
+.wait-map > :not(.wait-ring, .wait-keep) { filter: grayscale(.5) brightness(.85); opacity: .7; transition: opacity var(--motion) var(--ease); }
 .wait-ring { position: absolute; z-index: 1000; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; border: 3px solid var(--primary); pointer-events: none; animation: waitRing 1.6s ease-out infinite; }
 @keyframes waitRing { 0% { transform: scale(.4); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
+/* wait-look (Q1): the measured state - the bar filled to the share done (no run), the count in the stage line (never cut: it wraps) */
+.wait-bar.wait-fill::before { animation: none; width: var(--wait-p, 0%); transition: width var(--motion) var(--ease); }
+.wait-count bdi { white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { .wait-bar::before { animation-duration: 3s; } .wait-ring { animation-duration: 3s; } .wait-dots { animation: none; } }
 .ps-end { margin-top: 6px; flex-wrap: wrap; }
 .ps-other { margin: 6px 0 0; padding: 4px 2px; color: var(--on-surface-variant); font-size: var(--fs-body-small); overflow-wrap: anywhere; } /* 11.21.0 (Q5): the quiet way out at the end of a results list */

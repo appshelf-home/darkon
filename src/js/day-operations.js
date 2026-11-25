@@ -208,7 +208,7 @@ function unparkAsNew(pkId) {
 function openParkedMove(pkId, id) { const it = planItem(id); if (!it) return;
   const e = parkedOf().find(x => x.id === pkId); if (!e) return;
   openFmChoice({ key: 'openParkedMove', closeId: 'pmClose', as: 'grid', title: `${SY.days} לשבץ${SEP}${itemIcon(it, { size: 18, cls: 'msi-in' })} ${nameB(it.name)}`,
-    hints: [`היה ${_escH(e.from)}. בוחרים יום בטיול: המקום עובר אליו עם החלק ביום והשעה שהיו לו, ויוצא מ"מחוץ לטיול".`],
+    hints: [`היה ${escH(e.from)}. בוחרים יום בטיול: המקום עובר אליו עם החלק ביום והשעה שהיו לו, ויוצא מ"מחוץ לטיול".`],
     options: TRIP_DAYS.filter(d => dayOk(d.key, it)).map(d => ({ v: d.key, html: `<b>${d.label}</b>`, sub: `יום ${TRIP_DAYS.indexOf(d) + 1}`, on: dayIds(STATE.itinerary[d.key]).some(x => String(x) === String(id)) })) },
     key => moveParkedItem(pkId, id, key));
 }
@@ -225,11 +225,10 @@ function moveParkedItem(pkId, id, key) {
 function dropParked(pkId) { tripDaysChange(SY.del + ' היום שמחוץ לטיול נמחק', tt => { const td = tdOf(tt.id); td.parked = (td.parked || []).filter(x => x.id !== pkId); }); }
 // the "מחוץ לטיול" block at the end of the plan and of day arranging (10.12.0, design-plan gap 58: the chair, a folding card per day,
 // its places with their layer circle and "לשבץ", one "להחזיר לטיול…" and "מחיקה" in red)
-function parkedFromDay(from) { const m = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(String(from || '')); if (!m) return tmFmt('noYear', from); // "27.12.2026" -> "ראשון 27.12"
-  return tmFmt('day', `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`); }
+function parkedFromDay(from) { const iso = tmParseDMY(from); return iso ? tmFmt('day', iso) : tmFmt('noYear', from); } // "27.12.2026" -> "ראשון 27.12"
 function parkedHTML() {
   const list = parkedOf(); if (!list.length) return '';
-  const esc = _escH;
+  const esc = escH;
   return `<div class="parked-box"><div class="pk-head">${msi('chair', { size: 20 })}<b>מחוץ לטיול</b><small>· ${list.length}</small>${tipI('parked')}</div><p class="sh-hint">ימים שיצאו מהטיול, עם מה שהיה בהם.</p>`
     + list.map(e => { const ids = DAY_SLOTS.flatMap(sl => (e.day && e.day[sl] || []).map(id => ({ id, sl }))), names = ids.map(x => (planItem(x.id) || {}).name).filter(Boolean);
       // 4.40.0: a waiting day opens like a day of the plan - its places in their order, each with "לשבץ" to move it to a day of the trip
@@ -247,7 +246,7 @@ act('parked.del', c => askSure({ ic: 'delete', title: 'למחוק את היום?
 // the return sheet (10.12.0, gap 58): "במקום יום · כיום נוסף" (only without fixed dates), the days by destination with their content,
 // one line, and the main button naming the result
 function openParkedIn(pkId, how, key) { const pk = parkedOf().find(x => x.id === pkId); if (!pk) return; layerNote(openParkedIn, arguments);
-  const t = activeTripObj(), flex = isFlexDays(t), esc = _escH, sheet = document.getElementById('sheet'); how = flex ? how || 'in' : 'in';
+  const t = activeTripObj(), flex = isFlexDays(t), esc = escH, sheet = document.getElementById('sheet'); how = flex ? how || 'in' : 'in';
   const R = segRanges(t), dayN = d => TRIP_DAYS.indexOf(d) + 1, cellDate = d => d.date && !isVirt(d.date) ? tmFmt('dayN', d.date) : 'יום ' + dayN(d);
   const sel = key && dayByKey(key) ? dayByKey(key) : null;
   const grid = R.map(r => `<div class="pk-gh">${withFlag(destFlag(r.dest), esc(destName(r.dest)))}${r.dest === pk.dest ? ' <small>· היעד של היום</small>' : ''}</div><div class="pk-days">${TRIP_DAYS.slice(r.a - 1, r.b).map(d => { const n = dayContentN(d.key), on = sel === d;
@@ -271,7 +270,7 @@ function openDayMenu(key) {
   const lastN = r && !flex ? dayContentN('d' + r.b) : 0;
   const dd = dayByKey(key) || {}; // 10.9.0 (design-forms, gap 42): the title is the day - its weekday, date and number ("חמישי 27.12 · יום 4")
   sheet.innerHTML = `${fmHead(`${dd.date && !isVirt(dd.date) ? tmFmt('day', dd.date) + SEP + 'יום ' + (TRIP_DAYS.indexOf(dd) + 1) : nameB(dd.label || '')}`, 'dmX')}
-    ${!flex ? `<p class="sh-why" hidden>בטיול עם תאריכים קבועים הוספת יום דוחפת את הימים עד סוף ${r ? _escH(destName(r.dest)) : 'היעד'}, ${lastN ? `והיום האחרון שלו (${_escH((dayByKey('d' + r.b) || {}).label || '')}, ${lastN} בתוכנית) יוצא ל"מחוץ לטיול".` : `והיום האחרון שלו${r ? ` (${_escH((dayByKey('d' + r.b) || {}).label || '')})` : ''} יוצא מהטיול. הוא ריק, ולכן לא נשמר ב"מחוץ לטיול".`}</p>` : ''}
+    ${!flex ? `<p class="sh-why" hidden>בטיול עם תאריכים קבועים הוספת יום דוחפת את הימים עד סוף ${r ? escH(destName(r.dest)) : 'היעד'}, ${lastN ? `והיום האחרון שלו (${escH((dayByKey('d' + r.b) || {}).label || '')}, ${lastN} בתוכנית) יוצא ל"מחוץ לטיול".` : `והיום האחרון שלו${r ? ` (${escH((dayByKey('d' + r.b) || {}).label || '')})` : ''} יוצא מהטיול. הוא ריק, ולכן לא נשמר ב"מחוץ לטיול".`}</p>` : ''}
     <div class="ta-list" data-ref="day:${key}"><button type="button" class="ta-item t-wrap" data-act="dayMenu.do" data-v="before">＋ יום לפני</button><button type="button" class="ta-item t-wrap" data-act="dayMenu.do" data-v="after">＋ יום אחרי</button>
     <button type="button" class="ta-item t-wrap" data-act="dayMenu.do" data-v="dup"${!n ? ' disabled' : ''}>⧉ שכפול היום <small>יום נוסף אחריו, עם אותם מקומות</small></button>
     ${ARRANGE_DAYS ? '' : `<button type="button" class="ta-item t-wrap" data-act="dayMenu.do" data-v="arrange">↕️ סידור ימים</button>`}
@@ -283,7 +282,7 @@ act('dayMenu.do', c => { const key = c.ref.id, k = c.v, b = c.el, t = activeTrip
     if (k === 'before') insertDayAt(key, false); else if (k === 'after') insertDayAt(key, true); else if (k === 'dup') dupDayAt(key); else if (k === 'park') parkDayAt(key);
     else if (k === 'arrange') { ARRANGE_DAYS = true; return 'redraw'; } };
   if (!flex && (k === 'before' || k === 'after' || k === 'dup') && lastN && !(k !== 'before' && i === r.b)) // 10.13.0 (gap 47): the last day of the destination leaves - asked in the dialog
-    return askSure({ ic: 'event_busy', title: `${dayLabelOf('d' + r.b)} ייצא מהטיול`, text: `זה היום האחרון ב${_qe(destName(r.dest))}, ויש בו ${lastN} בתוכנית. הוא יחכה ב"מחוץ לטיול".`, ok: k === 'dup' ? 'שכפול' : 'הוספת יום', fill: true }, go);
+    return askSure({ ic: 'event_busy', title: `${dayLabelOf('d' + r.b)} ייצא מהטיול`, text: `זה היום האחרון ב${escH(destName(r.dest))}, ויש בו ${lastN} בתוכנית. הוא יחכה ב"מחוץ לטיול".`, ok: k === 'dup' ? 'שכפול' : 'הוספת יום', fill: true }, go);
   return go(); });
 var ARRANGE_DAYS = false, ARR_FLASH = 0; // 4.45.1: the row that just moved flashes
 act('days.arrangeDone', () => { ARRANGE_DAYS = false; appScroll(0); return 'redraw'; });
@@ -291,7 +290,7 @@ act('days.arrangeDone', () => { ARRANGE_DAYS = false; appScroll(0); return 'redr
 gestureOn('drag', '.arr-row', { grip: '.g-grip', items: '.arr-row', zones: r => [r.closest('.arr-seg')],
   drop: (r, to) => { const all = [...to.zone.querySelectorAll('.arr-row')].map(x => +x.dataset.arri); moveDayTo(+r.dataset.arri, Math.min(...all) + to.idx); } });
 function renderArrangeDays() { // 10.12.0 (design-plan, gap 58, Q16): one head, a card per destination, rows with what moves and what stays
-  const t = activeTripObj(), R = segRanges(t), esc = _escH, flex = isFlexDays(t);
+  const t = activeTripObj(), R = segRanges(t), esc = escH, flex = isFlexDays(t);
   const trv = new Set((t.travels || []).map(x => x.id)), hasFixed = (t.schedule || []).length || trv.size, tip = !flex ? tipI('arr.dates') : hasFixed ? tipI('arr.fixed') : '';
   const dayT = (d, i) => d && d.date && !isVirt(d.date) ? `${tmFmt('day', d.date)}${SEP}יום ${i}` : d ? `${esc(d.label || '')}${/^יום /.test(d.label || '') ? '' : SEP + 'יום ' + i}` : 'יום ' + i;
   let h = `<div class="arr-top"><h2>סידור ימים${tip ? ' ' + tip : ''}</h2><button class="btn-nav" data-act="days.arrangeDone">סיום</button></div><p class="sh-hint arr-line">מזיזים יום בתוך היעד שלו, עם התוכנית בו.</p><div class="arr-list">`;

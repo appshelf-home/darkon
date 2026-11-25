@@ -1,7 +1,98 @@
-const APP_VERSION = '11.47.0';
-const APP_DATE = '22.11.2026'; // this version's date (settings' "עודכן", the copyright years; build.py reads it) - 10.14.0: no longer from "מה חדש", which may be empty
+const APP_VERSION = '11.60.0';
+const APP_DATE = '25.11.2026'; // this version's date (settings' "עודכן", the copyright years; build.py reads it) - 10.14.0: no longer from "מה חדש", which may be empty
 const CHANGELOG = [ // 10.14.0 (guide diet Q5): empty until the first version distributed to someone (the owner decides; app.json activeUsers) - from
   // then one entry per update a user receives (the open entry is updated while unreleased; a line a later change made untrue is dropped)
+  // 11.55.1 (whatsnew-split; kind z): 11.47.0 was released (23.11.2026), so by the rule above ("a new entry - the previous version was
+  // released") the entry splits in two: 11.47.0's entry below holds exactly its 41 lines as released (its release.json at ad0e44aa, the
+  // satellite line in its 11.47.0 wording, "ועוד" last), and this entry only the lines added after it - 23: the satellite line's later
+  // wording (the relief left it, the terms page's version 1.7), 11.48.0's two, 11.49.0's six, 11.50.0's two, 11.51.0's one, 11.52.0's two,
+  // 11.53.0's one, 11.54.0's two and 11.55.0's six (each merge's "For the merge"); no "ועוד" here - its small fixes are 11.47.0's. A user
+  // updating from 11.47.0 reads only what is new. tests/t1220.py guards it: no unreleased entry repeats a line of a released one
+  // (dist/release.json liveRelease). The comments from 11.47.1 to 11.55.0 below say how this entry's lines came; the chain before
+  // them, 11.47.0's entry. 11.55.1's own fix (the add-place search's placeholder fits) is unseen.
+  // 11.47.1 (one-way with arch-guard; kind z, no behavior change) joins it too: the entry moves to it and gains no line - one implementation
+  // per kind, the guards, the saving format's register and errors naming their part are unseen
+  // 11.48.0 (tl-paths with ride-km; kind y) joins it too: the entry moves to it and gains two lines, before "ועוד" - the Timeline's path cleaned,
+  // walk and ride, hidden by choice (work.md tl-paths item 6) and "ק״מ בנסיעות" (ride-km item 5); items 7 (the offline maps' view after a
+  // move by hand) and 8 (a long choice from a bottom sheet) fix what the set already promises - silent
+  // 11.48.1 (review-fixes-11471; kind z) joins it too: the entry moves to it and gains no line - the map's status line taking its tap, the
+  // long names that fit, the placeholder escaped, ⛶ beside the trip picture's head and the build's fixed ZIP are fixes inside the same set
+  // 11.49.0 (the parallel day's merge: skill-install, map-side-view, memory-photos with trip-replay, hebrew-map, relief-phone; kind y) joins
+  // it too: the entry moves to it and gains six lines, before "ועוד" - each branch's own line(s) from its summary's "For the merge"; the
+  // satellite-and-relief line drops the relief (relief-phone: the relief is no longer Esri's) and names the terms page's version 1.5
+  // 11.50.0 (the parallel day's second merge: card-actions; kind y) joins it too: the entry moves to it and gains two lines, before "ועוד",
+  // from the branch's "For the merge" (the cards' actions; the closing step's switcher)
+  // 11.51.0 (the parallel day's third merge: map-3d; kind y) joins it too: the entry moves to it and gains one line, before "ועוד", from
+  // the branch's "For the merge" (the tilted 3D map)
+  // 11.52.0 (the parallel day's fourth merge: private-names, off-roads, terms-inside; kind y) joins it too: the entry moves to it and gains
+  // two lines, before "ועוד", from the branches' "For the merge" (the offline maps' roads; the terms page inside the app) - private-names
+  // has none (wording only); the terms page's line names its version 1.7 (map-3d raised it to 1.6, private-names to 1.7)
+  // 11.53.0 (the parallel day's fifth merge: wait-look, 3d-find; kind y) joins it too: the entry moves to it and gains one line, before
+  // "ועוד", from wait-look's "For the merge" (the one "in progress" look); 3d-find adds none - it rewords map-3d's line to point to the menu
+  // 11.54.0 (the parallel day's sixth merge: storage, off-prune; kind y) joins it too: the entry moves to it and gains two lines, before
+  // "ועוד", from the branches' "For the merge", each without its leading emoji (t1043): the storage section; the update that frees
+  // 11.55.0 (the parallel day's seventh merge: along-drive, countries-visited, off-frame, survival-words, passport-book, walk-time; kind y)
+  // joins it too: the entry moves to it and gains six lines, before "ועוד", from the branches' "For the merge", each without its leading
+  // emoji (t1043; the reviews of countries-visited, survival-words, along-drive)
+  // 11.56.0 (the parallel day's last merge: countries-globe; kind y) joins it too: the entry moves to it and gains one line, last, from
+  // the branch's "For the merge" (the globe and a list row that shows its country)
+  // 11.56.1 (legal-credits-2; kind z) joins it too: the entry moves to it and gains one line, last (the credits and licences brought up to
+  // date); the first line's terms page version becomes 1.9 (walk-time raised it to 1.8, legal-credits-2 to 1.9: jsDelivr no longer reached)
+  // 11.56.2 (legal-privacy-2; kind z) joins it too: the entry moves to it; the two lines naming the terms page say version 1.10 (what
+  // "along the drive" sends, the report's work list, others' names) and the credits line gains the report window's notice
+  // 11.56.3 (trip-picture-credits; kind z) joins it too: the entry moves to it; the credits line gains the illustrated picture's credits,
+  // stamped by the app (and "בעיבוד" for photos drawn by the look); the labels' providers and the kit's wording are unseen
+  // 11.56.4 (access-statement; kind z) joins it too: the entry moves to it; the two lines naming the terms page say version 1.11, and the
+  // credits line gains the accessibility statement and its link in settings
+  // 11.56.5 (hidden-data; kind z) joins it too: the entry moves to it and gains one line, last (what files and pages carry about photos and
+  // about the people who travelled with you)
+  // 11.56.6 (limits-and-safety; kind z) joins it too: the entry moves to it and gains one line, last (the check line on safety facts, the
+  // wait and the time limit of "along the drive"); the two lines naming the terms page say version 1.12 (FOSSGIS through the shared queue,
+  // the viewed tiles kept until their 200 MB); the services' pace and the queue are unseen
+  // 11.56.7 (along-time-field; kind z) joins it too: the entry moves to it and gains one line, last (the look fixes of phone round 6 a
+  // user notices); the logo's tap highlight, the request line, the closing step's text and the tests' waits go unnamed
+  // 11.57.0 (round6-behaviour; kind y) joins it too: the entry moves to it and gains one line, last (the 3D compass, the maps coming back by
+  // themselves, the plan's day titles); back closing a menu, a marked row staying put, the memory picture's background and the routes' pace go unnamed
+  // 11.58.0 (add-key; kind y) joins it too: the entry moves to it and gains one line, last (the places the user added come back once, the
+  // doubled merged once); the kit's addKey and the checker's errors go unnamed
+  // 11.59.0 (kit-install; kind y) joins it too: the entry moves to it, its skill line names Gemini, and it gains one line, last ("לא רלוונטי"
+  // dropped); the blocks that fold, "עוזר אחר", the ZIP's manifest and the weather line's place go unnamed
+  // 11.60.0 (ride-no-home; kind y) joins it too: the entry moves to it; the ride-km line says the km are inside the trip, without the way
+  // from home and back (the line is unreleased - rewritten, not a second line); the two lines naming the terms page say version 1.13 ("AI
+  // אחר", wording only); typing that kept the keyboard (G133), the picture editor's search and the guide's install line go unnamed
+  { version: '11.60.0', date: '25.11.2026', items: [
+    'הלוויין עובד לכולם דרך המפתח של האפליקציה (מפתח Esri משלכם עדיין אפשרי); מקום מציר הזמן ליד הבית או מקום קבוע מוצע בלי שם ולא נשלח לחיפוש - גם אחרי שמוסיפים אותו לטיול ונותנים לו שם; הגופנים נטענים מהאפליקציה עצמה. דף "תנאי שימוש ופרטיות" עודכן בהתאם (גרסה 1.13).',
+    'המסלול מציר הזמן נקי יותר: הליכה בקו מלא, נסיעות בקו מקווקו, בלי קפיצות - ואפשר להסתיר אותו בסינון של מפת הזיכרון ובתמונת הטיול.',
+    'בזיכרון של טיול מסלול: ק״מ בנסיעות בתוך הטיול, בלי הדרך מהבית ובחזרה - טיסות, רכבות, אוטובוסים ורכב - עם פירוק בלחיצה. אפשר להוסיף אותו גם לתמונת הטיול.',
+    'התקנת הסקיל עודכנה, כולל \u2068ChatGPT\u2069, \u2068Gemini\u2069 ו-\u2068Copilot\u2069, והאפליקציה מזכירה כשיש הוראות חדשות ל-\u2068AI\u2069.',
+    'גובה לאורך הדרך: ביום עם הליכה או נסיעה, בכרטיס של נסיעה ברכב ובימים של הזיכרון - נגיעה ב"גובה" מראה מפה וגרף עם העליות, הירידות והקטע התלול, ואצבע על הגרף מזיזה נקודה על המפה. הגבהים נשמרים, ואחרי הפעם הראשונה הם זמינים גם בלי רשת.',
+    'תמונות במפת הזיכרון: תמונה של רגע שיא מופיעה במפה במקום שלו, וגם במפה של הסיכום לחברים. "תמונות" בסינון המפה מכבה אותן.',
+    'לנגן את הטיול: במפת הזיכרון, יום אחרי יום - המסלול מצטייר והמקומות נדלקים, עם עצירה, קפיצה ליום ומהירות.',
+    'מפה בעברית: סוג מפה חדש עם שמות בעברית איפה שיש להם שם בעברית, בהיר או כהה, וגם בלי רשת באזורים שהורדו; ובמצב כהה גם "מפה" הרגילה מתכהה (אפשר להשאיר אותה בהירה בהגדרות).',
+    'התבליט במפה מצויר עכשיו בטלפון מנתוני גובה פתוחים: חד יותר בהרים, נראה טוב גם במצב כהה, ולא צריך בשבילו מפתח של Esri.',
+    'כרטיסים ושאלות מסודרים יותר בטלפון: פעולה ראשית אחת לרוחב השורה, והשאר כטקסט שקט מתחתיה, בחלקים שווים.',
+    'בסגירת הטיול, ב"איפה היינו": המתג על כל השורה, ו"היינו בהכל" מתחת לחצי של "עוד לא סומנו".',
+    'תלת־ממד: בוחרים "תלת־ממד" בתפריט סוגי המפה (במפה, במפה של יום ובמפת הזיכרון) והמפה נפתחת במסך מלא - ההרים, העמקים והבניינים בנפח, עם המקומות והמסלול של הטיול. צריך רשת, ובפעם הראשונה מוסבר כמה זה עולה.',
+    'במפות לשימוש בלי רשת: נגיעה בכביש ברשימה מראה אותו על המפה, ונגיעה בכביש על המפה מדליקה את השורה שלו ברשימה.',
+    'תנאי השימוש והפרטיות וטקסט הרישיונות נפתחים עכשיו בתוך האפליקציה, בגודל הטקסט ובתצוגה שלה, וחזור מחזיר בדיוק למקום שממנו נפתחו.',
+    'המתנה לשירות נראית עכשיו אותו דבר בכל מקום, ובהורדת מפות רואים כמה נשאר.',
+    'אחסון במכשיר בהגדרות: כמה תופס כל דבר ומה אפשר לפנות; אריחי המפה תופסים הרבה פחות.',
+    'עדכון של מפות בלי רשת מפנה מהטלפון אזורים שהוצאו - השורה למעלה אומרת כמה יתפנה, ושום דבר לא נמחק לפני "עדכון מפות".',
+    'לאורך הדרך: מה שווה עצירה לאורך נסיעה ברכב, לפי סדר הדרך - ומה שמוסיפים נעשה עצירה של הנסיעה.',
+    'מדינות שביקרנו: מפת עולם של כל הטיולים שנסגרו, ואפשר להוסיף מדינות מלפני האפליקציה. נכנסים מ-⋮ או מ"זיכרונות" במסך הטיולים.',
+    'מפות בלי רשת: מסמנים אזור במסגרת על המפה, ומשנים גודל ומקום של כל אזור - שורת הגודל אומרת כמה מקום הוא לוקח.',
+    'מילון הישרדות: עשר מילים בשפת היעד ועוד כמה מקומיות, איך אומרים ואיך כותבים - ונגיעה במילה מראה אותה בגדול.',
+    'הדרכון שלי: כל טיול שנסגר מחתים את הדרכון - חותמת לכל יעד. נפתח מ"זיכרונות" במסך הטיולים.',
+    'מה במרחק הליכה: שלוש טבעות של 10, 20 ו-30 דקות הליכה מכל נקודה במפה, וכמה מהמקומות שלך בתוכן - אפשר להשוות עד שלוש נקודות.',
+    'מדינות שביקרנו: אפשר לעבור לגלובוס ולסובב אותו באצבע, ונגיעה במדינה ברשימה מראה איפה היא.',
+    'קרדיטים ורישיונות מעודכנים: כל ספק במפות עם הקישור שלו, הגבהים עם Copernicus, טבעות ההליכה עם "לתקן את המפה", ובתמונת הטיול גם הכתובת של הרישיון של כל תמונה. "מקורות ורישיונות" ודף "תנאי שימוש ופרטיות" (גרסה 1.13) עודכנו - הדף אומר גם מה נשלח בחיפוש "לאורך הדרך", וחלון הדיווח אומר מה קורה בלי פרטי קשר ואיפה הזכויות שלכם. תמונת טיול מאוירת מקבלת את הקרדיטים מהאפליקציה עצמה, ותמונה שהפכה לציור מסומנת "בעיבוד". ובהגדרות, ליד התנאים: "הצהרת נגישות" - מה נעשה, מה עוד לא נגיש ואיך פונים.',
+    'מה יוצא בקבצים ובדפים: תמונה שמגיעה בקובץ נשמרת בלי פרטי המיקום והמכשיר שבה; בדף לחברים כל תמונה רק בחיתוך שרואים, ובלי "התמונות" אין בו תמונות בכלל (ובהמלצות לחברים התמונות נכנסות רק כשבוחרים אותן); בקובץ טיול לחבר, הדירוגים של מי שטייל איתכם נכנסים רק כשמסמנים אותם, וכל חלק אומר אילו מילים והערות יש בו.',
+    'מידע שכדאי לוודא: בסעיפי הבטיחות והחירום ונציגות ישראל ב"כללי" שורה שמזכירה לוודא באתר רשמי מספרים וטלפונים; ובחיפוש "לאורך הדרך", כששירות מבקש להמתין רואים כמה זמן נשאר, ואחרי שתי דקות מוצג מה שנמצא עם הקטעים שחסרים.',
+    'תיקוני תצוגה: שדות שעה ותאריך שלא נחתכים, "ביקרנו ב…" ו"הדרכון שלי" יחד בראש "זיכרונות", הסינון של מפת הזיכרון מעל המפה, וגרף הגובה קריא עד הקצה.',
+    'בתלת־ממד המצפן מסובב את המפה לצפון למעלה וההטיה נשארת; מפה שלא נטענה כשלא הייתה קליטה נטענת לבד כשהקליטה חוזרת; והכותרת של כל יום בתוכנית אומרת את שם העיר.',
+    'מקומות שהוספתם ושלחתם ל-\u2068AI\u2069 להשלמה חוזרים פעם אחת - שלכם, עם הפרטים שהוא השלים. מקומות שכבר הוכפלו כך מאוחדים פעם אחת כשהגרסה נפתחת, עם ביטול.',
+    'ב"כללי" אין יותר "לא רלוונטי ליעד הזה": ה-\u2068AI\u2069 כותב כל סעיף חסר, גם בשורה קצרה כשאין מה לומר, והשורה "חסר מידע" נעלמת.',
+  ] },
   // 11.15.1: the first entry (a first user since 15.11.2026) - the update from the released 11.13.0: 11.14.0, 11.15.0 and 11.15.1 together;
   // 11.16.0 (phone-round-1-followups) joins the same release: the entry moves to it, and gains no line - its changes (a number on a very
   // light layer colour, an unnamed Timeline offer, one status line at 320, obsolete country codes) are in "small fixes" or unseen
@@ -125,7 +216,7 @@ const CHANGELOG = [ // 10.14.0 (guide diet Q5): empty until the first version di
   // open, a quiet place in a destination, "חלקי היום" at ענק and a price word with "ו" are fixes of what the lines already promise (silent)
   // 11.47.0 (off-map-areas; kind y) joins it too: the entry moves to it and gains one line, before "ועוד" - the offline maps' map: each area
   // its number on its row and on its pin, a row tap shows its area, a pin tap zooms in, "כל האזורים" back (work.md off-map-areas item 4)
-  { version: '11.47.0', date: '22.11.2026', items: [
+  { version: '11.47.0', date: '23.11.2026', items: [
     'האפליקציה נפתחת מהר יותר, גם בלי קליטה: מהעותק שבטלפון, על מסך פתיחה בכחול של האפליקציה. גרסה חדשה מגיעה ב"יש גרסה חדשה · רענון" או בפתיחה הבאה.',
     'הפס "יש גרסה חדשה" מופיע רק כשבאמת מחכה גרסה חדשה יותר מזו שפתוחה - ולא אחרי כל עדכון.',
     'מזג האוויר והלבוש במקום אחד, ב"כללי": מתחת לחודשים של כל יעד - מה ללבוש ומה לארוז בעונה של הטיול (שאר העונות מקופלות), וזריחה ושקיעה בכל יום בטיול.',
@@ -162,7 +253,7 @@ const CHANGELOG = [ // 10.14.0 (guide diet Q5): empty until the first version di
     'הלוויין והמפה עם התבליט עובדים לכולם דרך המפתח של האפליקציה (מפתח Esri משלכם עדיין אפשרי); מקום מציר הזמן ליד הבית או מקום קבוע מוצע בלי שם ולא נשלח לחיפוש - גם אחרי שמוסיפים אותו לטיול ונותנים לו שם; הגופנים נטענים מהאפליקציה עצמה. דף "תנאי שימוש ופרטיות" עודכן בהתאם (גרסה 1.4).',
     'הזמנה ומחיר נבחרים מרשימה: האם צריך להזמין (לא ידוע, לא צריך, מומלץ, חובה) עם הערה איך ומתי, ומחיר כ"$$\u00a0· בינוני", חינם או סכום - ומחיר כניסה מופיע עם החודש שבו נבדק. במלון - המחיר ששילמתם, ללילה או לכל השהות.',
     'ב"כללי", כשחסר מידע ביעד (למשל שפה או נציגות ישראל, או מזג אוויר בלי עונות) מופיעה מתחת למידע שורה של ה-\u2068AI\u2069: נגיעה שולחת את היעד להשלמה, וה-\u2068AI\u2069 גם בודק שהמידע הקיים עדיין נכון ומבקש אישור לכל שינוי. סעיף שלא רלוונטי ליעד מסמנים ב-⋮ של השורה. במזג האוויר, נגיעה בחודש פותחת את העונה שלו.',
-    'אפשר לעבוד עם כל צ\'אט \u2068AI\u2069: האפליקציה כותבת "\u2068AI\u2069" במקום שם של עוזר אחד, ובמדריך פרק "עבודה עם \u2068AI\u2069". האפליקציה נבדקה עם קלוד ועובדת איתו הכי טוב.',
+    'אפשר לעבוד עם כל צ\'אט \u2068AI\u2069: האפליקציה כותבת "\u2068AI\u2069" במקום שם של צ\'אט אחד, ובמדריך פרק "עבודה עם \u2068AI\u2069". האפליקציה נבדקה עם קלוד ועובדת איתו הכי טוב.',
     'למקום יכול להיות שם מקומי - כמו בשלטים ובגוגל מפות - מתחת לשם בחלון המקום; החיפוש מוצא את המקום גם לפיו, ובעריכת מקום יש לו שדה "שם מקומי".',
     'שיתוף מגוגל מפות פותח את "מקום חדש" מיד, עם שם המקום, ופס מתקדם אומר מה קורה עכשיו - "קוראים את הקישור…", "מחפשים את המקום…" - עד שהמיקום מתמלא והמפה מתמקדת בו.',
     'מפות לשימוש בלי רשת: כל אזור מסומן במספר - בשורה שלו וגם על המפה - ונגיעה בשורה מראה אותו על המפה; נגיעה במספר על המפה מתקרבת לאזור, ו"כל האזורים" מחזיר את כולם.',

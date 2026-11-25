@@ -65,13 +65,38 @@ function mementoData(id) {
   const th = (dests[0] && dests[0].theme) || {};
   const outs = memOutings(M, stops); // 11.2.0 (Q8): the outings, a loop on the trip picture
   return { M, t, stops, legs, outs, visited, keyPts, spread, totalKm, walk: tlKm(id) || Math.round(walk * 1.3 * 10) / 10, // 11.9.0: the walking km of Google Timeline when imported (Q1), else the estimate
+    ride: rideData(M, dmeta), // ride-km: the one source of "ק״מ בנסיעות" (the memory tile, the picture's number, the memento file)
     records, days, eat, dests, auto, cols, hs, th, rate, cover: tripCover(id), coverKey: tripPhotoKeys(id)[0], flags: [...new Set(dests.map(d => destFlagMeta(d)).filter(Boolean))] };
 }
 
+// ride-km (decisions 2026-11-20 · "ק״מ בנסיעות", Q1-Q5): every km not on foot travelled inside the trip - flights, trains, buses, car, ferries
+// between destinations and rides in a city; ride-no-home (Q5): the way from home to the first destination and back from the last is left out
+// (it is the picture's "ק״מ"), a connection on the way with it. From the Timeline's days imported with kinds (tlRideKm: each move's own
+// distance, the moves from or to home left out - tlHomeMoves); for a day it lacks (or a trip imported before tl-paths, until a re-import)
+// the trip's travels (mine and the group's) but those with an end at home (travelHomeEnds), in straight lines between their ends - their
+// places, else the destination of their day - marked "משוער". Never both for one day. { km, est, by: { kind: km } }
+const RIDE_LABEL = ['ק״מ בנסיעות', 'km by transport']; // the one wording of the tile, its window and the picture's number (PIC_NUMS.ride)
+const RIDE_KINDS = [['flight', 'טיסות', 'flight'], ['train', 'רכבות', 'train'], ['bus', 'אוטובוסים', 'directions_bus'], ['car', 'רכב', 'directions_car'], ['ferry', 'מעבורות', 'directions_boat'], ['city', 'נסיעות בעיר', 'commute']];
+function rideKind(mode) { return RIDE_KINDS.some(x => x[0] === mode) ? mode : 'flight'; } // a travel's kind of ride (no mode: a flight)
+function rideData(M, dmeta) { const t = M.t, T = tlRideKm(t.id, t), by = { ...T.by }, C = memTvCtx(M); let est = false;
+  const destAt = (d, last) => { const sg = (t.segments || []).filter(g => (!g.from || g.from <= d) && (!g.to || d <= g.to)), g = last ? sg[sg.length - 1] : sg[0], m = g && dmeta(g.dest); return m && m.center ? { lat: m.center[0], lng: m.center[1] } : null; };
+  const end = (f, side) => tvEndC(f, side, C) || destAt(side === 'from' ? f.date : travelLandDate(f) || f.date, side === 'to'), home = f => C.home.has(f.id + '|from') || C.home.has(f.id + '|to');
+  travelsOf(t).forEach(f => { if (!f.date || T.days.has(f.date) || home(f)) return; const a = end(f, 'from'), b = end(f, 'to'); if (!a || !b) return; const km = kmBetween(a, b); if (km < 0.5) return;
+    const k = rideKind(f.mode); by[k] = (by[k] || 0) + km; est = true; });
+  Object.keys(by).forEach(k => { by[k] = Math.round(by[k]); if (!by[k]) delete by[k]; });
+  return { km: Object.values(by).reduce((n, x) => n + x, 0), est, by }; }
+// Q4: a tap on the memory tile - the km by kind (only the kinds present), "משוער" when estimated; a window of the app's kind
+function openRideKm(id) { layerNote(openRideKm, arguments); const D = mementoData(id); if (!D) return; const R = D.ride, sheet = document.getElementById('sheet');
+  sheet.innerHTML = `${fmHead(`${msi('commute', { size: 20 })} נסיעות${SEP}<bdi>${fmtKm(R.km)}</bdi>`)}
+    <div class="ride-rows">${RIDE_KINDS.filter(([k]) => R.by[k]).map(([k, l, ic]) => `<div class="ride-row">${msi(ic, { size: 20 })}<span>${l}</span><b><bdi>${fmtKm(R.by[k])}</bdi></b></div>`).join('')}</div>
+    <p class="sh-hint">${msi('info', { size: 16, cls: 'msi-in' })} ${R.est ? (tlOf(id) ? tipText('ride.mixed') : tipText('ride.est')) : tipText('ride.tl')}</p>`;
+  showSheetBackdrop('openRideKm'); }
+act('memory.ride', c => { openRideKm(c.v); return 'quiet'; });
+
 // ---- exports: PNG, PDF (A4/A3, a sharp image of the picture), print ----
 function svgToCanvas(svg, w, h) {
-  return new Promise((res, rej) => { const img = new Image(); img.onload = () => { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, w, h); x.drawImage(img, 0, 0, w, h); res(c); };
-    img.onerror = rej; img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); });
+  return localImg('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg)).then(img => { if (!img) throw new Error('the drawing did not load'); // one-way (8): the one local loader
+    const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, w, h); x.drawImage(img, 0, 0, w, h); return c; });
 }
 function pdfFromJpeg(jpegBytes, iw, ih, pw, ph) {
   const enc = new TextEncoder(), parts = [], offs = []; let len = 0;
@@ -90,15 +115,18 @@ function pdfFromJpeg(jpegBytes, iw, ih, pw, ph) {
 }
 function currentMementoSVG(id) { // 4.43.0: the picture as I arranged it (the illustrated one gets my point images back)
   const style = mementoStyleOf(id), art = MEMO.get('art:' + id);
-  if (style === 'art' && art) return picResolveArt(id, art.svg);
+  if (style === 'art' && art) return picResolveArt(id, art.svg, art); // trip-picture-credits: with the app's own credits stamped
   return picSVG(picModel(id), style);
 }
 async function readyMementoBg(id) { return picEnsureBg(id); }
+// trip-picture-credits: the illustrated version's stamp names its base's map - that data read from the phone first (no network needed)
+async function readyArtCredits(id) { if (mementoStyleOf(id) === 'art') await picLoadGeo(id); }
 function mementoBgReady(id) { return picBgReady(id); }
 function svgSize(svg) { const m = String(svg).match(/viewBox="\s*[-\d.]+\s+[-\d.]+\s+([\d.]+)\s+([\d.]+)/); return m ? [Number(m[1]), Number(m[2])] : [1000, 1400]; }
 async function exportMemento(id, kind) {
-  if (!mementoBgReady(id) && navigator.onLine) { showToast(SY.map + ' מכין את המפה של התמונה…'); await readyMementoBg(id); }
+  if (!mementoBgReady(id) && svcOnline()) { showToast(SY.map + ' מכין את המפה של התמונה…'); await readyMementoBg(id); }
   if (!mementoBgReady(id) && mementoStyleOf(id) !== 'art') showToast(SY.warn + ' רקע המפה לא נטען, והתמונה נשמרה בלעדיו. אפשר לנסות שוב ממסך הזיכרון');
+  await readyArtCredits(id);
   const t = STATE.trips[id], svg = currentMementoSVG(id), [w, h] = svgSize(svg), base = `${PACK.fileName}-${String(t.name).split(' · ')[0].replace(/[^\wא-ת]+/g, '-')}`;
   try {
     if (kind === 'png') { const c = await svgToCanvas(svg, Math.round(w * 2), Math.round(h * 2)); const blob = await new Promise(r => c.toBlob(r, 'image/png'));
@@ -109,7 +137,7 @@ async function exportMemento(id, kind) {
       const pdf = pdfFromJpeg(u, c.width, c.height, PW, PH);
       if (await deliverFile(new Blob([pdf], { type: 'application/pdf' }), `${base}-${kind.toUpperCase()}.pdf`, 'application/pdf')) logEvent(`נשמר PDF ${kind.toUpperCase()} של תמונת הטיול: ` + t.name, true); return; }
     if (kind === 'print') { let pa = document.getElementById('printArea'); if (!pa) { pa = document.createElement('div'); pa.id = 'printArea'; document.body.appendChild(pa); }
-      pa.innerHTML = svg; document.body.classList.add('printing'); const end = () => { document.body.classList.remove('printing'); pa.innerHTML = ''; window.removeEventListener('afterprint', end); };
-      window.addEventListener('afterprint', end); try { window.print(); } catch (e) { end(); showToast('ההדפסה לא זמינה כאן. אפשר לשמור PDF'); } setTimeout(end, 60000); }
+      pa.innerHTML = svg; document.body.classList.add('printing'); const end = () => { document.body.classList.remove('printing'); pa.innerHTML = ''; sysOff(window, 'afterprint', end); };
+      sysOn(window, 'afterprint', end); try { window.print(); } catch (e) { end(); showToast('ההדפסה לא זמינה כאן. אפשר לשמור PDF'); } setTimeout(end, 60000); }
   } catch (e) { showToast('לא הצלחתי להכין את הקובץ'); }
 }

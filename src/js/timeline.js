@@ -2,15 +2,19 @@
 // Google keeps Timeline on the phone since 2024 and exports it to a file (Android: Location → Timeline → Export; iPhone: Google Maps →
 // Personal content → Export Timeline data). The file is read here, on the phone, and forgotten at once (Q4): only the trip's days are
 // read; what is kept, with the trip (registry row "timeline", td.tl, the trip's "visits" part - a friend's trip file leaves it out):
-//   tl = { at, n: days read, days: { 'YYYY-MM-DD': { p: [[lat, lng], ...] (simplified, a few hundred points), km: walking km } },
+//   tl = { at, n: days read, days: { 'YYYY-MM-DD': { s: [{ m: 'w' | 'r', p: [[lat, lng], ...] }] (tl-paths: the day's cleaned segments, walk or
+//          ride, in time order, simplified to a few hundred points in all), km: walking km, r: { <ride kind>: km } (ride-km; from ride-no-home
+//          (rh: 1) without the way from home and back - tlHomeMoves) } },
+//          (a day imported before tl-paths has p: [[lat, lng], ...] - one line, no kinds - instead of s and r; cleaned on read, tlPaths)
 //          v: { <placeId>: { d: date, s: 'HH:MM', m: minutes } } - only for a place marked "היינו" (confirmed or added) }
 // What a review needs and is not kept (the matches of places not confirmed, the places not on the list) lives in TL_REVIEW for the
 // session. Formats read: the on-device export (Android: { semanticSegments }, iPhone: a list of segments) and the old Takeout
 // ({ timelineObjects }); the CSV some EU users get carries no places, so it gets a clear message (tlParse).
 // Matching (Q1): a visit is a trip place when it is within TL_NEAR of the place (the export has a Google place id but no name, and the
 // app's places have no Google place id - so by distance); a visit near none, of at least TL_EXTRA_MIN minutes and not home or work, is
-// offered as "היינו גם כאן · לא היה ברשימה". A day's path: the visits, the moves' ends and the path points in time order, simplified
-// (tlSimplify) to TL_MAX_PTS; walking km: the walking moves' own distance (else the straight line between their ends).
+// offered as "היינו גם כאן · לא היה ברשימה". A day's path: its segments, walk and ride, cleaned (tlDaySegs - tl-paths) and simplified
+// (tlSimplifyDays, the one line simplifier simplifyLine) to TL_MAX_PTS; walking km: the walking moves' own distance (else the straight line
+// between their ends); ride-km: the other moves' km by kind (tlRideKm).
 // 11.18.0 (timeline-offers; decisions 2026-11-15 "Which places the Google Timeline import offers" Q3-Q4): the radius by kind - a pin is
 // one point and an airport spans kilometres: an airport TL_NEAR_AIRPORT, a train or bus station and a port TL_NEAR_STATION, every other
 // place TL_NEAR; the nearest wins by distance, whatever the radii. A travel's located end that is not a trip place takes its kind's.
@@ -27,12 +31,12 @@ function tlEndRadius(mode) { mode = mode || 'flight'; return mode === 'flight' ?
 let TL_REVIEW = null; // { id, at, matched: { pid: { d, s, m } }, extras: [{ k, ll, d, s, m }], added: [k], stats } - the review of an import, not stored
 function tlLL(v) {
   if (!v) return null;
-  if (typeof v === 'object') { if (v.latitudeE7 != null) return { lat: v.latitudeE7 / 1e7, lng: v.longitudeE7 / 1e7 }; return tlLL(v.latLng || v.point || v.placeLocation || v.location); }
+  if (typeof v === 'object') { if (v.latitudeE7 != null) return { lat: v.latitudeE7 / 1e7, lng: v.longitudeE7 / 1e7 }; if (v.latE7 != null) return { lat: v.latE7 / 1e7, lng: v.lngE7 / 1e7 }; /* tl-paths: the old Takeout's waypoints */ return tlLL(v.latLng || v.point || v.placeLocation || v.location); }
   const m = String(v).match(/(-?\d+(?:\.\d+)?)°?\s*,\s*(-?\d+(?:\.\d+)?)°?/); if (!m) return null;
   const c = { lat: +m[1], lng: +m[2] }; return Math.abs(c.lat) <= 90 && Math.abs(c.lng) <= 180 ? c : null;
 }
 // a moment of the file: its local date and hour as written (the export writes the place's own offset); the old Takeout writes UTC (Z)
-function tlAt(s) { s = String(s || ''); const m = s.match(/^(\d{4}-\d\d-\d\d)T(\d\d:\d\d)/); if (!m) return null; return { d: m[1], hm: m[2], ms: Date.parse(s) }; }
+function tlAt(s) { s = String(s || ''); const m = s.match(/^(\d{4}-\d\d-\d\d)T(\d\d:\d\d)/); if (!m) return null; return { d: m[1], hm: m[2], ms: tmMs(s) }; }
 const TL_WALK = /^(walking|on_foot|running|walk)$/i, TL_HOME = /home|work/i;
 function tlParse(text) {
   const t = String(text || '').replace(/^\uFEFF/, '').trim();
@@ -43,7 +47,7 @@ function tlParse(text) {
   if (segs) segs.forEach(g => { if (!g || typeof g !== 'object') return; const a = tlAt(g.startTime), b = tlAt(g.endTime);
     if (g.visit && a) { const c = g.visit.topCandidate || {}, ll = tlLL(c.placeLocation || c.placeLocation); if (ll) out.visits.push({ a, b: b || a, ll, type: String(c.semanticType || ''), gid: gidOfId(c.placeId) }); }
     else if (g.activity && a) { const x = g.activity, c = x.topCandidate || {}, s = tlLL(x.start), e = tlLL(x.end), km = x.distanceMeters != null ? +x.distanceMeters / 1000 : null;
-      out.moves.push({ a, b: b || a, s, e, km: isFinite(km) ? km : null, walk: TL_WALK.test(String(c.type || '')) }); }
+      out.moves.push({ a, b: b || a, s, e, km: isFinite(km) ? km : null, walk: TL_WALK.test(String(c.type || '')), kind: tlRideKind(c.type) }); }
     else if (Array.isArray(g.timelinePath) && a) g.timelinePath.forEach(q => { const ll = tlLL(q.point); if (!ll) return;
       const at = q.time ? tlAt(q.time) : q.durationMinutesOffsetFromStartTime != null ? { d: a.d, ms: a.ms + (+q.durationMinutesOffsetFromStartTime) * 6e4 } : a;
       if (at) out.pts.push({ d: at.d || a.d, ms: at.ms, ll }); }); });
@@ -51,19 +55,18 @@ function tlParse(text) {
     if (g.placeVisit) { const v = g.placeVisit, a = tlAt((v.duration || {}).startTimestamp), b = tlAt((v.duration || {}).endTimestamp), ll = tlLL(v.location);
       if (a && ll) out.visits.push({ a, b: b || a, ll, type: String((v.location || {}).semanticType || ''), gid: gidOfId((v.location || {}).placeId) }); }
     else if (g.activitySegment) { const x = g.activitySegment, a = tlAt((x.duration || {}).startTimestamp), b = tlAt((x.duration || {}).endTimestamp);
-      if (!a) return; out.moves.push({ a, b: b || a, s: tlLL(x.startLocation), e: tlLL(x.endLocation), km: x.distance != null ? x.distance / 1000 : null, walk: TL_WALK.test(String(x.activityType || '')) });
-      ((x.waypointPath || {}).waypoints || (x.simplifiedRawPath || {}).points || []).forEach(q => { const ll = tlLL(q); if (ll) out.pts.push({ d: a.d, ms: a.ms, ll }); }); } });
+      if (!a) return; const mv = { a, b: b || a, s: tlLL(x.startLocation), e: tlLL(x.endLocation), km: x.distance != null ? x.distance / 1000 : null, walk: TL_WALK.test(String(x.activityType || '')), kind: tlRideKind(x.activityType), path: [] }; out.moves.push(mv);
+      // tl-paths: the old Takeout's waypoints carry no time - each its share of the move's time, in order, kept with its move
+      const wp = ((x.waypointPath || {}).waypoints || (x.simplifiedRawPath || {}).points || []).map(tlLL).filter(Boolean);
+      wp.forEach((ll, i) => mv.path.push({ d: a.d, ms: a.ms + (mv.b.ms - a.ms) * (i + 1) / (wp.length + 1), ll })); } });
   else return { err: 'זה לא קובץ של ציר הזמן של גוגל' };
   if (!out.visits.length && !out.moves.length && !out.pts.length) return { err: 'אין בקובץ ביקורים או מסלולים' };
   return out;
 }
-// the one line simplifier (simplifyLine, Douglas-Peucker - the trip picture's background uses it too) on [lng, lat], from about 12 m
-// up, until it fits TL_MAX_PTS; back to [lat, lng]
-function tlSimplify(pts, max) {
-  max = max || TL_MAX_PTS; const xy = pts.map(p => [p.lng, p.lat]); let tol = 1.1e-4, r = simplifyLine(xy, tol);
-  while (r.length > max && tol < 0.05) { tol *= 1.6; r = simplifyLine(xy, tol); }
-  return r.map(q => [+(+q[1]).toFixed(5), +(+q[0]).toFixed(5)]);
-}
+// ride-km (Q1): a move's kind from the file's activity type (Android / iPhone / Takeout spell it differently)
+function tlRideKind(t) { t = String(t || '').toUpperCase().replace(/[\s-]+/g, '_');
+  return /FLY|PLANE/.test(t) ? 'flight' : /SUBWAY|METRO|TRAM|CABLE|FUNICULAR|GONDOLA|CYCL|BIKE|SKI/.test(t) ? 'city' : /TRAIN|RAIL/.test(t) ? 'train'
+    : /BUS|COACH/.test(t) ? 'bus' : /FERRY|BOAT|SAIL/.test(t) ? 'ferry' : /VEHICLE|CAR|TAXI|DRIV|MOTOR/.test(t) ? 'car' : 'city'; }
 // the trip's places that a visit can be (located; airports too since 11.18.0, Q3), each with its coordinate and its radius
 // (a closed trip: its snapshot's places - what the memory screen shows; tripMemoryData)
 function tlPlaceList(id) { const t = STATE.trips[id]; return t && t.archived && t.archived.snap ? (t.archived.snap.places || []) : withTrip(id, () => POINTS.map(q => ({ ...q }))); }
@@ -101,15 +104,33 @@ function tlRead(id, F) {
     if (abroad && inIsrael(v.ll)) return; // the place rule: on a trip abroad an offer in Israel never (a country only; a trip in Israel filters nothing)
     const near = extras.find(e => distanceKm(e.ll, v.ll) < 0.1 && (!e.gid || !v.gid || gidSame(e.gid, v.gid))); if (near) { near.m += m; if (!near.gid && v.gid) near.gid = v.gid; return; }
     extras.push({ k: 'x' + extras.length, ll: { lat: +v.ll.lat.toFixed(6), lng: +v.ll.lng.toFixed(6) }, d: v.a.d, s: v.a.hm, m, ...(v.gid ? { gid: v.gid } : {}), ...(priv(v.ll) ? { quiet: 1 } : {}) }); }); // quiet: near home / work or a frequent place - never sent for a name
-  const byDay = {}; const put = (d, ms, ll) => { if (ll && inT(d)) (byDay[d] = byDay[d] || []).push({ ms, ll }); };
-  visits.forEach(v => { put(v.a.d, v.a.ms, v.ll); put(v.b.d, v.b.ms, v.ll); });
-  moves.forEach(m => { put(m.a.d, m.a.ms, m.s); put(m.b.d, m.b.ms, m.e); });
-  pts.forEach(q => put(q.d, q.ms, q.ll));
-  const walk = {}; moves.filter(m => m.walk).forEach(m => { const km = m.km != null ? m.km : m.s && m.e ? distanceKm(m.s, m.e) : 0; walk[m.a.d] = (walk[m.a.d] || 0) + km; });
-  const out = {}; Object.keys(byDay).sort().forEach(d => { const a = byDay[d].sort((x, y) => x.ms - y.ms).map(x => x.ll); out[d] = { p: tlSimplify(a), km: Math.round((walk[d] || 0) * 10) / 10 }; });
-  Object.keys(walk).forEach(d => { if (!out[d]) out[d] = { p: [], km: Math.round(walk[d] * 10) / 10 }; });
+  // tl-paths (Q1-Q2): each day's segments, cleaned at the source (tlDaySegs); walking km and (ride-km, Q1) the rides' km by kind, per day
+  // ride-no-home (decisions 2026-11-20 · "ק״מ בנסיעות", Q5): a move on the way from home or back is not a ride of the trip (tlHomeMoves)
+  const mvKm = m => m.km != null ? m.km : m.s && m.e ? distanceKm(m.s, m.e) : 0, walk = {}, ride = {}, dset = new Set(), homeMv = tlHomeMoves(F, moves, t, inT);
+  moves.forEach(m => { const km = mvKm(m); if (m.walk) walk[m.a.d] = (walk[m.a.d] || 0) + km; else if (km > 0 && !homeMv.has(m)) { const r = (ride[m.a.d] = ride[m.a.d] || {}); r[m.kind] = (r[m.kind] || 0) + km; } });
+  visits.forEach(v => { dset.add(v.a.d); }); moves.forEach(m => dset.add(m.a.d)); pts.forEach(q => dset.add(q.d)); Object.keys(walk).forEach(d => dset.add(d));
+  const out = {}, r1 = x => Math.round(x * 10) / 10, stats = tlCleanStats();
+  [...dset].filter(inT).sort().forEach(d => { const r = {}; Object.keys(ride[d] || {}).forEach(k => { const v = r1(ride[d][k]); if (v > 0) r[k] = v; });
+    out[d] = { s: tlDaySegs(visits.filter(v => v.a.d === d), moves.filter(m => m.a.d === d), pts.filter(q => q.d === d), stats), km: r1(walk[d] || 0), r }; });
+  tlSimplifyDays(out); Object.assign(TL_CLEAN_LAST, stats);
   return { days: out, matched, extras: extras.sort((a, b) => (a.d + a.s).localeCompare(b.d + b.s)), n: Object.keys(out).length };
 }
+// ride-no-home (decisions 2026-11-20 · "ק״מ בנסיעות", Q5): the moves on the way out from home to the trip and back - their rides are not
+// counted in "ק״מ בנסיעות" (the picture's "ק״מ" counts them already). Home is the move's end: on a trip abroad any end in Israel (the taxi to
+// the airport, the flight from it - inIsrael, as the offers' place rule); on a trip in Israel an end within TL_PRIV_KM of the home the file
+// marks (semanticType HOME, on a day outside the trip - a hotel Google took for home during the trip is not home). A connection on the way
+// (a stop-over abroad) belongs to the home leg, as the travels' chains (travelHomeEnds): a flight leaving on the day a home flight lands
+// out, and a flight landing on the day a home flight leaves back. -> Set of moves
+function tlHomeMoves(F, moves, t, inT) { const abroad = tripAbroad(t), out = new Set(), fl = m => !m.walk && m.kind === 'flight';
+  const homes = abroad ? [] : F.visits.filter(v => TL_HOME.test(v.type) && !/work/i.test(v.type) && !inT(v.a.d)).map(v => v.ll);
+  const atHome = c => !!c && (abroad ? inIsrael(c) : homes.some(h => distanceKm(h, c) <= TL_PRIV_KM));
+  const rides = moves.filter(m => !m.walk).sort((a, b) => a.a.ms - b.a.ms);
+  rides.forEach(m => { if (atHome(m.s) || atHome(m.e)) out.add(m); });
+  const chain = (C, link) => { let more = true; while (more) { more = false; rides.forEach((m, i) => { if (C.has(m) || !fl(m)) return;
+    if (rides.some((h, j) => C.has(h) && link(h, m, j, i))) { C.add(m); out.add(m); more = true; } }); } };
+  chain(new Set(rides.filter(m => fl(m) && atHome(m.s))), (h, m, j, i) => j < i && m.a.d === h.b.d); // out: a flight leaving the day the one before it landed
+  chain(new Set(rides.filter(m => fl(m) && atHome(m.e))), (h, m, j, i) => j > i && m.b.d === h.a.d); // back: a flight landing the day the one after it leaves
+  return out; }
 // legal-server (Q11): (ll) -> true when a point is near home / work or at a frequent place (the whole file read once, on the phone; nothing kept)
 function tlPrivate(F, inTrip) {
   const G = 0.002, cell = ll => Math.floor(ll.lat / G) + ':' + Math.floor(ll.lng / G), homes = [], grid = new Map();
@@ -123,7 +144,19 @@ function tlPrivate(F, inTrip) {
 function tlDates(t) { return dayList(t.start, t.end).map(x => x.date || x); }
 function tlOf(id) { return (STATE.tripData[id] || {}).tl || null; }
 function tlKm(id) { const tl = tlOf(id); return tl ? Math.round(Object.values(tl.days || {}).reduce((s, x) => s + (x.km || 0), 0) * 10) / 10 : 0; }
-function tlPaths(id) { const tl = tlOf(id); return tl ? Object.keys(tl.days || {}).sort().map(d => tl.days[d].p).filter(p => p && p.length > 1) : []; }
+// ride-km (Q1): the rides' km from the Timeline, by kind - only the days imported with kinds (s); { by: { kind: km }, days: Set }
+// ride-no-home (Q5): an import from ride-no-home on (tl.rh) left the way from home and back out of r already (tlHomeMoves); a day imported
+// before kept it - there, on the days of a travel from home or back (travelHomeEnds), that travel's kind is left out (tlHomeKinds)
+function tlRideKm(id, t) { const tl = tlOf(id), by = {}, days = new Set(); if (!tl) return { by, days };
+  const drop = tl.rh ? null : tlHomeKinds(t || STATE.trips[id]);
+  Object.keys(tl.days || {}).forEach(d => { const x = tl.days[d] || {}; if (!Array.isArray(x.s)) return; days.add(d);
+    Object.keys(x.r || {}).forEach(k => { if (!drop || !drop.has(d + '|' + k)) by[k] = (by[k] || 0) + (+x.r[k] || 0); }); });
+  return { by, days }; }
+// the travels from home and back (an end at home - travelHomeEnds, with their connections): 'date|kind' of the days they leave and land
+function tlHomeKinds(t) { const out = new Set(); if (!t) return out; const home = travelHomeEnds(t);
+  travelsOf(t).forEach(f => { if (!f.date || !(home.has(f.id + '|from') || home.has(f.id + '|to'))) return; const k = rideKind(f.mode);
+    [f.date, travelLandDate(f) || f.date].forEach(d => out.add(d + '|' + k)); });
+  return out; }
 // the kept visits follow "היינו": a place marked keeps its time and length, any other loses them (Q4); TL_REVIEW keeps them for the review
 // td: the record already in hand (a second tdOf would stash the active trip over it)
 function tlSyncVisits(id, td) { td = td || tdOf(id); if (!td.tl) return; const vs = new Set(td.visited || []), all = { ...(td.tl.v || {}), ...((TL_REVIEW && TL_REVIEW.id === id && TL_REVIEW.matched) || {}) }, v = {};
@@ -135,7 +168,7 @@ function tlImport(id, text) {
   const fresh = Object.keys(R.matched).map(Number).filter(k => !vs.has(k) && !nr.has(k));
   td.visited = [...(td.visited || []), ...fresh];
   const no = (td.tl && td.tl.no) || []; // closing-where (Q4): offers dismissed with "לא הגענו" stay dismissed - a re-import does not offer them again
-  td.tl = { at: Date.now(), n: R.n, days: R.days, v: {}, ...(no.length ? { no } : {}) };
+  td.tl = { at: Date.now(), n: R.n, days: R.days, v: {}, rh: 1, ...(no.length ? { no } : {}) }; // rh (ride-no-home): r holds the trip's own rides only
   TL_REVIEW = { id, at: Date.now(), matched: R.matched, extras: R.extras.filter(e => !tlNoHas(no, e)), added: [], pidOf: {}, at0: {}, marked: fresh, asking: new Set() };
   tlSyncVisits(id, td); tdSave(id);
   return { ok: true, had, n: R.n, matched: Object.keys(R.matched).length, fresh: fresh.length, extras: R.extras.length, km: tlKm(id) };
@@ -165,8 +198,11 @@ function tlSummaryHTML(id) {
   const chip = (ic, t) => `<span class="gl-fact">${msi(ic, { size: 16 })}<span>${t}</span></span>`;
   return `<div class="gl-sum card"><div class="gl-sum-h">${msi('timeline', { size: 20 })}<b>מציר הזמן של גוגל${SEP}${tl.n} ימים</b></div>
     <div class="gl-facts">${chip('check_circle', `${nM} מקומות זוהו`)}${nX ? chip('add_location_alt', `${nX} שלא היו ברשימה`) : ''}${paths ? chip('route', 'מסלול לכל יום') : ''}${km ? chip('directions_walk', `${fmtKm(km)} ברגל`) : ''}</div>
-    <small class="gl-sum-l">${msi('info', { size: 16, cls: 'msi-in' })} מה שזוהה כבר מסומן "${TX.visited}"${SEP}אפשר לשנות כל שורה</small></div>`;
+    <small class="gl-sum-l">${msi('info', { size: 16, cls: 'msi-in' })} מה שזוהה כבר מסומן "${TX.visited}"${SEP}אפשר לשנות כל שורה</small>${tlAgainHTML(id)}</div>`;
 }
+// tl-paths (Q5): a trip imported before keeps one line a day with no kinds - a quiet line offers the re-import (the import window's door)
+function tlAgainHTML(id) { return tlOldDays(id) && !tlCancelled(STATE.trips[id]) ? `<small class="gl-sum-l gl-again">${msi('update', { size: 16, cls: 'msi-in' })} <span>${tipText('tl.again')}</span> <button type="button" class="link-btn" id="tlAgain" data-act="tl.again" data-v="${escH(id)}">ייבוא מחדש</button></small>` : ''; }
+act('tl.again', c => { openTlImport(c.v); return 'quiet'; });
 // Q2 (decisions 2026-11-13): a name for each offered place - a reverse lookup by its coordinate through the one services client
 // (service placeName: Nominatim, Photon when it is busy; their queue, rates and network waiting). Only the offers' coordinates
 // leave the phone - never the file, the path or the matched visits. The answers live for the session (the offers are not kept);
@@ -183,25 +219,34 @@ function tlNamesAsk(R) { if (!R || !R.extras) return; R.asking = R.asking || new
         else { if (!Array.isArray(d.features)) throw new Error('answer'); const f = d.features[0]; if (!f) return SVC_EMPTY; const pp = f.properties || {}; nm = pp.name || ''; near = pp.street || pp.district || pp.locality || ''; }
         const cl = x => String(x).replace(/\s+/g, ' ').trim().slice(0, 80); nm = cl(nm); near = cl(near);
         return nm || (near ? 'ליד ' + near : SVC_EMPTY); } }) // B4: no place name but a street or a neighbourhood - "ליד <it>"; the date placeholder only when there is not even that
-    .then(r => { R.asking.delete(k); if (r.kind !== 'ok' && r.kind !== 'empty') return; TL_NAMES[k] = r.kind === 'ok' ? r.value : ''; // offline / busy / error: asked again on the next draw
-      if (r.kind === 'ok' && TL_REVIEW === R && tlCtxId() === R.id) redrawSoon(); }); }); }
+    .then(r => { R.asking.delete(k); const got = r.kind === 'ok' || r.kind === 'empty'; if (got) TL_NAMES[k] = r.kind === 'ok' ? r.value : ''; // offline / busy / error: asked again on the next draw
+      if (!got) R.hold = true; // wait-look: the draw that ends a wait with a failure does not ask again at once (the next one does)
+      if ((r.kind === 'ok' || !R.asking.size) && TL_REVIEW === R && tlCtxId() === R.id) redrawSoon(); }); }); }
+// wait-look (decisions 2026-11-23 · One "in progress" look, Q2): while names are asked, the group of the places not on the list waits with
+// the one "in progress" component, measured (state 3): the bar under its head fills with the names answered, the line "12 מתוך 40"
+function tlNamesWaitHTML(R) { if (!R || !R.asking || !R.asking.size) return ''; const ex = R.extras.filter(e => !e.quiet && !R.added.includes(e.k)), n = { done: ex.filter(e => tlNameKey(e) in TL_NAMES).length, total: ex.length };
+  return waitBarHTML('מחפשים שמות למקומות', n) + waitLineHTML('מחפשים שמות למקומות', n); }
 function tlTagHTML(x, day) { return `<span class="gl-tag">${msi('schedule', { size: 14 })}${day ? `${day}${SEP}` : ''}<bdi>${x.s}</bdi>${SEP}${tmFmt('dur', Math.max(1, x.m))}</span>`; } // day: an offer's own day (11.14.0, P14) - a found row has it in its day's head
 // 11.14.0 (phone-round-1-fixes P14, G16): an offer says its day as the found rows' day head does - "יום N · <date>" (only the date for a day outside the trip's dates)
 function tlDayTx(dl, d) { const i = (dl || []).indexOf(d); return (i >= 0 ? `יום ${i + 1}${SEP}` : '') + tmFmt('date', d); }
 function tlVisRowHTML(id, p, x) { const td = tdOf(id), on = (td.visited || []).includes(p.id), no = (td.notReached || []).includes(p.id);
-  return `<div class="cl-row gl-row g-swipe" data-ref="place:${p.id}"><span class="gl-rn"><span class="gl-nm">${typeIcon(p.icon, { size: 18, cls: 'msi-in' })} <b>${_qe(p.name)}</b></span>${x ? tlTagHTML(x) : `<small class="gl-miss">לא זוהה בציר הזמן</small>`}</span>${fmMark({ act: 'tl.vis', on, no })}</div>`; }
+  return `<div class="cl-row gl-row g-swipe" data-ref="place:${p.id}"><span class="gl-rn"><span class="gl-nm">${typeIcon(p.icon, { size: 18, cls: 'msi-in' })} <b>${escH(p.name)}</b></span>${x ? tlTagHTML(x) : `<small class="gl-miss">לא זוהה בציר הזמן</small>`}</span>${fmMark({ act: 'tl.vis', on, no })}</div>`; }
 // the rows: every place the Timeline found, by day and hour; then the planned places it did not find (closing's "where" rows, the
 // window's - one review in both doors, C5); then the places not on the list, with the name the names service gave (Q2).
 // closing-where (Q3): V is the door's view, kept by it (CLOSING.tlV, TL_WIN_V) - "עוד לא סומנו" | "הכל"; the rows of "עוד לא סומנו" are fixed when
 // the view is drawn first, so a row marked there stays in place (V.keep); V.add: places chosen from "＋ עוד מקום שהיינו בו" (Q6), each a marked row.
-// The offers (Q4) are rows with the same mark; an offer marked "היינו" stays in its group (its place is not drawn again in the days)
+// The offers (Q4) are rows with the same mark; an offer marked "היינו" stays in its group (its place is not drawn again in the days).
+// round6-behaviour (G115): the groups too are fixed when the view is drawn first (V.lay - each row's group, its day and hour), under both views:
+// a mark set, changed or cleared never moves its row to another group (a "לא הגענו" leaves the day's match, tlSyncVisits) or out of "הכל"
 function tlReviewHTML(id, V) {
-  const tl = tlOf(id); if (!tl) return ''; V = V || {}; const R = TL_REVIEW && TL_REVIEW.id === id ? TL_REVIEW : null, M = R ? R.matched : (tl.v || {}), pm = new Map(tlPlaceList(id).map(q => [q.id, q]));
+  const tl = tlOf(id); if (!tl) return ''; V = V || {}; const R = TL_REVIEW && TL_REVIEW.id === id ? TL_REVIEW : null, pm = new Map(tlPlaceList(id).map(q => [q.id, q]));
   const offerPids = new Set(R ? Object.values(R.pidOf || {}) : []), t = STATE.trips[id], td = tdOf(id), dl = tlDates(t);
-  const ids = Object.keys(M).map(Number).filter(k => pm.has(k) && !offerPids.has(k)).sort((a, b) => (M[a].d + M[a].s).localeCompare(M[b].d + M[b].s)), inM = new Set(ids);
   const vs = new Set(td.visited || []), ns = new Set(td.notReached || []), marked = k => vs.has(k) || ns.has(k);
-  const planned = [...tripPlannedIds(id, t, td)].filter(k => pm.has(k) && !inM.has(k) && !offerPids.has(k)), inP = new Set(planned);
-  const others = [...new Set([...vs, ...ns, ...(V.add || [])])].filter(k => pm.has(k) && !inM.has(k) && !inP.has(k) && !offerPids.has(k)); // "הכל": every place marked either way (Q3)
+  if (!V.lay) { const M0 = R ? R.matched : (tl.v || {}), ids0 = Object.keys(M0).map(Number).filter(k => pm.has(k) && !offerPids.has(k)).sort((a, b) => (M0[a].d + M0[a].s).localeCompare(M0[b].d + M0[b].s)), inM0 = new Set(ids0);
+    const pl0 = [...tripPlannedIds(id, t, td)].filter(k => pm.has(k) && !inM0.has(k) && !offerPids.has(k)), inP0 = new Set(pl0);
+    V.lay = { m: Object.fromEntries(ids0.map(k => [k, M0[k]])), ids: ids0, planned: pl0, others: [...new Set([...vs, ...ns])].filter(k => pm.has(k) && !inM0.has(k) && !inP0.has(k) && !offerPids.has(k)) }; } // "הכל": every place marked either way (Q3)
+  const LY = V.lay, M = LY.m, ids = LY.ids.filter(k => pm.has(k) && !offerPids.has(k)), inM = new Set(ids), planned = LY.planned.filter(k => pm.has(k) && !offerPids.has(k)), inP = new Set(planned);
+  const others = [...new Set([...LY.others, ...(V.add || [])])].filter(k => pm.has(k) && !inM.has(k) && !inP.has(k) && !offerPids.has(k));
   const all = [...ids, ...planned, ...others], nUn = all.filter(k => !marked(k)).length;
   if (!V.view) V.view = nUn ? 'un' : 'all'; if (!V.keep) V.keep = all.filter(k => !marked(k));
   const keep = new Set([...V.keep, ...(V.add || [])]), sh = k => V.view === 'all' || keep.has(k), byDay = {};
@@ -213,8 +258,8 @@ function tlReviewHTML(id, V) {
   if (more.length) h += `<div class="gl-day"><div class="gl-dh">${msi('add_location', { size: 16 })} עוד מקומות שסומנו</div><div class="cl-list">${more.map(k => tlVisRowHTML(id, pm.get(k), null)).join('')}</div></div>`;
   if (!all.length && !(R && R.extras.length)) h += `<div class="callout">אין מקומות לסמן.</div>`;
   else if (V.view === 'un' && !ids.some(sh) && !miss.length && !more.length) h += `<div class="callout">${nUn ? '' : '✓ '}${nUn ? 'אין כאן מקומות שעוד לא סומנו.' : 'הכל סומן.'} ב"הכל" אפשר לתקן.</div>`;
-  const ex = R ? R.extras : []; if (ex.some(e => !R.added.includes(e.k))) tlNamesAsk(R);
-  if (ex.length) h += `<div class="gl-day gl-extra"><div class="gl-dh">${msi('add_location_alt', { size: 16 })} ${TX.visited} גם כאן${SEP}לא היה ברשימה</div><div class="cl-list">${ex.map(e => `<div class="cl-row gl-row g-swipe" data-tlx="${e.k}"><span class="gl-rn"><b>${tlNameOf(e) ? _qe(tlNameOf(e)) : 'מקום בלי שם'}</b>${tlTagHTML(e, tlDayTx(dl, e.d))}<small class="gl-ll" dir="ltr">${e.ll.lat.toFixed(4)}, ${e.ll.lng.toFixed(4)}</small>${e.quiet ? '<small class="gl-ll">ליד הבית או מקום קבוע - השם לא נשלח לחיפוש</small>' : ''}</span>${fmMark({ acts: ['tl.no', 'tl.add'], v: e.k, on: R.added.includes(e.k), no: tlNoHas((tl || {}).no, e) })}</div>`).join('')}</div></div>`;
+  const ex = R ? R.extras : []; if (ex.some(e => !R.added.includes(e.k))) { if (R.hold) R.hold = false; else tlNamesAsk(R); }
+  if (ex.length) h += `<div class="gl-day gl-extra"><div class="gl-dh">${msi('add_location_alt', { size: 16 })} ${TX.visited} גם כאן${SEP}לא היה ברשימה</div>${tlNamesWaitHTML(R)}<div class="cl-list">${ex.map(e => `<div class="cl-row gl-row g-swipe" data-tlx="${e.k}"><span class="gl-rn"><b>${tlNameOf(e) ? escH(tlNameOf(e)) : 'מקום בלי שם'}</b>${tlTagHTML(e, tlDayTx(dl, e.d))}<small class="gl-ll" dir="ltr">${e.ll.lat.toFixed(4)}, ${e.ll.lng.toFixed(4)}</small>${e.quiet ? '<small class="gl-ll">ליד הבית או מקום קבוע - השם לא נשלח לחיפוש</small>' : ''}</span>${fmMark({ acts: ['tl.no', 'tl.add'], v: e.k, on: R.added.includes(e.k), no: tlNoHas((tl || {}).no, e) })}</div>`).join('')}</div></div>`;
   return h;
 }
 act('tl.view', c => { const id = tlCtxId(); if (!id) return 'quiet'; const V = { view: c.v }; if (CLOSING && activeTab === 'closing' && CLOSING.id === id) CLOSING.tlV = V; else TL_WIN_V = V; return 'redraw'; });
@@ -278,7 +323,7 @@ function tlCancelled(t) { return !!(t && t.archived && t.archived.reason === 'ca
 function openTlImport(id, redraw) { if (tlCancelled(STATE.trips[id])) return; layerNote(openTlImport, arguments); const sheet = document.getElementById('sheet'), had = !!tlOf(id);
   sheet.innerHTML = `${fmHead(`${msi('timeline', { size: 20 })} ${had ? 'ייבוא מחדש מציר הזמן' : 'ייבוא מציר הזמן של גוגל'}`)}
     <p class="sh-p">${had ? 'הקובץ קורא שוב את ימי הטיול: המסלול, השעות והק״מ מתעדכנים. מקומות שכבר סימנתם "' + TX.visited + '" או "לא הגענו" לא משתנים.' : 'אם ציר הזמן היה דלוק בטיול, הקובץ ממלא את "איפה ' + TX.visited + '", מציע מקומות שלא היו ברשימה ומצייר את המסלול האמיתי של כל יום.'}</p>
-    ${tlDoorsHTML(id)}`;
+    ${had && tlOldDays(id) ? `<p class="sh-hint">${msi('update', { size: 16, cls: 'msi-in' })} ${tipText('tl.again')}</p>` : ''}${tlDoorsHTML(id)}`;
   if (!redraw) showSheetBackdrop('openTlImport'); }
 // The dates window (B5, decisions 2026-11-13 review of 11.10.0): a closed or dateless trip's first and last day, as the trip editor's
 // dates. The last day is filled in from the trip's planned days; a changed length follows the trip editor's rule for days - a day

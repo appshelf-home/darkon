@@ -34,7 +34,7 @@ function guideDraw() { const box = document.querySelector('#main #guideChapters'
   if (GUIDE_Q) guideWords(GUIDE_Q).forEach(w => guideForms(w).sort((a, b) => b.length - a.length).forEach(f => box.querySelectorAll('.accordion-item').forEach(b => markSearch(b, f)))); }
 function renderGuideScreen() {
   document.getElementById('main').innerHTML = `<div class="section-head gd-head"><h2>מדריך</h2></div><div class="gd-hero"><h3>איך עושים את זה?</h3><p>פרק לכל מסך, וחיפוש לכל שאלה</p></div><div class="sh-field guide-search gd-search">${searchFieldHTML('guideQ', 'חיפוש, למשל "איך מוסיפים מקום"', GUIDE_Q)}</div><div id="guideChapters" class="gd-list"></div>`; // 10.3.0 (design-3): a light-blue header, the search raised over its edge
-  wireSearchField(document.querySelector('#main #guideQ'), v => { GUIDE_Q = v; guideDraw(); });
+  fmOnInput(document.querySelector('#main #guideQ'), v => { GUIDE_Q = v; guideDraw(); });
   guideDraw();
 }
 

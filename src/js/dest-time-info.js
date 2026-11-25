@@ -18,7 +18,7 @@ function renderInfoTab() {
       + `<div class="accordion" id="tripAccordion">${tripBlocksHTML()}</div>`
       + `<div id="destInfo">${body}${miss}</div>`;
     const di = document.getElementById('destInfo'), sh = di.querySelector('.section-head'); if (sh) sh.remove();
-    di.insertAdjacentHTML('afterbegin', `<div class="section-head dest-info-head"><h2><button type="button" class="fpick dest-hbtn" id="infoDestBtn" data-act="info.destPick"><span>${withFlag(destFlagMeta(D.meta), `<bdi>${esc(D.meta.name)}</bdi>`)}</span><span aria-hidden="true">▾</span></button></h2><p>${D.meta.description ? sepTie(esc(D.meta.description)) + SEP : ''}${dd.length ? `${dd.length} ימים בטיול (${dd[0].label}${dd.length > 1 ? '–' + dd[dd.length - 1].label : ''})` : 'עוד בלי תאריכים'}</p><p class="dest-clock" id="destClock">${sepTie(esc(tmClockLine(D)))}</p></div>`);
+    di.insertAdjacentHTML('afterbegin', `<div class="section-head dest-info-head"><h2><button type="button" class="fpick dest-hbtn t-wrap" id="infoDestBtn" data-act="info.destPick"><span>${withFlag(destFlagMeta(D.meta), `<bdi>${esc(D.meta.name)}</bdi>`)}</span><span aria-hidden="true">▾</span></button></h2><p>${D.meta.description ? sepTie(esc(D.meta.description)) + SEP : ''}${dd.length ? `${dd.length} ימים בטיול (${dd[0].label}${dd.length > 1 ? '–' + dd[dd.length - 1].label : ''})` : 'עוד בלי תאריכים'}</p><p class="dest-clock" id="destClock">${sepTie(esc(tmClockLine(D)))}</p></div>`);
     if (_clockTimer) clearInterval(_clockTimer);
     _clockTimer = setInterval(() => { const c = document.getElementById('destClock'); if (!c) { clearInterval(_clockTimer); _clockTimer = null; return; } c.textContent = sepTie(tmClockLine(infoDest())); }, 30000);
   }
@@ -51,7 +51,7 @@ function renderInfoTab() {
 const INFO_ACC = {};
 // 5.15.0 (ד4): which destination ℹ️ כללי shows - a small window with the trip's destinations, "✓ היום" by the default one
 function openInfoDestPicker() { const ids = tripDests(activeTripObj()), auto = dayDestId(); // 9.4.0: the chosen one framed, "היום" at the side
-  openFmChoice({ key: 'openInfoDestPicker', title: 'איזה יעד', closeId: 'idpClose', value: oneDest().id, options: ids.map(id => ({ v: id, html: _qe(withFlag(destFlag(id), destName(id))), sub: id === auto ? 'היום' : '' })) },
+  openFmChoice({ key: 'openInfoDestPicker', title: 'איזה יעד', closeId: 'idpClose', value: oneDest().id, options: ids.map(id => ({ v: id, html: escH(withFlag(destFlag(id), destName(id))), sub: id === auto ? 'היום' : '' })) },
     v => { setOneDest(v); redrawSoon(); }); }
 act('info.destPick', () => openInfoDestPicker()); // 5.15.0 (ד4): the destination's title is its picker
 act('today.plan', () => { activeTab = 'itinerary'; return 'redraw'; });

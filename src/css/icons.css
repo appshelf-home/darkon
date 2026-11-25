@@ -20,7 +20,7 @@
    own falls on the wrong side; the gap belongs to the row). :where() keeps the rule at no specificity and free of the order of
    the style files: a component that sets its own display or gap keeps it. An icon alone gets nothing (a gap needs two).
    No justify-content here: it would move the content of every label that is a row already. */
-:where(button, a, label, .badge):where(:has(> :is(.msi, .sym, svg.il-flag))):where(:not([hidden])) { display: inline-flex; align-items: center; column-gap: var(--icon-gap); }
+:where(button, a, label, .badge):where(:has(> :is(.msi, .sym))):where(:not([hidden])) { display: inline-flex; align-items: center; column-gap: var(--icon-gap); }
 /* inside a line of text (msi-in) the gap is the line's word space, written as a no-break space (msiT). The icon is a plain inline
    there, not an inline-block: a line may break beside an inline-block even at a no-break space, which left the icon at the end of
    one line and its word on the next. */
@@ -32,7 +32,7 @@ html .msi.fill { font-variation-settings: 'FILL' 1; } html .msi.s16 { font-size:
 .msi-tie { white-space: nowrap; } /* size-fixes (2): msiT - a mirrored icon (a box) and its first word on one line */
 html .msi.msi-in { font-size: 1.15em; vertical-align: -0.2em; } html .msi.warn-ic { color: var(--error); } /* 10.8.0 (design-icons, Q19): a line icon inside a text - at the text's size and color */
 .acc-sub { display: block; font-weight: 400; font-size: var(--fs-body-small); color: var(--on-surface-variant); } /* 10.8.0 (design-icons, gap 24): a row's supporting line */
-.accordion-header > .acc-ic { flex: none; color: var(--on-surface-variant); } .accordion-header > .acc-ic + * { margin-inline-start: 10px; } /* 10.15.0 (design-review Q15): the fixed gap sits on the title - an icon is direction: ltr, so its own inline-end margin fell on the wrong side */ .accordion-header > .acc-emo { font-size: 1.1em; line-height: 1; } .accordion-header > svg.il-flag { width: 20px; height: 20px; } .accordion-header > .acc-ic + span { flex: 1 1 auto; min-width: 0; text-align: start; } /* 10.8.0 (design-icons): a section head's line icon */
+.accordion-header > .acc-ic { flex: none; color: var(--on-surface-variant); } .accordion-header > .acc-ic + * { margin-inline-start: 10px; } /* 10.15.0 (design-review Q15): the fixed gap sits on the title - an icon is direction: ltr, so its own inline-end margin fell on the wrong side */ .accordion-header > .acc-emo { font-size: 1.1em; line-height: 1; } .accordion-header > .acc-ic + span { flex: 1 1 auto; min-width: 0; text-align: start; } /* 10.8.0 (design-icons): a section head's line icon */
 .le-ic .msi { color: var(--on-surface-variant); } .le-ic[data-active="true"] .msi { color: var(--on-secondary-container); }
 /* 10.1.0 (design-1): Claude's mark (sparkles) in Claude's color, the size of the text beside it; one color in the ⋮ menu */
 .cl-mark { color: var(--on-claude); font-size: 1.2em; vertical-align: -.2em; }

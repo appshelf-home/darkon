@@ -22,18 +22,17 @@ const GID_NEAR_KM = 0.15, GID_MISS_DAYS = 30, GID_OLD_DAYS = 365, GID_START_MS =
 const GID_LOOK = { on: MAP_AVAILABLE, busy: false, t: 0, skip: new Set(), gone: false, n: 0 }; // skip: places that failed in this opening
 function gidLookSoon(ms) { try { if (!GID_LOOK.on || GID_LOOK.gone) return; } catch (e) { return; } // persist runs at startup before this part is read (GID_LOOK not yet there)
   clearTimeout(GID_LOOK.t); GID_LOOK.t = setTimeout(gidLookStep, ms == null ? 1500 : ms); }
-window.addEventListener('online', () => gidLookSoon(2000));
+svcOnBack(() => gidLookSoon(2000));
 function gidMonth() { return tmPhoneDate().slice(0, 7); }
 function gidPaused() { const u = regRead('upkeep'), m = u.gidLater; return (!!m && m >= gidMonth()) || gidPausedDay(); }
 function gidPausedDay() { const d = regRead('upkeep').gidLaterDay; return !!d && d >= tmPhoneDate(); }
 const GID_DAY_RECHECK_MS = 30 * 60 * 1000; // a day's pause: an app left open past midnight looks again within half an hour
-function gidDays(a, b) { return Math.round((Date.parse(b) - Date.parse(a)) / DAY_MS); }
 // what a record asks for now: 'look' | 'check' | null
 function gidNeed(g, today) {
   if (!g || typeof g !== 'object') return 'look';
   if (g.off) return null;
-  if (g.id || g.cid) return g.id && gidDays(g.at, today) >= GID_OLD_DAYS ? 'check' : null; // a cid alone cannot be asked about (Google's ids only)
-  if (g.miss) return g.at === g.miss && gidDays(g.miss, today) >= GID_MISS_DAYS ? 'look' : null;
+  if (g.id || g.cid) return g.id && daysBetween(g.at, today) >= GID_OLD_DAYS ? 'check' : null; // a cid alone cannot be asked about (Google's ids only)
+  if (g.miss) return g.at === g.miss && daysBetween(g.miss, today) >= GID_MISS_DAYS ? 'look' : null;
   return 'look';
 }
 // ---- every stored place, in the pass's order: { w: 'trip' | 'dest' | 'snap', trip, id, name, dest, ll, g } ----

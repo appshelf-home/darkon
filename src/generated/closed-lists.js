@@ -16,3 +16,5 @@ const CLOSED_LISTS = {
 };
 // 11.43.0 (info-complete, item 1): the fixed general info sections [icon, title] in their order - from claude/reference/vocabulary.md (validate.py reads the same list there)
 const INFO_FIXED = [["task_alt", "לפני שנוסעים"], ["directions_subway", "ניידות"], ["payments", "כסף"], ["signal_cellular_alt", "תקשורת"], ["local_hospital", "בטיחות וחירום"], ["thermostat", "מזג אוויר ולבוש"], ["power", "שעה וחשמל"], ["translate", "שפה"], ["israel_flag", "נציגות ישראל"], ["tips_and_updates", "טיפים מקומיים"]];
+// survival-words (Q1): the survival dictionary's ten fixed meanings in their order - from claude/reference/vocabulary.md (validate.py reads the same list there)
+const INFO_WORDS = ["שלום", "תודה", "בבקשה", "סליחה", "כן / לא", "כמה זה עולה?", "החשבון, בבקשה", "איפה השירותים?", "אני לא מבין", "עזרה!"];

@@ -2,29 +2,32 @@ const DEST_KEY = PACK.filePrefix + '_destinations_v1';
 const DESTS = {};
 BUNDLE.destinations.forEach(d => { DESTS[d.id] = { ...d, idBase: d.idBase || 0, builtin: true }; }); // destinations built into this copy
 // 3.0.1: imported destinations live in IndexedDB (room for many destinations), not in the small localStorage.
-// Legacy localStorage copies are read at once and moved to IndexedDB on the first open.
-try { Object.values(JSON.parse(regRawGet(DEST_KEY) || '{}')).forEach(d => { if (d && d.id && !DESTS[d.id]) DESTS[d.id] = d; }); } catch (e) {}
+// Legacy localStorage copies are read at once and moved to IndexedDB on the first open (the migration register's row legacyDests).
+migRun('legacyDests', when => {
+  if (when === 'dests') { try { Object.values(JSON.parse(regRawGet(DEST_KEY) || '{}')).forEach(d => { if (d && d.id && !DESTS[d.id]) DESTS[d.id] = d; }); } catch (e) {} }
+  else if (regRawGet(DEST_KEY)) saveDests(); }); // move legacy copies into IndexedDB
+migrate('dests');
 function saveDests() {
   const list = Object.values(DESTS).filter(d => !d.builtin && !d.ghost); // 4.28.0: a destination shown only for an archived trip
   if (OLD_COPY) return true; // 10.1.1: an old copy writes nothing
-  if (DEST_DB.ok) { DEST_DB.sync(list).then(ok => { if (!ok) showToast('לא הצלחתי לשמור את היעדים בטלפון'); else regRawDel(DEST_KEY); }); return true; }
+  if (DEST_DB.ok) { DEST_DB.sync(list).then(ok => { if (ok === false) showToast('לא הצלחתי לשמור את היעדים במכשיר'); else if (ok) regRawDel(DEST_KEY); }); return true; } // storage (Q6): null - refused for space, the one message shown
   const out = {}; list.forEach(d => out[d.id] = d);
-  if (regWrite('dests', out, DEST_KEY)) return true; showToast('אין מקום בטלפון לשמור את היעד'); return false;
+  if (regWrite('dests', out, DEST_KEY)) return true; if (!regIsSpace(REG_SPACE.err)) showToast('היעד לא נשמר במכשיר'); return false;
 }
 async function loadDestsFromDB() {
   if (!(await DEST_DB.open())) return;
   regPersistAsk();
   const before = Object.keys(DESTS).join();
   (await DEST_DB.all()).forEach(d => { if (d && d.id && !(DESTS[d.id] && DESTS[d.id].builtin)) DESTS[d.id] = d; });
-  if (regRawGet(DEST_KEY)) saveDests(); // move legacy copies into IndexedDB
+  migrate('destsDB'); // legacy copies of the small storage move into IndexedDB (legacyDests)
   if (typeof STATE !== 'undefined' && STATE && Array.isArray(STATE.trash)) purgeDestTrashRows(); // 4.37.3: daily age cleanup also for deleted destinations
   if (typeof STATE !== 'undefined' && STATE && STATE.destBases) Object.values(DESTS).forEach(d => { STATE.destBases[d.id] = d.idBase || 0; }); // 4.2.1
-  if (Object.keys(DESTS).join() !== before && typeof applyActiveTrip === 'function' && STATE) { _destTrip = null; applyActiveTrip(); syncFlightsToPlan(); updateHeader(); startupRedraw(); } // 11.14.0 (P11): the day's destination filter is chosen again, now with the destinations
-}
+  if (Object.keys(DESTS).join() !== before && typeof applyActiveTrip === 'function' && STATE) { _destTrip = null; applyActiveTrip(); syncFlightsToPlan(); updateHeader(); return startupRedraw(); } // 11.14.0 (P11): the day's destination filter is chosen again, now with the destinations
+} // -> true when it drew again (arch-guard (3): the first real screen is that draw)
 // 11.14.0 (phone-round-1-fixes P11, G12): what the stores bring after the first draw (the destinations, the photos) draws the screen
 // and the top window again - the first draw of a cold start runs before IndexedDB answers, and an overview drawn then had the
 // trip with none of its destinations (fewer rows in the top card, no booking to make, no country part) until a tab switch
-function startupRedraw() { if (typeof redrawSoon === 'function' && document.getElementById('main')) redrawSoon(); }
+function startupRedraw() { if (typeof redrawSoon === 'function' && document.getElementById('main')) { redrawSoon(); return true; } return false; }
 // place / layer ids of an imported destination are shifted by its idBase so they never collide
 const destPlaces = d => d.places.map(p => ({ ...p, id: d.idBase + p.id, layer: d.idBase + p.layer, dest: d.id }));
 const destRegions = d => (d && d.meta.regions) || [];

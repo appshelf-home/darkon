@@ -147,7 +147,7 @@ function filterSheetHTML(fam) {
   if (fam === 'draft') {
     const D = DRAFT; if (!D) return '<div class="sheet-head"><b>סינון</b><button class="sheet-x" data-act="win.close" id="fwClose" aria-label="סגירה">✕</button></div>';
     const f = FILTER.draft, srcs = draftSources(D), ch = draftLayerChips(D); n = draftShown(D).length; clear = !!(f.srcs.size || f.layers.size || f.changed || f.notes);
-    if (srcs.length > 1) h += fsec('מקור', fchips('src', [{ v: '', html: `${msi('public', { size: 18 })} הכל`, on: !f.srcs.size }].concat(srcs.map(s => ({ v: s.id, html: _qe(s.label), on: selOn(f.srcs, s.id) })))));
+    if (srcs.length > 1) h += fsec('מקור', fchips('src', [{ v: '', html: `${msi('public', { size: 18 })} הכל`, on: !f.srcs.size }].concat(srcs.map(s => ({ v: s.id, html: escH(s.label), on: selOn(f.srcs, s.id) })))));
     if (ch.chips.length > 1) h += fsec('שכבות', layerChipsHTML('fwDLayers', ch.chips, f.layers, ch.count));
     const rc = draftRoundCounts(D, draftItems(D));
     if (rc.ch || rc.nt) h += fsec('בטיוטה', (rc.ch ? fswitch('changed', `${claudeMark()} רק מה שהשתנה בסבב${SEP}${rc.ch}`, f.changed) : '') + (rc.nt ? fswitch('notes', `${msi('chat', { size: 18 })} רק עם הערה${SEP}${rc.nt}`, f.notes) : ''));
@@ -163,7 +163,7 @@ function filterSheetHTML(fam) {
     const lim = POINTS.filter(p => p.access === 'limited' && destShown(p.dest) && !layerDef(p.layer).hidden).length;
     h += fsec('סימונים' + (lim ? ' ' + tipI('filter.limited') : ''), fswitch('fav', msi('star', { size: 18 }) + ' רק ' + TX.fav, FP.fav) + fswitch('book', msi('event_available', { size: 18 }) + ' רק מה שצריך להזמין', FP.book) + (lim ? fswitch('limited', msi('warning', { size: 18 }) + ' כולל גישה מוגבלת', DEV.showLimited) : ''));
     const rs = usedRegions();
-    if (rs.length) h += fsec('אזורים', fchips('region', [{ v: '', html: 'כל האזורים', on: !FP.regions.size }].concat(rs.map(r => ({ v: r.key, html: _qe(r.name), on: selOn(FP.regions, r.key) })))));
+    if (rs.length) h += fsec('אזורים', fchips('region', [{ v: '', html: 'כל האזורים', on: !FP.regions.size }].concat(rs.map(r => ({ v: r.key, html: escH(r.name), on: selOn(FP.regions, r.key) })))));
     if (FP.route && activeTab === 'map' && routeOffered()) { const k = routeHiddenCount(); h += fsec('המסלול', fpickHTML('routehid', `${msi('route', { size: 16 })} מה מוצג במסלול${k ? SEP + k + ' מוסתרים' : ''}`, k)); }
     if (activeTab === 'all') h += `<hr class="fsep">` + fsec('מיון', fchips('sort', [['fav', 'מועדפים קודם'], ['alpha', 'לפי א-ב']].concat(MAP_AVAILABLE ? [['near', 'קרוב אליי']] : []).map(([v, l]) => ({ v, html: l, on: FP.sort === v }))));
   }
@@ -182,8 +182,8 @@ function openChipsPicker(key, title, items, getSel, setSel, after) { const ids =
     isOn: v => v === '' ? !getSel().size : selOn(getSel(), v) }, v => { const s = getSel(); setSel(v !== '' ? selToggle(s, v, ids) : selAllTap(s)); after(); });
 }
 function openDestPicker() { const ids = tripDests(activeTripObj());
-  openChipsPicker('openDestPicker', 'יעדים', ids.map(id => ({ id, label: _qe(withFlag(destFlag(id), destName(id))) })), () => FP.dest, s => setDestSel(s, true), () => filterChanged('points')); }
-function openDraftSrcPicker() { if (!DRAFT) return; openChipsPicker('openDraftSrcPicker', 'מקורות', draftSources(DRAFT).map(s => ({ id: s.id, label: _qe(s.label) })), () => FILTER.draft.srcs, s => { FILTER.draft.srcs = s; }, () => filterChanged('draft')); }
+  openChipsPicker('openDestPicker', 'יעדים', ids.map(id => ({ id, label: escH(withFlag(destFlag(id), destName(id))) })), () => FP.dest, s => setDestSel(s, true), () => filterChanged('points')); }
+function openDraftSrcPicker() { if (!DRAFT) return; openChipsPicker('openDraftSrcPicker', 'מקורות', draftSources(DRAFT).map(s => ({ id: s.id, label: escH(s.label) })), () => FILTER.draft.srcs, s => { FILTER.draft.srcs = s; }, () => filterChanged('draft')); }
 // ס5: the days picker - a filter (picker-rule): every tap applies at once, every close keeps, no "סיום"; the title shows the choice
 function openDaysPicker() { const tk = TRIP_DAYS.find(d => d.date === todayStr());
   // 10.9.0 (design-forms, gap 40): "כל הימים / היום / כל המסלול" segmented; a range one band (its ends filled, the days between tinted); the title counts the days; the explanation behind ⓘ, one short line
@@ -212,13 +212,7 @@ function hiddenLineHTML() {
 function listEndHTML(shown) { const k = searchOutside(shown);
   return (k ? `<button type="button" class="srch-out" data-act="search.outside">עוד ${k} תוצאות מחוץ לסינון${SEP}להציג</button>` : '') + hiddenLineHTML(); }
 act('search.outside', () => showSearchOutside());
-// ס6: the one search field over my data - the same look and behaviour everywhere (✕ clears and keeps the focus, the found part
-// is marked). Used by the header's 🔍, ＋ מקום, "עוד מקום שהיינו בו" in closing a trip, and the search in the trip-picture editor.
-function searchFieldHTML(id, placeholder, value) { return `<span class="clear-wrap sfield"><input id="${id}" type="text" data-sfield="1" enterkeyhint="search" autocomplete="off" placeholder="${placeholder}" value="${_qe(value || '')}"><button type="button" class="field-clear" id="${id}X" data-act="search.clearField" data-keepfocus aria-label="ניקוי"${value ? '' : ' hidden'}>✕</button></span>`; }
-function wireSearchField(input, onInput) { if (!input) return; const x = document.getElementById(input.id + 'X'); input._onInput = onInput;
-  input.addEventListener('input', () => { if (x) x.hidden = !input.value; onInput(input.value); });
-}
-act('search.clearField', c => { const input = c.el.closest('.clear-wrap').querySelector('input'); input.value = ''; c.el.hidden = true; if (input._onInput) input._onInput(''); input.focus(); return 'quiet'; });
+// ס6: the one search field over my data is the form block's search kind (searchFieldHTML, forms.js; one-way (1))
 // marks every occurrence of q in the text of root (cards, rows), case-insensitively; never inside fields or buttons' own labels
 function markSearch(root, q) { q = String(q || '').trim(); if (!root || !q) return; const ql = q.toLowerCase(), tw = document.createTreeWalker(root, NodeFilter.SHOW_TEXT), hits = []; let n;
   while ((n = tw.nextNode())) { if (n.parentElement.closest('input, textarea, select, mark, .sheet-head, .fbar, .lchips, script, style')) continue; if (n.nodeValue.toLowerCase().includes(ql)) hits.push(n); }
@@ -291,7 +285,7 @@ function renderMapScreen() {
   }
   main.innerHTML = `<div class="map-container map-full" id="mapView_screen" style="margin-top:8px"></div>`;
   { const m = document.getElementById('mapView_screen'), top = m.getBoundingClientRect().top + window.scrollY; // fills the screen down to the bottom bar
-    m.style.height = Math.max(320, window.innerHeight - top - (window.innerWidth >= 1024 ? 24 : 78) - (rangeDays().length > 1 ? 30 : 0)) + 'px'; }
+    m.style.height = Math.max(320, window.innerHeight - top - (screenAtLeast('wide') ? 24 : 78) - (rangeDays().length > 1 ? 30 : 0)) + 'px'; }
   const pts = filteredPoints(), ds = rangeDays();
   if (FP.route && routeOffered()) renderRouteMap('mapView_screen', pts);
   else if (ds.length) renderDaysMap('mapView_screen', 'mapCard_screen', pts, ds);

@@ -54,7 +54,7 @@ function cdCard(o) {
 }
 // the tags of a mini card (row 2): "קבוצתי", the kind or layer · price · ratings (· the distance while measuring), the marks
 function mcTags(it, o) {
-  const esc = _escH, p = it.place, meta = [], t = [];
+  const esc = escH, p = it.place, meta = [], t = [];
   if (it.sched) t.push(grpTag());
   if (it.kind === 'travel') meta.push(TX.travel); else if (it.kind === 'note') meta.push(it.sched ? '' : TX.note); else if (p) meta.push(esc(it.hotel ? TX.lodging : layerTagLabel(p.layer)));
   if (p) meta.push(...placeMeta(p, () => true, pastRateMiniHTML));
@@ -65,7 +65,7 @@ function mcTags(it, o) {
 }
 // the scheduling chip (list and map): when it is in the plan, or "לשבץ"; a hotel - its stay; a tap opens the scheduling window
 function mcSchedLineHTML(it) {
-  const esc = _escH;
+  const esc = escH;
   if (it.hotel && it.lodging[0]) { const l = it.lodging[0], S = stayOf(l);
     // value-no-cut (Q3): the line wraps between its parts (a flex row), each part a box that carries its own " ·" at its end - so a " · "
     // never opens the next line ("· לילה אחד" did, at "ענק", 360)
@@ -83,7 +83,7 @@ function mcActsHTML(it, scr) {
 }
 // the card itself. o: { screen: 'list' | 'map' | 'hotels', host (map id), ctx, pick: html of the one button of a pick row, desc, extra }
 function miniCardHTML(it, o) {
-  o = o || {}; const esc = _escH, p = it.place, vis = !!p && STATE.visited.has(p.id);
+  o = o || {}; const esc = escH, p = it.place, vis = !!p && STATE.visited.has(p.id);
   const scr = o.pick ? '' : o.screen === 'list' && p && MAP_AVAILABLE && (routeCoordOf(p) || p.address) ? `<button type="button" class="tl-act a-scr" data-act="item.map" aria-label="במפה" title="במפה">${actIc('map')}</button>`
     : o.screen === 'map' && p && o.host ? `<button type="button" class="tl-act a-scr" data-act="map.measureFrom" data-v="${o.host}" aria-label="מדידה מכאן" title="מדידה מכאן">${actIc('track_changes')}</button>` : '';
   const name = esc(it.kind === 'travel' && it.travel ? (TRAVEL_MODES[it.travel.mode] || TRAVEL_MODES.flight)[1] + ' ל' + it.travel.to : it.name);
@@ -176,7 +176,8 @@ function trackMapView(map, containerId) {
 function showMapCard(containerId, cardContainerId, p) {
   const st = _mapState[containerId] || (_mapState[containerId] = {}); st.selectedId = p.id;
   const mk = MAPS[containerId] && MAPS[containerId].markers.get(String(p.id)); // 4.31.0
-  const md = measActiveOn(containerId) && MEAS.mode === 'ref' && mk ? (l => `<span class="meas-d">${measFrom({ lat: l.lat, lng: l.lng })}</span>`)(mk._fanOrig || mk.getLatLng()) : '';
+  const md = measActiveOn(containerId) && MEAS.mode === 'ref' && mk ? (l => `<span class="meas-d">${measFrom({ lat: l.lat, lng: l.lng })}</span>`)(mk._fanOrig || mk.getLatLng())
+    : walkActiveOn(containerId) && mk ? (l => (w => w ? `<span class="meas-d">${w}</span>` : '')(walkFrom({ lat: l.lat, lng: l.lng })))(mk._fanOrig || mk.getLatLng()) : ''; // walk-time: its walk from the rings' point
   const it = itemOf(p.id); if (!it) return; const html = miniCardHTML(it, { screen: 'map', host: containerId, extra: md }); // 5.3.0: the same mini card, floating
   openFloatCard(containerId, html, null,
     () => { st.selectedId = null; markSelected(containerId, null); }, () => { _sheetFromMap = containerId; openPlaceSheet(p); });

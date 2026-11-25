@@ -85,7 +85,10 @@ function tripRefsToDevice(t, rows) {
 function hotelsToTrips(trips) { stashActive(); const n = trips.reduce((k, t) => k + hotelsToTrip(t), 0); if (n) loadPersonal(STATE.activeTrip); return n; }
 const hotelsMovedText = n => n ? `${SEP}🧳 ${n === 1 ? 'מלון אחד עבר' : n + ' מלונות עברו'} לטיול` : '';
 loadPersonal(STATE.activeTrip);
-if (STATE._bundleHotels) { const n = hotelsToTrips(STATE._bundleHotels.map(id => STATE.trips[id]).filter(Boolean)); delete STATE._bundleHotels; if (n) setTimeout(() => logEvent('אתר הטיול עודכן' + hotelsMovedText(n), true, { b: 1 }), 0); } // a timer: logEvent's consts are further down at startup
+// review-fixes-11471 (4; decisions 2026-11-23 · Review of the `test-dedupe` and `one-way` summaries, Q2): an ordinary step of a built-in trip's
+// coming in, not a one-time migration - whenever the built-in trips' pass (layer-edits) marked a trip that came in or was updated, its hotels move into it
+function bundleHotelsIn() { if (STATE._bundleHotels) { const n = hotelsToTrips(STATE._bundleHotels.map(id => STATE.trips[id]).filter(Boolean)); delete STATE._bundleHotels; if (n) setTimeout(() => logEvent('אתר הטיול עודכן' + hotelsMovedText(n), true, { b: 1 }), 0); } } // a timer: logEvent's consts are further down at startup
+bundleHotelsIn();
 applyActiveTrip();
 persist();      // 1.8.1: first change not yet in a backup (0 = nothing new)
 
@@ -95,7 +98,7 @@ function persist(quiet) { // the small-storage rows are saved together; which fi
   const toSave = { format: REG_FORMAT, app: APP_VERSION }; // 10.1.1: the version that saved (the old-copy guard)
   [...REG, ...REG_STATES].forEach(r => (r.where.blob || []).forEach(f => { toSave[f] = STATE[f]; }));
   toSave.activeTrip = ARCHIVE_VIEW ? ARCHIVE_VIEW.prev : STATE.activeTrip;
-  if (!regWrite(null, toSave, STORE_KEY)) showToast('אין מקום בטלפון לשמור את השינוי');
+  if (!regWrite(null, toSave, STORE_KEY) && !regIsSpace(REG_SPACE.err)) showToast(TX.notSaved); // storage (Q6): a refusal for space already gave the one message
 }
 
 const LOG_DAYS = 14;
@@ -215,9 +218,10 @@ function planItem(id) {
 function isNote(p) { return !!(p && p.planOnly && !p.dup); }
 function copyRef(id) { return (STATE.planItems[id] || {}).ref; }
 // 10.0.0 (rename-plan-items): until 9.8.0 a trip's plan items were stored as "freeItems" and a note's icon as "free".
-// The one conversion, on everything that may hold a trip's personal data: the device's data on load, a backup of
-// format 2, the personal part of a trip file (openIncoming). Idempotent.
-function planItemsUp(td) { const OLD = 'freeItems'; // a literal: this runs on load, before the consts below exist
+// The one conversion, on everything that may hold a trip's personal data: the device's stored trips (the migration register's row
+// planItems, run by layer-edits when the stored record is parsed), a backup of format 2 (fileUp), the personal part of a trip file
+// (fileUp, personalFromFile). Idempotent.
+function planItemsUp(td) { const OLD = 'freeItems'; // a literal: the register's row runs it at load, before the consts below exist
   if (!td || typeof td !== 'object' || Array.isArray(td)) return td;
   if (td[OLD]) td.planItems = { ...td[OLD], ...(td.planItems || {}) };
   delete td[OLD];

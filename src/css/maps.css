@@ -60,6 +60,10 @@ footer.legend .dot { width: 9px; height: 9px; border-radius: 50%; }
 .draft-map-status, .map-status { inset-inline-start: 56px; max-width: calc(100% - 110px); }
 /* 4.37.1: every map shows "📍 מאתר מיקומים" as this same small status over the map (it was a cover that hid the map) */
 .map-status { pointer-events: none; cursor: default; }
+/* review-fixes-11471 (1): the line inside is the service's explanation button (svc.explain, "a tap explains"): it takes its tap, the box around
+   it still lets the map pan and zoom; a transparent touch area grows it to the full 44 px height without moving the line */
+.map-status .svc-line { pointer-events: auto; cursor: pointer; position: relative; }
+.map-status .svc-line::after { content: ''; position: absolute; inset: -14px -8px; }
 body.fs-on header.top, body.fs-on .bottom-nav, body.fs-on .scroll-top-btn { display: none !important; }
 body.fs-on:not(.fs-main) .add-fab { display: none; }
 body.fs-on .add-fab { z-index: 2550; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); }
@@ -93,6 +97,24 @@ body.fs-on.map-card-open .map-fs + .map-legend { display: none; }
 .fsp-card small { color: var(--on-surface-variant); font-size: var(--fs-body-small); } .fsp-card b[hidden] { display: none; }
 .fsp-card .fsp-ok { position: static; transform: none; width: 100%; margin-top: 6px; display: inline-flex; align-items: center; justify-content: center; gap: var(--icon-gap); }
 .fs-pick .locate-me-btn { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
+.off-chg { font-weight: 600; color: var(--primary); } /* off-frame (Q4): "שונה" on the row of a computed area the user changed */
+/* off-frame (decisions 2026-11-23 · Offline maps - an area framed, Q2, Q6): the point picker as a frame - the top bar (back, the title, "שמירה"), a fixed
+   frame in the middle with its four corners (the map dimmed around it), the bottom card (the name, the size line and its bar, "חזרה לגודל המקורי") */
+.fsp-bar { position: absolute; top: 0; left: 0; right: 0; z-index: 1060; display: flex; align-items: center; gap: 8px; padding: calc(8px + var(--safe-top)) 8px 8px; background: var(--surface-container); color: var(--on-surface); box-shadow: var(--elev-2); }
+.fsp-bar .fsp-title { flex: 1 1 auto; min-width: 0; align-self: center; background: none; box-shadow: none; padding: 0; overflow-wrap: anywhere; }
+.fsp-bar .fsp-save { flex: 0 0 auto; white-space: nowrap; } .fsp-save.fsp-off { opacity: var(--fade); }
+.fsp-frame { position: absolute; z-index: 1055; box-sizing: border-box; border: 2px solid var(--primary); border-radius: var(--r-xs); box-shadow: 0 0 0 4000px color-mix(in srgb, var(--scrim) 45%, transparent); pointer-events: none; }
+.fsp-frame.fsp-big { border-color: var(--map-pin); }
+.fsp-c { position: absolute; width: 48px; height: 48px; pointer-events: auto; cursor: nwse-resize; }
+.fsp-c::before { content: ''; position: absolute; width: 20px; height: 20px; border: 0 solid var(--primary); } .fsp-big .fsp-c::before { border-color: var(--map-pin); }
+.fsp-ne { top: -26px; right: -26px; cursor: nesw-resize; } .fsp-ne::before { top: 24px; right: 24px; border-top-width: 5px; border-right-width: 5px; }
+.fsp-nw { top: -26px; left: -26px; } .fsp-nw::before { top: 24px; left: 24px; border-top-width: 5px; border-left-width: 5px; }
+.fsp-se { bottom: -26px; right: -26px; } .fsp-se::before { bottom: 24px; right: 24px; border-bottom-width: 5px; border-right-width: 5px; }
+.fsp-sw { bottom: -26px; left: -26px; cursor: nesw-resize; } .fsp-sw::before { bottom: 24px; left: 24px; border-bottom-width: 5px; border-left-width: 5px; }
+.fsp-fcard { gap: 2px; padding: 8px 14px 10px; } .fsp-fcard .sh-field { margin: 0; } .fsp-fcard .off-meter { margin: 4px 0 2px; } .fsp-fcard .off-fr-size { margin: 4px 0 0; }
+.off-meter.off-meter-big > div { background: var(--map-pin); }
+.off-fr-orig { align-self: flex-start; display: inline-flex; align-items: center; gap: var(--icon-gap); margin-top: 4px; }
+.pin-marker.off-pin.off-faint { opacity: .7; }
 
 /* 4.15.0: route map - stops, legs, ★ key points */
 .rt-stop { width: 1.875rem; height: 1.875rem; border-radius: 50%; background: var(--route-stop); color: var(--on-route); border: 2px solid var(--surface-container); display: flex; align-items: center; justify-content: center; font: 700 var(--fs-body-small) 'Rubik', system-ui, sans-serif; box-shadow: var(--elev-1); white-space: nowrap; }
@@ -109,6 +131,10 @@ body.fs-on.map-card-open .map-fs + .map-legend { display: none; }
 /* 11.2.0 (travels-3-maps, Q9-Q10): a travel on the day map - its ends' pins in the travel tone with the kind's icon, its line (a flight dotted in the travel tone; a road, a rail or a ferry in the route's colors, which read on the map's light tiles in both schemes; an approximate line pale), the edge arrow of a far end */
 .tv-pin { width: 26px; height: 26px; box-sizing: border-box; border-radius: 50%; background: var(--travel-container); color: var(--on-travel); border: 2px solid var(--on-travel); display: flex; align-items: center; justify-content: center; box-shadow: var(--elev-1); }
 .tv-pin.big { width: 34px; height: 34px; }
+.ly-menu.disc-menu { top: 148px; } .map-fs .ly-menu.disc-menu { top: calc(148px + var(--safe-top)); } /* along-drive and walk-time: the 📚 tools menu beside its button */
+.disc-mode > b.t-wrap { overflow-wrap: normal; } /* along-drive: "לאורך הדרך · N מקומות" wraps after its " · ", never before it */
+.dl-along { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-block: 4px 8px; }
+.tv-pin.tv-stop { width: 24px; height: 24px; border-width: 1.5px; } /* along-drive: a drive's stop - the travel's tone, a place's pin icon, a little smaller than its ends */
 .leaflet-container path.tv-line.flight { stroke: var(--on-travel); }
 .leaflet-container path.tv-line.approx { stroke: var(--on-surface-variant); }
 .map-edge { position: absolute; left: 0; top: 0; transform: translate(-50%, -15px); display: flex; flex-direction: column; align-items: center; gap: 4px; white-space: nowrap; cursor: pointer; }
@@ -149,6 +175,19 @@ body.fs-on.map-card-open .map-fs + .map-legend { display: none; }
 .ms-ways { flex: 1 1 100%; } .ms-ways > button { flex: 1 1 auto; min-width: 0; padding: 0 6px; gap: var(--icon-gap); font-size: var(--fs-label); } .ms-ways > button.off { opacity: .45; } .ms-ways.tight > button > .msi { display: none; } /* size-fixes (1): measWaysFit - the words whole, the icons aside */
 .ms-undo { flex: none; display: inline-flex; align-items: center; gap: var(--icon-gap); height: 36px; padding: 0 12px; border: 1px solid var(--outline); border-radius: var(--r-pill); background: transparent; color: inherit; font: 500 var(--fs-body-small) 'Rubik', system-ui, sans-serif; white-space: nowrap; cursor: pointer; }
 .meas-host > .fs-btn, .meas-host > .ly-btn, .meas-host > .ms-btn, .meas-host > .disc-btn, .meas-host > .disc-bar { transform: translateY(var(--msb, 0px)); }
+/* walk-time ("מה במרחק הליכה"): the 📚 menu (above, with along-drive's); the rings under the pins in shades of one colour; the trip's pins inside highlighted, the rest dimmed; the points' rows at the bottom */
+.leaflet-container path.wk-ring { stroke: var(--walk-line); stroke-opacity: .8; } .leaflet-container path.wk-10 { fill: var(--walk-10); fill-opacity: 1; } .leaflet-container path.wk-20 { fill: var(--walk-20); fill-opacity: 1; } .leaflet-container path.wk-30 { fill: var(--walk-30); fill-opacity: 1; stroke-dasharray: 4 5; }
+.wk-pt { width: 16px; height: 16px; box-sizing: border-box; border-radius: 50%; background: var(--surface); border: 3px solid var(--walk-pt); box-shadow: var(--elev-1); position: relative; opacity: .8; } .wk-pt.cur { background: var(--walk-pt); opacity: 1; }
+.wk-pt b { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 3px; white-space: nowrap; background: var(--walk-pt); color: var(--on-walk-pt); font: 600 var(--fs-micro) 'Rubik', system-ui, sans-serif; padding: 1px 6px; border-radius: var(--r-xs); }
+.leaflet-container .wk-out { opacity: .35; } .leaflet-container .wk-in { filter: drop-shadow(0 0 3px var(--walk-line)); }
+.wk-bar .wk-sum { overflow-wrap: normal; } .wk-bar .wk-sum bdi { white-space: nowrap; }
+.wk-rows { position: absolute; bottom: 28px; inset-inline: 10px; z-index: 1065; display: flex; flex-direction: column; gap: 4px; padding: 4px; border-radius: var(--r-card); background: var(--surface-container); color: var(--on-surface); box-shadow: var(--elev-float); }
+.walk-cr { display: block; padding: 0 var(--sp-2) 2px; font-size: var(--fs-label-small); color: var(--on-surface-variant); } .walk-cr a { color: inherit; } /* legal-credits-2 (S6) */
+.wk-row { display: flex; align-items: center; gap: 4px; border-radius: var(--r-tile); } .wk-row.cur { background: var(--secondary-container); color: var(--on-secondary-container); }
+.wk-r { flex: 1 1 auto; min-width: 0; min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 10px; border: none; background: none; color: inherit; text-align: start; font: 500 var(--fs-body-small) 'Rubik', system-ui, sans-serif; cursor: pointer; }
+.wk-r > b { min-width: 0; font-weight: 500; } .wk-r > small { flex: none; font-size: var(--fs-body-small); white-space: nowrap; }
+.wk-x { flex: none; width: 44px; height: 44px; padding: 0; border: none; border-radius: 50%; background: none; color: inherit; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+body.map-card-open .wk-rows { display: none; } /* a pin's card (its walk from the point) takes the bottom while open */
 .ms-pt { width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 3px solid #2563EB; box-shadow: var(--elev-1); position: relative; }
 .ms-pt.first { background: #2563EB; } .ms-pt.me { background: #4285F4; border-color: #fff; }
 .ms-pt b { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 3px; white-space: nowrap; background: #2563EB; color: #fff; font: 600 var(--fs-micro) 'Rubik', system-ui, sans-serif; padding: 1px 6px; border-radius: var(--r-xs); }
@@ -165,7 +204,13 @@ body.fs-on.map-card-open .map-fs + .map-legend { display: none; }
 .clu-b.disc { background: var(--discover-ring); } .clu-b.disc > span { background: var(--discover-container); color: var(--on-discover); } .clu-b.disc .msi { font-size: var(--pin-ic); color: var(--on-discover); }
 .pin-marker.fanned, .fanned > * { outline: 2px solid #fff; }
 .ly-menu button b { display: block; font-weight: inherit; } .ly-menu button small { display: block; font-size: var(--fs-micro); color: var(--on-surface-variant); font-weight: 400; }
-.hs-layer { mix-blend-mode: multiply; } .hs-layer .leaflet-tile { filter: contrast(.85) brightness(1.08); }
+/* relief-phone: the relief drawn on the phone (reliefLayer) is transparent shading - shadows darkened, lit slopes lightened, flat ground untouched - so it lies over the light and the dark map as it is (no blend mode, no filter) */
+.hs-layer { pointer-events: none; }
+/* hebrew-map (Q7 (2)): "מפה" in dark mode - a dark filter on its tiles (the token is none in light); settings can keep it light (html[data-maplight]); satellite and topographic untouched.
+   map-3d item 8 (decisions 2026-11-23 · Review of the parallel day's summaries, Q2): "מפה עם תבליט" too - the filter on its OSM base (img tiles) under the same switch; the relief layer itself (.hs-layer, canvases with their own dark shading) never */
+:root:not([data-maplight]) .leaflet-container:is([data-base="osm"], [data-base="relief"]) img.leaflet-tile { filter: var(--map-dark-filter); }
+/* "מפה בעברית": the names' canvas over the tiles, under the routes and pins, never under a finger */
+.leaflet-container .he-lbl-pane { z-index: 350; pointer-events: none; } .he-lbl { pointer-events: none; }
 
 /* 4.16.0: map type (map / satellite / satellite with names / topographic) - button on every map, under ⛶ */
 .ly-btn { position: absolute; top: 56px; right: 10px; z-index: 1060; width: 38px; height: 38px; border-radius: var(--r-tile); border: none; background: var(--surface-container); color: var(--on-surface);
@@ -225,7 +270,6 @@ body.fs-on.map-card-open .map-fs + .map-legend { display: none; }
 .pe-maybe { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; font-size: var(--fs-body-small); color: var(--on-surface-variant); }
 .pe-need .chips-row { outline: 2px dashed var(--error); outline-offset: 3px; border-radius: var(--r-chip); }
 /* 4.24.0: hiding in the route map */
-.ic-eye { width: 18px; height: 18px; vertical-align: -4px; flex: none; }
 .rl-row { display: grid; grid-template-columns: 1fr 36px; align-items: center; }
 .rl-row.hid .rl-stop > *, .rl-leg.hid > span { opacity: var(--fade); } /* on the stop's parts, as a past stop's: hidden and past is one fade, not two */
 .rl-row.hid .rl-stop b, .rl-leg.hid > span { text-decoration: line-through; }
@@ -234,19 +278,21 @@ body.fs-on.map-card-open .map-fs + .map-legend { display: none; }
 .rl-mode { position: relative; align-self: stretch; display: flex; align-items: center; justify-content: center; color: var(--travel, var(--on-surface-variant)); }
 .rl-mode::before { content: ''; position: absolute; inset-block: 0; inset-inline-start: calc(50% - 1px); border-inline-start: 2px dashed var(--outline-variant); } .rl-leg.next .rl-mode::before { border-color: var(--primary); }
 .rl-mode > .msi { position: relative; background: var(--surface-container); padding: 2px 0; } /* 10.9.0 (design-forms, gap 41): the leg's mode icon in the number column, on the line that joins the stops */
-.rl-row > .rl-eye, .rl-leg > .rl-eye { justify-self: center; } .rl-leg > .rl-eye { width: 28px; height: 28px; } .rl-leg > .rl-eye .ic-eye { width: 16px; height: 16px; } /* the legs' eye a little smaller, in the same column */
+.rl-row > .rl-eye, .rl-leg > .rl-eye { justify-self: center; } .rl-leg > .rl-eye { width: 28px; height: 28px; } /* the legs' eye a little smaller, in the same column */
 .rl-eye { width: 34px; height: 34px; border: none; background: none; color: var(--on-surface-variant); border-radius: 50%; display: grid; place-items: center; cursor: pointer; padding: 0; -webkit-tap-highlight-color: transparent; }
 .rl-eye[aria-pressed="true"] { color: var(--on-surface); background: color-mix(in srgb, var(--on-surface) 8%, transparent); }
 .rh-all { width: 100%; margin-top: 8px; }
 /* 10.5.0 (design-4 part 2, look.md "Maps"): offline maps - "＋ אזור" outlined, a linear meter, rows with a map icon and a tonal ✕, the download in the pinned footer */
 .off-addrow { display: flex; justify-content: flex-end; } .off-add { display: inline-flex; align-items: center; gap: var(--icon-gap); height: 36px; padding: 0 14px; border-radius: var(--r-pill); border: 1px solid var(--outline); background: none; color: var(--primary); font: 500 var(--fs-body) 'Rubik', system-ui, sans-serif; cursor: pointer; white-space: nowrap; }
-.off-x { flex: none; width: 32px; height: 32px; border: none; border-radius: 50%; background: var(--surface-container-high); color: var(--on-surface-variant); display: inline-flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; }
+.off-x, .off-ed { flex: none; width: 32px; height: 32px; border: none; border-radius: 50%; background: var(--surface-container-high); color: var(--on-surface-variant); display: inline-flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; }
 .off-row .off-ic { color: var(--on-surface-variant); }
 /* off-map-areas (11.47.0): an area's number - on its row (beside its icon) and on its pin, in the area's colour; an area out or taken out dashed */
 .off-n { flex: 0 0 auto; min-width: 1.7em; height: 1.7em; padding: 0 4px; box-sizing: border-box; border-radius: var(--r-pill); color: #fff; /* its background is the area's colour, inline (offAreaColor) */ font: 700 var(--fs-label) 'Rubik', system-ui, sans-serif; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; }
 .off-n.off-out, .pin-marker.off-pin.off-out { background: var(--surface-container); border: 1.5px dashed var(--outline); color: var(--on-surface-variant); }
 .pin-marker.off-pin.off-out > span { color: var(--on-surface-variant); }
-.off-row[data-offn] { cursor: pointer; } .off-row.off-hl { background: color-mix(in srgb, var(--primary) 16%, transparent); }
+/* off-roads: a road's row shows a short line in its drawing on the map (its colour inline - offAreaColor; dashed when out) where an area shows its number */
+.off-rd { flex: 0 0 auto; width: 1.7em; height: 0; border-top: 4px solid; border-radius: var(--r-pill); } .off-rd.off-dash { border-top-style: dashed; border-top-width: 3px; }
+.off-row[data-offn], .off-row[data-offr] { cursor: pointer; } .off-row.off-hl { background: color-mix(in srgb, var(--primary) 16%, transparent); }
 .off-all { position: absolute; top: 10px; right: 56px; z-index: 1060; min-height: 38px; padding: 0 12px; border-radius: var(--r-tile); border: none; background: var(--surface-container); color: var(--on-surface);
   font: 600 var(--fs-label) 'Rubik', system-ui, sans-serif; white-space: nowrap; cursor: pointer; box-shadow: var(--elev-2); -webkit-tap-highlight-color: transparent; }
 .off-all[hidden] { display: none; } .off-full .off-all { top: calc(10px + var(--safe-top)); } .off-cr { font-size: var(--fs-label-small); }
@@ -256,7 +302,7 @@ body.fs-on.map-card-open .map-fs + .map-legend { display: none; }
 .off-list > * { direction: rtl; }
 .off-row .icon-btn { width: auto; min-width: 36px; padding: 0 10px; white-space: nowrap; flex: 0 0 auto; } /* 4.46.3: ＋ להכניס fits its button */ .off-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(127,127,127,.15); }
 .off-row .off-ic { font-size: var(--icon-18); flex: 0 0 auto; } .off-row { flex-wrap: wrap; } .off-row .off-tx { flex: 1 1 9em; min-width: 0; /* 11.33.0 (text-size): with no room for the text beside its button, the button goes down a line (320 +30%: squeezed) */ display: flex; flex-direction: column; } .off-row .off-tx small { opacity: var(--fade); font-size: var(--fs-label); } .off-row .icon-btn { flex: 0 0 auto; }
-.off-row .off-hotel b, .off-row .off-hotel .off-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* phone-round-2b-fixes P5: a hotel's title on one line, ending in "…" */ .off-dim .off-tx b { opacity: var(--fade); } .off-out { font-weight: 600; } .off-prog { display: flex; align-items: center; gap: 8px; justify-content: space-between; margin: 6px 0; }
+.off-row .off-hotel b, .off-row .off-hotel .off-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* phone-round-2b-fixes P5: a hotel's title on one line, ending in "…" */ .off-dim .off-tx b { opacity: var(--fade); } .off-out { font-weight: 600; } .off-run { display: flex; align-items: center; gap: 8px; justify-content: space-between; margin: 6px 0; } .off-wait { flex: 1; min-width: 0; }
 .off-badge { background: rgba(255,255,255,.92); color: #333; border: 1px solid rgba(0,0,0,.2); border-radius: var(--r-tile); font: 600 var(--pin-num) Rubik, Arial, sans-serif; padding: 3px 9px; margin-top: 4px !important; box-shadow: var(--elev-1); cursor: pointer; }
 .rate-row { display: flex; align-items: center; gap: 6px; margin: 6px 0 2px; font-size: var(--fs-body); flex-wrap: wrap; }
 .rate-btn { border: 1px solid var(--outline); background: var(--surface-container); border-radius: var(--r-pill); min-width: 38px; height: 34px; font-size: var(--fs-title-medium); cursor: pointer; }
@@ -270,3 +316,49 @@ body.fs-on.map-card-open .map-fs + .map-legend { display: none; }
 .mh-item small { display: block; color: var(--on-surface-variant); }
 .mem-rate { margin: 4px 0; font-size: var(--fs-body); line-height: 1.8; }
 .mr-item { display: inline-block; background: var(--outline-variant); border-radius: var(--r-pill); padding: 1px 10px; margin: 2px; }
+/* map-side-view: a route's side view - the "גובה" chip in its row (the day's plan and map, the memory's days) or a card's tag (a drive),
+   with its climb and descent once kept; the window: the route's map above, the chart (own SVG, distance left to right) under it */
+.sv-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
+.sv-row .sv-btn { flex-wrap: wrap; white-space: normal; max-width: 100%; justify-content: flex-start; text-align: start; } /* at the large sizes on a narrow phone the summary goes under "גובה", never cut */
+.sv-btn .sv-sum { white-space: normal; color: var(--on-surface-variant); font-weight: 400; }
+.sv-map { height: clamp(150px, 30vh, 260px); border-radius: var(--r-tile); overflow: hidden; margin: 4px 0 8px; }
+.sv-line { stroke: var(--route-stop); stroke-opacity: .85; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+.sv-mdot { stroke: var(--surface-container); fill: var(--map-pin); }
+.sv-body { min-height: 3em; }
+.sv-read { font-size: var(--fs-body-small); color: var(--on-surface-variant); min-height: 1.5em; }
+.sv-chart { display: block; width: 100%; height: auto; overflow: visible; user-select: none; -webkit-user-select: none; } /* a finger or a mouse along it selects nothing */
+.sv-axis { stroke: var(--outline); stroke-width: 1; }
+.sv-lab { font-size: var(--fs-label-small); fill: var(--on-surface-variant); direction: rtl; } /* svDraw places each label by its edge in this direction (G121) */
+.sv-area { fill: var(--primary); fill-opacity: .14; stroke: none; }
+.sv-path { fill: none; stroke: var(--primary); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.sv-steep { fill: none; stroke: var(--error); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.sv-top { fill: var(--primary); stroke: var(--surface-container); stroke-width: 2; }
+.sv-cur { stroke: var(--on-surface-variant); stroke-width: 1; stroke-dasharray: 3 3; }
+.sv-dot { fill: var(--map-pin); stroke: var(--surface-container); stroke-width: 2; }
+.sv-stats { margin-top: 6px; }
+.sv-st { color: var(--error); }
+/* map-3d: in 3D the 2D tools step aside - the map type stays (3d-find: its menu's "תלת־ממד" row is the way in and another type the way out), the compass
+   (straight down) under it; the view covers the 2D map, under the corner's buttons and the floating card. 3d-find: the menu's row greyed when not offered now */
+.ly-menu button[data-off="true"] { opacity: .55; }
+.m3-on > :is(.ms-btn, .disc-btn, .disc-bar, .ms-bar, .wk-rows, .rp-btn, .locate-me-btn, .fs-pill, .map-status, .draft-map-status, .map-edge) { display: none !important; }
+body.m3-open .add-fab { display: none; } /* ＋ מקום belongs to the 2D map (a long press there); in 3D it would cover the credits */
+.m3-box { position: absolute; inset: 0; z-index: 1050; background: var(--vmap-land); }
+.m3-box > .m3-gl { position: absolute; inset: 0; } /* above the engine's own map class, which sets position: relative (its sheet comes later) */
+.m3-st { position: absolute; top: calc(54px + var(--safe-top)); left: 50%; transform: translateX(-50%); max-width: calc(100% - 124px); display: flex; gap: var(--icon-gap); align-items: center; padding: 6px 12px;
+  border-radius: var(--r-tile); background: var(--surface-container); color: var(--on-surface); font-size: var(--fs-label); box-shadow: var(--elev-2); z-index: 2; }
+.m3-st[hidden] { display: none; }
+.m3-cr { position: absolute; left: 4px; bottom: calc(2px + env(safe-area-inset-bottom, 0px)); max-width: calc(100% - 8px); padding: 1px 6px; border-radius: var(--r-xs); z-index: 2;
+  background: color-mix(in srgb, var(--surface) 80%, transparent); color: var(--on-surface-variant); font-size: var(--fs-micro); } .m3-cr a { color: inherit; }
+.m3-north { position: absolute; top: calc(102px + var(--safe-top)); right: 10px; z-index: 2; width: 38px; height: 38px; border: none; border-radius: var(--r-tile); background: var(--surface-container); color: var(--on-surface);
+  box-shadow: var(--elev-2); display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.m3-pin { pointer-events: none; } .m3-pin.m3-tap { pointer-events: auto; cursor: pointer; }
+.m3-note { margin: 0 0 12px; padding-inline-start: 1.2em; } .m3-note li { margin: 4px 0; }
+/* wait-look (Q2): "מה יש כאן" waits with the one "in progress" component - its bar along the mode banner's lower edge, the stage line in a chip */
+.disc-bar > .wait-bar { align-self: stretch; margin: -8px 10px 0; }
+.disc-bar > .disc-wait { max-width: 100%; border-radius: var(--r-tile); background: var(--surface-container); box-shadow: var(--elev-float); padding: 0 10px; }
+.disc-bar > .disc-wait:empty { display: none; }
+/* storage (decisions 2026-11-23 · Storage on the phone, Q4): the settings section "💾 אחסון במכשיר" - the summary with its bar, a header per kind, the rows of offline maps (.off-row) */
+.st-sum { padding: var(--sp-1) 0 var(--sp-2); border-bottom: 1px solid var(--outline-variant); } .st-used { margin: 0; overflow-wrap: anywhere; } .st-used small { display: block; color: var(--on-surface-variant); }
+.st-sum .st-meter { margin: var(--sp-2) 0 var(--sp-1); } .st-warn { margin: var(--sp-1) 0 0; color: var(--on-surface); }
+.st-h { display: flex; align-items: center; gap: var(--icon-gap); margin: var(--sp-3) 0 0; font-size: var(--fs-label); font-weight: 600; color: var(--on-surface-variant); }
+.st-sub { margin: 0 0 var(--sp-1); } .st-row .st-go { white-space: nowrap; flex: 0 0 auto; } .off-space { margin: var(--sp-2) 0; } .st-app { margin-top: var(--sp-3); border-top: 1px solid var(--outline-variant); } /* item 8: the app itself, last, apart from the content */

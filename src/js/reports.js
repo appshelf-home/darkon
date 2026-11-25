@@ -20,11 +20,11 @@ function reportQueueSet(q) { const ok = regWrite('reportOut', q.slice(-REPORT_KE
 // when the waiting list could not keep it (a photo too big for the phone's storage) - the row shows until it is sent
 function reportMenuSync() { const can = reportCan(), b = document.getElementById('reportBtn'), w = document.getElementById('reportWait'), n = can ? new Set([...reportQueue().map(x => x.id), ...REPORT_BUSY]).size : 0;
   if (b) b.hidden = !can; // 10.7.1 (feedback-look, Q20): reports waiting for the network are the row's supporting line, never a row of their own
-  const net = !navigator.onLine || REPORT_OFF; // phone-round-2b-fixes P8 (G58, 11.23.2): the words follow the real state - offline (or the last try answered offline) waits for the network; online, the send is in progress or will be tried again
+  const net = !svcOnline() || REPORT_OFF; // phone-round-2b-fixes P8 (G58, 11.23.2): the words follow the real state - offline (or the last try answered offline) waits for the network; online, the send is in progress or will be tried again
   if (w) { w.hidden = !n; w.textContent = !n ? '' : net ? (n === 1 ? 'דיווח אחד ממתין לרשת' : `${n} ממתינים לרשת`) : (n === 1 ? 'דיווח אחד נשלח ברקע' : `${n} נשלחים ברקע`); } }
 var REPORT_OFF = false; // the last try answered 'offline'
 // ---- what the app attaches (Q4): taken when the window opens, shown in "מה מצורף" and sent as is ----
-function reportContext() { const st = screenTop(), t = layerTop(); return { screen: st ? st.tab : activeTab, win: t && !t.tab ? t.key : '', online: navigator.onLine, at: Date.now() }; }
+function reportContext() { const st = screenTop(), t = layerTop(); return { screen: st ? st.tab : activeTab, win: t && !t.tab ? t.key : '', online: svcOnline(), at: Date.now() }; }
 function reportUA(ua) { let m, os = 'אחר', br = 'אחר';
   if ((m = ua.match(/Android\s([\d.]+)/))) os = 'Android ' + m[1];
   else if ((m = ua.match(/(?:iPhone|iPad|iPod)[^)]*OS (\d+)[_.](\d+)/))) os = 'iOS ' + m[1] + '.' + m[2];
@@ -46,10 +46,10 @@ function reportDetails(cx, err) { const ua = reportUA(navigator.userAgent || '')
     ['מכשיר', `${ua.kind}${SEP}${ua.os}${SEP}${ua.br}${SEP}${appInstalled() ? 'מותקנת' : 'בדפדפן'}`],
     ['מסך וטקסט', `${innerWidth}×${innerHeight} ×${Math.round((window.devicePixelRatio || 1) * 100) / 100}${SEP}טקסט ${Math.round(fs / 16 * 100)}%${SEP}${isDarkUI() ? 'כהה' : 'בהירה'}`],
     ['זמן ורשת', `${tmFmt('date', cx.at)} ${tmFmt('stamp', cx.at)}${SEP}${cx.online ? 'יש רשת' : 'אין רשת'}`]];
-  if (err) rows.push(['השגיאה', `${err.msg}${SEP}${err.where}`]);
+  if (err) rows.push(['השגיאה', `${err.msg}${SEP}${err.where}${err.part ? SEP + err.part : ''}`]); // arch-guard (2): the part it came from
   rows.push(['מזהה מכשיר', reportDevId()]);
   return rows; }
-function reportErrors() { return ERR_RING.slice(-10).map(e => `${tmFmt('stamp', e.at)}${SEP}${e.where}${SEP}${e.msg}`); }
+function reportErrors() { return ERR_RING.slice(-10).map(e => `${tmFmt('stamp', e.at)}${SEP}${e.where}${e.part ? SEP + e.part : ''}${SEP}${e.msg}`); }
 // ---- the window (Q3, Q7) ----
 function openReport(kind, err, cx) { if (!reportCan()) return; layerNote(openReport, arguments);
   const sheet = document.getElementById('sheet'), F = fmNew({}), c = DEV.repContact || {}; kind = kind || 'bug';
@@ -66,15 +66,17 @@ function openReport(kind, err, cx) { if (!reportCan()) return; layerNote(openRep
     ${fmSaveBar({ act: 'report.send', label: `שליחה ${msi('send', { size: 18 })}` })}`;
   showSheetBackdrop('openReport'); fmAttach(F); }
 // 11.39.0 (legal-page; decisions 2026-11-21 · Review of the legal-review report, Q6, Q14 item 7; the Privacy Protection Law's section 11): the notice
-// at the form itself - voluntary, what for, to whom - and the link to the page (who collects it, how long it is kept, the rights and how to ask)
-const REPORT_NOTICE = 'הכל רשות. הדיווח משמש רק לתיקון ולשיפור האפליקציה, נשמר ב-Netlify (האתר של האפליקציה) ובמייל, ונמחק לכל המאוחר אחרי שנה.';
-function reportWho(F) { return [fmGet(F, 'name'), fmGet(F, 'how')].filter(Boolean).map(x => _escH(x)).join(SEP); }
+// at the form itself - voluntary, what for, to whom - and the link to the page (who collects it, how long it is kept, the rights and how to ask).
+// 11.56.2 (legal-privacy-2, U12; decisions 2026-11-24 · Review of the legal-review-2 report, Q5): one more sentence names the rest of s.11 - the result
+// of giving no contact details, who is responsible and how to reach them, the rights to see and correct - all on the linked page (no name here)
+const REPORT_NOTICE = 'הכל רשות. הדיווח משמש רק לתיקון ולשיפור האפליקציה, נשמר ב-Netlify (האתר של האפליקציה) ובמייל, ונמחק לכל המאוחר אחרי שנה. בלי פרטי קשר לא נוכל לחזור אליכם. מי אחראי, איך פונים, והזכות לעיין ולתקן - בדף:';
+function reportWho(F) { return [fmGet(F, 'name'), fmGet(F, 'how')].filter(Boolean).map(x => escH(x)).join(SEP); }
 function reportWhatHTML(F) { const r = F.rep;
-  return `<p class="sh-hint">יוצא רק מה שכתבתם, התמונה ופרטי הקשר אם מילאתם, ועוד:</p><dl class="rep-what">${r.rows.map(([k, v]) => `<div><dt>${k}</dt><dd><bdi>${_escH(v)}</bdi>${k === 'מזהה מכשיר' ? '<small>מספר אקראי, לא מזהה אתכם</small>' : ''}</dd></div>`).join('')}`
-    + `<div><dt>שגיאות</dt><dd>${r.errs.length ? `<span>${r.errs.length} אחרונות</span>` + r.errs.map(x => `<bdi>${_escH(x)}</bdi>`).join('') : 'אין'}</dd></div></dl>`; }
+  return `<p class="sh-hint">יוצא רק מה שכתבתם, התמונה ופרטי הקשר אם מילאתם, ועוד:</p><dl class="rep-what">${r.rows.map(([k, v]) => `<div><dt>${k}</dt><dd><bdi>${escH(v)}</bdi>${k === 'מזהה מכשיר' ? '<small>מספר אקראי, לא מזהה אתכם</small>' : ''}</dd></div>`).join('')}`
+    + `<div><dt>שגיאות</dt><dd>${r.errs.length ? `<span>${r.errs.length} אחרונות</span>` + r.errs.map(x => `<bdi>${escH(x)}</bdi>`).join('') : 'אין'}</dd></div></dl>`; }
 function reportPhotoHTML(F) { return (F.photo ? photoDraftHTML(F.photo, { act: 'report.photoView', cls: 'rep-thumb', label: 'הגדלת התמונה' }) : photoAddHTML('report.photo', { words: true })) + '<small class="rep-phl">תמונה' + SEP + 'לא חובה</small>'; }
 function reportPhotoPaint(F) { const el = document.getElementById('repPh'); if (el) el.innerHTML = reportPhotoHTML(F); }
-act('report.open', () => { closeMenu(); if (reportQueue().length && navigator.onLine) reportFlush(); openReport('bug', null, reportContext()); return 'quiet'; }); // a tap also sends what waits, at once
+act('report.open', () => { closeMenu(); if (reportQueue().length && svcOnline()) reportFlush(); openReport('bug', null, reportContext()); return 'quiet'; }); // a tap also sends what waits, at once
 act('report.err', c => { showToast(null); openReport('bug', ERR_RING.find(e => String(e.id) === c.v) || null, reportContext()); return 'quiet'; });
 act('report.photo', async c => { const F = fmOf(c.el); if (!F) return; const [url] = await photoRead(c.el, PHOTO_PLACES.report.px); if (!url) return;
   F.photo = url; reportPhotoPaint(F); fmErrClear(F, 'text'); });
@@ -98,10 +100,15 @@ act('report.send', c => { const F = fmOf(c.el); if (!F) return;
   if (!kept && rec.photo) { kept = reportQueueSet([...q0, { ...rec, photo: null, photoLost: true }]); lost = kept; }
   if (!kept) { fmFailLine(F, 'לא הצלחנו לשמור את הדיווח בטלפון - אפשר לנסות שוב'); return 'quiet'; }
   devSet({ repContact: who, repSent: [...sent, { at: now, h }] });
-  c.el.disabled = true; c.el.textContent = 'שולח…';
+  c.el.disabled = true; const W = reportWait(c.el); // wait-look (Q2): the one "in progress" component (state 1), the button's own "שולח…" gone
   return Promise.race([reportSend(rec), new Promise(res => setTimeout(() => res('later'), REPORT_WAIT_MS))]).then(r => {
-    closeSheet(); showToast(r === 'ok' ? 'נשלח, תודה' : r === 'offline' ? (lost ? 'יישלח כשתחזור הרשת, בלי התמונה (לא היה לה מקום בטלפון). אפשר לצרף אותה שוב בדיווח חדש' : 'יישלח כשתחזור הרשת')
+    W.done(); closeSheet(); showToast(r === 'ok' ? 'נשלח, תודה' : r === 'offline' ? (lost ? 'יישלח כשתחזור הרשת, בלי התמונה (לא היה לה מקום בטלפון). אפשר לצרף אותה שוב בדיווח חדש' : 'יישלח כשתחזור הרשת')
       : lost ? 'הדיווח נשלח ברקע. אם השליחה תיכשל, הוא יישלח שוב בלי התמונה' : 'הדיווח נשלח ברקע'); }); }); // P8: online and slow (a photo) - it goes on in the background
+// wait-look (decisions 2026-11-23 · One "in progress" look for every screen that waits on an outside service, Q2): the send waits with the
+// one component - the bar under the window's head and the stage line "שולחים את הדיווח…" above the save bar (state 1)
+function reportWait(btn) { const sh = btn.closest('#sheet'), bar = btn.closest('.sheet-save-bar'); if (!sh || !bar) return waitOn(null);
+  let ln = sh.querySelector('.rep-wait'); if (!ln) { ln = document.createElement('div'); ln.className = 'rep-wait'; bar.before(ln); }
+  return waitOn(sh, { head: sh.querySelector(':scope > .sheet-head'), line: ln, stage: 'שולחים את הדיווח' }); }
 // the submission: the fields of the static form "report", in its order - the first is the ready line for the shelf
 function reportForm(rec) { const kindHe = (REPORT_KINDS.find(k => k[0] === rec.kind) || REPORT_KINDS[0])[1], f = new FormData(), w = rec.who || {};
   f.append('form-name', 'report');
@@ -125,6 +132,6 @@ async function reportSend(rec) { if (REPORT_BUSY.has(rec.id)) return 'busy'; REP
 async function reportFlush() { if (!reportCan()) return 0; let n = 0;
   for (const rec of reportQueue()) { const r = await reportSend(rec); if (r === 'ok') n++; else if (r === 'offline') break; }
   return n; }
-sysOn(window, 'online', () => { reportFlush(); }); // a system event: the network is back - waiting reports go
+svcOnBack(() => { reportFlush(); }); // a system event: the network is back - waiting reports go
 setTimeout(() => { reportMenuSync(); reportFlush(); }, 3000); // the opening: what waited from last time
 // ================= END REPORTS =================

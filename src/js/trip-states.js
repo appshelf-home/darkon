@@ -113,7 +113,7 @@ function exitArchiveView(silent) {
 }
 function archiveBarHTML() {
   if (!ARCHIVE_VIEW) return ''; const t = STATE.trips[ARCHIVE_VIEW.id];
-  return `<div class="ro-bar">${msi('photo_album')}<span class="bn-t"><b>זיכרון${SEP}לקריאה בלבד</b>${SEP}${_qe(t ? t.name : '')}</span><span class="ro-acts brow"><button type="button" class="ro-reopen" data-act="archive.reopen">פתיחה מחדש</button><button type="button" class="ro-x" data-act="archive.exit" aria-label="סגירת העיון" title="סגירת העיון">${msi('close')}</button></span></div>`; // 10.1.0 (design-1): a sticky violet strip
+  return `<div class="ro-bar">${msi('photo_album')}<span class="bn-t"><b>זיכרון${SEP}לקריאה בלבד</b>${SEP}${escH(t ? t.name : '')}</span><span class="ro-acts brow"><button type="button" class="ro-reopen" data-act="archive.reopen">פתיחה מחדש</button><button type="button" class="ro-x" data-act="archive.exit" aria-label="סגירת העיון" title="סגירת העיון">${msi('close')}</button></span></div>`; // 10.1.0 (design-1): a sticky violet strip
 }
 act('archive.reopen', () => reopenTrip(ARCHIVE_VIEW.id));
 act('archive.exit', () => exitArchiveView());
@@ -141,19 +141,19 @@ function headFont(font) { font = HEADING_FONTS.includes(font) ? font : 'Rubik'; 
 function tripNameAttr(t, color) { const th = tripTheme(t), c = color && /^#[0-9a-f]{6}$/i.test(th.primary || '') ? `--tn-c:${th.primary};` : '';
   return ` class="trip-name${c ? ' trip-name-c' : ''}" style="--tn-f:${headFont(th.headingFont).replace(/"/g, '&quot;')};${c}"`; }
 function tripCardHTML(t) { // the large card: cover, chip, flags, name, dates · destinations, the main action across, ✏️ · 📤 · ⋯
-  const st = tripState(t), act = t.id === STATE.activeTrip && !ARCHIVE_VIEW, nm = _qe(String(t.name).split(' · ')[0]);
+  const st = tripState(t), act = t.id === STATE.activeTrip && !ARCHIVE_VIEW, nm = escH(String(t.name).split(' · ')[0]);
   const main = st === 'ended' ? ['close', msi('flag', { size: 18 }) + 'סגירת הטיול'] : st === 'during' ? ['plan', msi('today', { size: 18 }) + 'היום בטיול'] : ['plan', msi('calendar_month', { size: 18 }) + 'לתכנון'];
   return `<div class="card trip-card ent-big" data-ref="trip:${t.id}" data-tstate="${st}"><div class="ent-cover">${tripCoverHTML(t.id)}${tripChipHTML(t)}<span class="ent-flags">${tripFlags(t)}</span></div>
-    <div class="ent-body"><h3><span${tripNameAttr(t, true)}>${nm}</span>${act ? ' <span class="badge tc-open">פתוח</span>' : ''}</h3><div class="sub">${sepTie(_qe(tripDatesLine(t, { days: true })))}</div>
+    <div class="ent-body"><h3><span${tripNameAttr(t, true)}>${nm}</span>${act ? ' <span class="badge tc-open">פתוח</span>' : ''}</h3><div class="sub">${sepTie(escH(tripDatesLine(t, { days: true })))}</div>
     <div class="ent-acts brow tight"><button type="button" class="btn-nav tc-main" data-act="trips.tc" data-tc="${main[0]}">${main[1]}</button><button type="button" class="top-ic" data-act="trips.tc" data-tc="edit" aria-label="עריכה" title="עריכה">${msi('edit')}</button><button type="button" class="top-ic" data-act="trips.tc" data-tc="share" aria-label="שיתוף" title="שיתוף">${msi('share')}</button><button type="button" class="top-ic tc-more" data-act="trips.tc" data-tc="more" aria-label="כל הפעולות" title="כל הפעולות">${msi('more_horiz')}</button></div></div></div>`;
 }
 function tripRowHTML(t) { // a compact card: a cover thumbnail, the name, dates · country, the countdown, ›; a tap opens all of the trip's actions
   const act = t.id === STATE.activeTrip && !ARCHIVE_VIEW;
-  return `<button type="button" class="card trip-card ent-row t-wrap" data-ref="trip:${t.id}" data-tstate="${tripState(t)}" data-act="trips.tc" data-tc="more"><span class="ent-th">${tripCoverHTML(t.id)}</span><span class="ent-rt"><b>${_qe(String(t.name).split(' · ')[0])}${act ? ' <span class="badge tc-open">פתוח</span>' : ''}</b><small>${_qe(tripDatesLine(t, { short: true }))}</small>${tripChipHTML(t)}</span>${msi('chevron_right', { cls: 'ent-go' })}</button>`;
+  return `<button type="button" class="card trip-card ent-row t-wrap" data-ref="trip:${t.id}" data-tstate="${tripState(t)}" data-act="trips.tc" data-tc="more"><span class="ent-th">${tripCoverHTML(t.id)}</span><span class="ent-rt"><b>${escH(String(t.name).split(' · ')[0])}${act ? ' <span class="badge tc-open">פתוח</span>' : ''}</b><small>${escH(tripDatesLine(t, { short: true }))}</small>${tripChipHTML(t)}</span>${msi('chevron_right', { cls: 'ent-go' })}</button>`;
 }
 function tripMemHTML(t) { // a past trip in "זיכרונות": a small cover card; a tap opens its memory screen
   const c = t.archived && t.archived.reason === 'cancelled';
-  return `<button type="button" class="card trip-card ent-mem t-wrap" data-ref="trip:${t.id}" data-tstate="archived" data-act="trips.tc" data-tc="memory"><span class="ent-th">${tripCoverHTML(t.id)}</span><b>${_qe(String(t.name).split(' · ')[0])}</b><small>${c ? 'בוטל' : t.end ? _qe(tmFmt('year', t.end)) : ''}</small></button>`;
+  return `<button type="button" class="card trip-card ent-mem t-wrap" data-ref="trip:${t.id}" data-tstate="archived" data-act="trips.tc" data-tc="memory"><span class="ent-th">${tripCoverHTML(t.id)}</span><b>${escH(String(t.name).split(' · ')[0])}</b><small>${c ? 'בוטל' : t.end ? escH(tmFmt('year', t.end)) : ''}</small></button>`;
 }
 // 11.24.0 (small-ui-set C, memories-grid; decisions 2026-11-18 · "זיכרונות" on the trips screen: a grid that fills the row): a grid of
 // 2 / 3 / 4 columns by the screen class (css .ent-mems --mc); the cards stretch so every row is full (a last row with fewer cards, or one
@@ -164,8 +164,9 @@ function tripMemsHTML(arch, lim) { const n = arch.length, more = !lim ? 0 : n > 
 const tripsArchived = () => Object.values(STATE.trips).filter(t => tripState(t) === 'archived').sort((a, b) => String(b.end || '').localeCompare(String(a.end || '')));
 function renderMemoriesScreen() { const ctl = ctlNS('trips'), arch = tripsArchived();
   document.getElementById('main').innerHTML = `<div class="section-head"><h2>${msi('photo_album', { cls: 'msi-in' })} כל הזיכרונות</h2><p>טיולים שנסגרו, החדש ראשון. נגיעה פותחת את הזיכרון.</p></div>`
-    + (arch.length ? tripMemsHTML(arch, false) : emptyHTML(msi('photo_album'), 'טיול שנסגר מופיע כאן', '', 'עוד אין זיכרונות'));
+    + cvLineHTML(true) + ppLineHTML(msi('chevron_right', { cls: 'ent-go' }), true) + (arch.length ? tripMemsHTML(arch, false) : emptyHTML(msi('photo_album'), 'טיול שנסגר מופיע כאן', '', 'עוד אין זיכרונות'));
   ctl.tc = (b, c) => runTripAction(c.ref.id, b.dataset.tc); }
+const entGo = () => msi('chevron_right', { cls: 'ent-go' }); // a row's trailing arrow (countries-visited: its rows and line too)
 const entHead = (ic, title, n, x) => `<div class="ent-h">${msi(ic, { size: 22 })}<span>${title}</span>${n ? `<small>${n}</small>` : ''}${x || ''}</div>`;
 function renderTripsScreen(noActive) { const ctl = ctlNS('trips');
   if (ARCHIVE_VIEW) exitArchiveView(true); document.body.classList.add('on-entrance');
@@ -183,10 +184,10 @@ function renderTripsScreen(noActive) { const ctl = ctlNS('trips');
   const dests = Object.values(DESTS).filter(d => !d.ghost);
   const destRow = d => { const na = all.filter(t => t.archived && ((t.archived.snap || {}).dests || {})[d.id]).length, inMem = !used.has(d.id) && usedArch.has(d.id);
     const counts = [`${d.places.length} מקומות`, `${(d.meta.layers || []).length} שכבות`, inMem ? 'רק בזיכרונות' : ''].filter(Boolean).join(SEP);
-    return `<div class="ent-dest"><span class="ent-flag">${destFlagMeta(d.meta) || msi('public')}</span><span class="ent-rt"><b>${_qe(d.meta.name)}</b>${d.meta.description ? `<small class="t-ell">${_qe(d.meta.description)}</small>` : ''}<small>${counts}</small></span>
+    return `<div class="ent-dest"><span class="ent-flag">${destFlagMeta(d.meta) || msi('public')}</span><span class="ent-rt"><b>${escH(d.meta.name)}</b>${d.meta.description ? `<small class="t-ell">${escH(d.meta.description)}</small>` : ''}<small>${counts}</small></span>
       <button type="button" class="top-ic" data-act="trips.senddest" data-senddest="${d.id}" aria-label="שיתוף" title="שיתוף">${msi('share')}</button>${d.builtin ? '' : `<button type="button" class="top-ic" data-act="trips.editdest" data-editdest="${d.id}" aria-label="עריכה" title="עריכה">${msi('edit')}</button>`}${!d.builtin && !used.has(d.id) ? `<button type="button" class="top-ic ent-del" data-act="trips.deldest" data-deldest="${d.id}" data-arch="${na}" aria-label="מחיקה" title="מחיקה">${msi('delete')}</button>` : ''}</div>`; };
-  document.getElementById('main').innerHTML = `<div class="ent-hero"><div class="ent-hero-t"><h2 class="display">${APP.appTitle}</h2><p>כל הטיולים שלכם במקום אחד</p></div>${logoHTML('m')}</div>
-    <div class="ent-tiles" role="group" aria-label="חדש"><button type="button" class="ent-tile" id="newTripBtn" data-act="trips.newTripBtn">${msi('add_location_alt', { size: 22 })}<span>טיול חדש</span></button><span class="ent-tile ent-cl brow"><button type="button" class="ent-tile-b" id="buildBtn" data-act="claude.build">${claudeMark({ size: 22 })}<span>לבנות עם ${AI}</span></button>${tipI('claude.build')}</span></div>
+  document.getElementById('main').innerHTML = `<div class="ent-hero"><div class="ent-hero-t"><h2 class="display">${APP.appTitle}</h2><p>כל הטיולים שלכם במקום אחד</p></div><button type="button" class="ent-stamp t-wrap" data-act="pp.hero" aria-label="הדרכון שלי">${logoHTML('m')}</button></div>
+    ${kitCardHTML()}<div class="ent-tiles" role="group" aria-label="חדש"><button type="button" class="ent-tile" id="newTripBtn" data-act="trips.newTripBtn">${msi('add_location_alt', { size: 22 })}<span>טיול חדש</span></button><span class="ent-tile ent-cl brow"><button type="button" class="ent-tile-b" id="buildBtn" data-act="claude.build">${claudeMark({ size: 22 })}<span>לבנות עם ${AI}</span></button>${tipI('claude.build')}</span></div>
     <div class="ent-links">${importDoorHTML('import', msi('upload_file', { size: 18 }) + 'ייבוא קובץ', msi('content_paste', { size: 18 }) + 'הדבקת תוכן')}</div>
     ${noActive ? `<p class="ent-note">${msi('info', { size: 18 })}<span><b>אין טיול פתוח.</b> פותחים טיול כדי לראות מקומות, מפה ותכנון.</span></p>` : ''}
     ${all.length ? '' : `<div class="empty ent-empty">${msi('luggage')}<div class="empty-t">עוד אין טיולים</div><div class="empty-l"><b>יעד</b> = המקומות והמידע, נכון בכל ביקור.</div><div class="empty-l"><b>טיול</b> = ביקור אחד עם תאריכים ותוכנית.</div></div>`}
@@ -194,7 +195,7 @@ function renderTripsScreen(noActive) { const ctl = ctlNS('trips');
     ${ended.length ? entHead('flag', ('הסתיים' + SEP + 'מחכה לסגירה'), ended.length, tipI('trips.ended')) + ended.map(tripCardHTML).join('') : ''}
     ${rest.length ? entHead('event_upcoming', 'בקרוב', rest.length) + rest.map(tripRowHTML).join('') : ''}
     ${planning.length ? entHead('edit_calendar', 'בתכנון', planning.length) + planning.map(tripRowHTML).join('') : ''}
-    ${arch.length ? entHead('photo_album', 'זיכרונות', arch.length) + tripMemsHTML(arch, true) : ''}
+    ${arch.length || cvHasAny() ? entHead('photo_album', 'זיכרונות', arch.length, `<div class="ent-memline">${cvLineHTML() + (arch.length ? ppLineHTML(msi('chevron_right', { cls: 'ent-go' })) : '')}</div>`) + (arch.length ? tripMemsHTML(arch, true) : '') : ''}
     <div class="accordion ent-acc">${accHTML('tr-dests', `${msi('public', { size: 22 })}יעדים בטלפון${SEP}${dests.length} ${tipI('trips.dests', true)}`, `<div class="card ent-dests">${dests.map(destRow).join('')}<div class="ent-dend"><button type="button" class="btn-outline" id="newDestBtn" data-act="trips.newDestBtn">${msi('add', { size: 18 })}יעד חדש</button></div></div>`, !all.length)}</div>
     ${nTrash ? `<button type="button" class="ent-trash t-wrap" id="tripsTrash" data-act="trips.tripsTrash">${msi('delete', { size: 22 })}<span class="ent-rt"><b>סל המחזור</b><small>${nTrash === 1 ? 'אחד שנמחק' : nTrash + ' שנמחקו'}${SEP}30 יום</small></span>${msi('chevron_right', { cls: 'ent-go' })}</button>` : ''}`;
   ctl.newTripBtn = () => { if (!Object.keys(DESTS).filter(k => !DESTS[k].ghost).length) { showToast('קודם צריך יעד: ייבוא מקובץ, "לבנות עם ' + AI + '" או "＋ יעד חדש"'); return; } openTripEditor(null); };
@@ -208,7 +209,7 @@ function renderTripsScreen(noActive) { const ctl = ctlNS('trips');
     // 4.37.2: one tap deletes, with a long undo. A destination that past trips still show asks once, in the button itself, and the toast says what stays.
     const na = Number(b.dataset.arch || 0);
     const id = b.dataset.deldest, del = () => { deleteDestToTrash(id); }; // 4.37.3: to the trash for 30 days, like trips and places
-    if (na) return askSure({ ic: 'delete', title: `למחוק את ${_qe(destName(id))}?`, text: `${na === 1 ? 'טיול אחד בזיכרונות ישמור' : na + ' טיולים בזיכרונות ישמרו'} את מה שהיה בו מהיעד. היעד עובר לסל ל-30 יום.`, ok: 'מחיקה' }, del); // 10.13.0 (gap 47): in the dialog
+    if (na) return askSure({ ic: 'delete', title: `למחוק את ${escH(destName(id))}?`, text: `${na === 1 ? 'טיול אחד בזיכרונות ישמור' : na + ' טיולים בזיכרונות ישמרו'} את מה שהיה בו מהיעד. היעד עובר לסל ל-30 יום.`, ok: 'מחיקה' }, del); // 10.13.0 (gap 47): in the dialog
     del();
   };
 }
@@ -239,7 +240,7 @@ function openTripActions(id) { const ctl = {}; layerNote(openTripActions, argume
   
   ctl.ta = b => {
     const k = b.dataset.ta;
-    if (k === 'delete') return askSure({ ic: 'delete', title: `למחוק את ${_qe(String(t.name).split(' · ')[0])}?`, text: 'הטיול עובר לסל, ואפשר לשחזר אותו 30 יום.', ok: 'מחיקה' }, () => { closeSheet(); deleteTripToTrash(id); }); // 10.13.0 (gap 47): in the dialog
+    if (k === 'delete') return askSure({ ic: 'delete', title: `למחוק את ${escH(String(t.name).split(' · ')[0])}?`, text: 'הטיול עובר לסל, ואפשר לשחזר אותו 30 יום.', ok: 'מחיקה' }, () => { closeSheet(); deleteTripToTrash(id); }); // 10.13.0 (gap 47): in the dialog
     closeSheet(); runTripAction(id, k);
   };
   showSheetBackdrop('openTripActions'); layerTop().ctl = ctl;
@@ -251,7 +252,7 @@ ctlActs('tripActs', ['ta']);
 function openShareChoice(id) { const ctl = {}; layerNote(openShareChoice, arguments);
   const t = STATE.trips[id]; if (!t) return; const st = tripState(t), sheet = document.getElementById('sheet');
   const ch = [['file', '📄 קובץ הטיול', 'לחבר, לשיפור עם ' + AI + ' או לטלפון אחר שלכם']].concat(typeof openRecommend === 'function' ? [['rec', '💌 המלצות לחברים', 'הודעה או דף עם מפה']] : [], (st === 'archived' || st === 'ended') && typeof sendTripSummary === 'function' ? [['sum', '📖 סיכום הטיול', 'קובץ למזכרת']] : []);
-  sheet.innerHTML = `${fmHead(`📤 שיתוף${SEP}${_qe(String(t.name).split(' · ')[0])}`, 'shcClose')}
+  sheet.innerHTML = `${fmHead(`📤 שיתוף${SEP}${escH(String(t.name).split(' · ')[0])}`, 'shcClose')}
     ${taListHTML({ act: 'shareChoice.shc' }, ch)}`;
   
   ctl.shc = b => { const k = b.dataset.shc;
@@ -285,12 +286,12 @@ function closeTripStart(id) { const ctl = {}; layerNote(closeTripStart, argument
   if (st === 'ended' || (DEV.clSteps || {})[id]) { if (typeof openClosingFlow === 'function') openClosingFlow(id); else archiveTrip(id, 'ended'); return; } // 11.34.0 (P5, G73; Q2 A): a closing already begun reopens at its step
   const iso = todayStr(), yest = isoAdd(iso, -1);
   let body = '';
-  if (!t.start) body = `<p><b>הטיול התקיים?</b> אם כן, בוחרים את התאריכים שלו וממשיכים לסגירה הרגילה. אם לא, הוא עובר לזיכרונות עם התווית "בוטל", בלי תהליך סגירה ובלי מזכרת.</p><div class="brow export-actions"><button class="btn-nav" data-act="closeStart.cl" data-cl="happened">${msi('edit_calendar', { size: 18 })} כן, לבחור תאריכים</button><button class="icon-btn btn-copy" data-act="closeStart.cl" data-cl="cancel" style="width:auto;padding:0 12px;">לא, הטיול בוטל</button></div>`; // B1 (decisions 2026-11-13 review of 11.10.0)
-  else if (st === 'before') body = `<p><b>הטיול בוטל?</b> הוא יעבור לזיכרונות עם התווית "בוטל", בלי תהליך סגירה ובלי מזכרת. אפשר להחזיר אותו בכל זמן ("פתיחה מחדש").</p><p class="sh-hint">הטיול נדחה? עדיף לערוך ולשנות תאריכים.</p><div class="brow export-actions"><button class="btn-nav" data-act="closeStart.cl" data-cl="cancel">כן, הטיול בוטל</button><button class="icon-btn btn-copy" data-act="closeStart.cl" data-cl="edit" style="width:auto;padding:0 12px;">${msi('edit_calendar', { size: 18 })} לשנות תאריכים</button></div>`;
+  if (!t.start) body = `<p><b>הטיול התקיים?</b> אם כן, בוחרים את התאריכים שלו וממשיכים לסגירה הרגילה. אם לא, הוא עובר לזיכרונות עם התווית "בוטל", בלי תהליך סגירה ובלי מזכרת.</p>${cardActionsHTML({ act: 'closeStart.cl', data: 'data-cl="happened"', label: `${msi('edit_calendar', { size: 18 })} כן, לבחור תאריכים` }, [{ act: 'closeStart.cl', data: 'data-cl="cancel"', label: 'לא, הטיול בוטל' }])}`; // B1 (decisions 2026-11-13 review of 11.10.0)
+  else if (st === 'before') body = `<p><b>הטיול בוטל?</b> הוא יעבור לזיכרונות עם התווית "בוטל", בלי תהליך סגירה ובלי מזכרת. אפשר להחזיר אותו בכל זמן ("פתיחה מחדש").</p><p class="sh-hint">הטיול נדחה? עדיף לערוך ולשנות תאריכים.</p>${cardActionsHTML({ act: 'closeStart.cl', data: 'data-cl="cancel"', label: 'כן, הטיול בוטל' }, [{ act: 'closeStart.cl', data: 'data-cl="edit"', label: `${msi('edit_calendar', { size: 18 })} לשנות תאריכים` }])}`;
   else body = `<p><b>חזרתם מוקדם?</b> הטיול מתוכנן עד ${tmFmt('date', t.end)}. אפשר לקצר אותו עד היום האחרון שבו הייתם, ואז לסגור.</p>
     <div class="brow tight sh-days">${[yest >= t.start ? [yest, 'אתמול'] : null, [iso, 'היום']].filter(Boolean).map(([d, l]) => `<button type="button" data-act="closeStart.clend" data-clend="${d}" aria-pressed="${d === iso}">${l}${SEP}${tmFmt('dayN', d)}</button>`).join('')}</div>
     <label class="sh-field">או יום אחר${fmDateInput({ id: 'clEnd', min: t.start, max: t.end, value: iso })}</label>
-    <div class="brow export-actions"><button class="btn-nav" data-act="closeStart.cl" data-cl="short">${msi('sports_score', { size: 18 })} לקצר עד היום הזה ולסגור</button><button class="icon-btn btn-copy" data-act="closeStart.cl" data-cl="x" style="width:auto;padding:0 12px;">לא, ממשיכים בטיול</button></div>`;
+    ${cardActionsHTML({ act: 'closeStart.cl', data: 'data-cl="short"', label: `${msi('sports_score', { size: 18 })} לקצר עד היום הזה ולסגור` }, [{ act: 'closeStart.cl', data: 'data-cl="x"', label: 'לא, ממשיכים בטיול' }])}`;
   sheet.innerHTML = `${fmHead(`🗄️ סגירת ${nameB(t.name)}`, 'clClose')}${body}`;
   
   ctl.clend = b => { sheet.querySelector('#clEnd').value = b.dataset.clend; sheet.querySelectorAll('[data-clend]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); };
@@ -318,6 +319,10 @@ ctlActs('closeStart', ['cl', 'clend']);
 // ---- the memory screen ----
 // one projection for every picture of a trip (memory map, memento, recommendations page): equirectangular with cos(lat)
 function snapCoord(p) { return p.coord || p.manualCoord || (p.address && GEOCODE_CACHE[p.address]) || null; }
+// ride-km (Q2-Q4): "ק״מ בנסיעות" - a fourth tile only in a route trip by the app's automatic kind (a city trip keeps its three); a button that
+// opens the breakdown by kind (the other tiles stay as they are)
+function memRideTileHTML(D, id) { if (!D || D.auto === 'city' || !D.ride.km) return ''; const n = fmtKm(D.ride.km, { num: true }), l = RIDE_LABEL[0] + (D.ride.est ? ' (משוער)' : '');
+  return `<button type="button" class="dr-tile dr-tile-btn mem-ride" id="memRide" data-act="memory.ride" data-v="${escH(id)}" aria-label="${escH(l)}: ${n}${SEP}פירוק לפי סוג"><b>${n}</b><small>${l}</small></button>`; }
 function tripMemoryData(id) {
   const t = STATE.trips[id]; if (!t) return null; if (id === STATE.activeTrip) stashActive();
   const snap = (t.archived && t.archived.snap) || null, td = STATE.tripData[id] || {};
@@ -336,19 +341,19 @@ function memoryMapSVG(M, w, h) { // 4.36.0: the static version (inside Claude, w
   if (I.hotels.length > 1) s += `<polyline points="${I.hotels.map(x => `${g.x(x.c.lng).toFixed(1)},${g.y(x.c.lat).toFixed(1)}`).join(' ')}" class="mm-route"/>`;
   I.places.forEach(x => { s += `<circle cx="${g.x(x.c.lng).toFixed(1)}" cy="${g.y(x.c.lat).toFixed(1)}" r="${x.hi || x.key || x.r === 'love' ? 6 : 4.2}" fill="${x.color}" class="mm-dot"/>`; });
   I.hotels.forEach(x => { s += `<text x="${g.x(x.c.lng).toFixed(1)}" y="${(g.y(x.c.lat) + 5).toFixed(1)}" class="mm-hotel" text-anchor="middle">&#x${MS_CP.hotel};</text>`; });
-  I.places.filter(x => x.hi || x.key).slice(0, 8).forEach(x => { s += `<text x="${g.x(x.c.lng).toFixed(1)}" y="${(g.y(x.c.lat) - 9).toFixed(1)}" class="mm-label" text-anchor="middle">${_qe(x.name.slice(0, 22))}</text>`; });
+  I.places.filter(x => x.hi || x.key).slice(0, 8).forEach(x => { s += `<text x="${g.x(x.c.lng).toFixed(1)}" y="${(g.y(x.c.lat) - 9).toFixed(1)}" class="mm-label" text-anchor="middle">${escH(x.name.slice(0, 22))}</text>`; });
   s += edgeArrowsSVG(g, box, fr.far, fr.center, '#1C2B33', 10);
   return s + '</g></svg>';
 }
-function planAsItWasHTML(M) {
+function planAsItWasHTML(M, o) { o = o || {}; // o.sv (the memory screen, map-side-view): each day's Timeline walk gets its "גובה"; pages for people get none
   const days = dayList(M.t.start, M.t.end); if (!days.length) return '';
   const nameOf = id => { if (typeof id === 'string') { const f = (M.td.planItems || {})[id]; return f ? { ic: msi('sticky_note_2', { cls: 'msi-in' }), n: f.name } : ''; } const p = M.pmap.get(id); return p ? { ic: typeIcon(p.icon, { cls: 'msi-in' }), n: p.name } : ''; }; // 10.8.0: line icons
   const vis = new Set(M.td.visited || []);
   return days.map(d => { const it = (M.td.itinerary || {})[d.key] || {}, ids = ['morning', 'afternoon', 'evening', 'unassigned'].flatMap(k => it[k] || []);
-    const sch = (M.t.schedule || []).filter(x => x.date === d.date).map(x => `<li class="mp-org">${x.start ? x.start + ' ' : ''}${_qe(x.title)}</li>`);
-    const mine = ids.map(i => { const n = nameOf(i); if (!n) return ''; const tm = (M.td.times || {})[d.key + '|' + i]; return `<li${vis.has(i) ? ' class="mp-vis"' : ''}>${tm && tm.start ? tm.start + ' ' : ''}${msiTie(n.ic, _qe(n.n))}${vis.has(i) ? ' ✓' : ''}</li>`; }).filter(Boolean);
-    if (!sch.length && !mine.length) return '';
-    return `<div class="mp-day"><b>${tmFmt('day', d.date)}</b><ul>${sch.join('')}${mine.join('')}</ul></div>`; }).join('');
+    const sch = (M.t.schedule || []).filter(x => x.date === d.date).map(x => `<li class="mp-org">${x.start ? x.start + ' ' : ''}${escH(x.title)}</li>`);
+    const mine = ids.map(i => { const n = nameOf(i); if (!n) return ''; const tm = (M.td.times || {})[d.key + '|' + i]; return `<li${vis.has(i) ? ' class="mp-vis"' : ''}>${tm && tm.start ? tm.start + ' ' : ''}${msiTie(n.ic, escH(n.n))}${vis.has(i) ? ' ✓' : ''}</li>`; }).filter(Boolean);
+    const sv = o.sv ? svBtnHTML(svTlRoute(M.t.id, d.date)) : ''; if (!sch.length && !mine.length && !sv) return '';
+    return `<div class="mp-day"><b>${tmFmt('day', d.date)}</b>${sv ? `<div class="sv-row">${sv}</div>` : ''}${sch.length || mine.length ? `<ul>${sch.join('')}${mine.join('')}</ul>` : ''}</div>`; }).join('');
 }
 function renderMemoryScreen() { const ctl = ctlNS('memory');
   const id = memoryTrip, M = id && tripMemoryData(id), main = document.getElementById('main');
@@ -358,18 +363,18 @@ function renderMemoryScreen() { const ctl = ctlNS('memory');
   // 10.3.0 (design-3, look.md "Full screens, part 2"): a cover hero (the trip's cover or a drawn landscape; "זיכרון · לקריאה בלבד"; the name,
   // dates · flags · who), three stat tiles, "עיון מלא" filled and "טיול על בסיסו" outlined; share and ⋯ sit in the screen's head
   const Dm = cancelled ? null : mementoData(id), flags = M.dests.map(d => destFlagMeta((M.snap && M.snap.dests && M.snap.dests[d]) || (DESTS[d] || {}).meta || {})).join('');
-  const hero = `<div class="mem-hero" style="--mh:${th.primary || 'var(--primary)'};--ma:${th.accent || 'var(--favorite)'}">${tripCoverHTML(id)}<div class="mem-hero-in"><span class="mem-kicker">${cancelled ? msi('block', { size: 16 }) + 'בוטל' : t.archived ? msi('auto_stories', { size: 16 }) + 'זיכרון' + SEP + 'לקריאה בלבד' : (live ? '' : msi('auto_stories', { size: 16 })) + tripStateLine(t) /* built HTML, never escaped again: a trip in progress or upcoming brings its own line icon */}</span><h2 class="display"><span${tripNameAttr(t)}>${_qe(String(t.name).split(' · ')[0])}</span></h2>
-    <div class="mem-sub">${[t.start ? tmFmt('range', [t.start, t.end], { year: true }) : '', flags, t.travelers ? _qe(t.travelers) : ''].filter(Boolean).join(SEP)}</div></div></div>`
-    + (cancelled ? '' : `<div class="dr-tiles mem-tiles"><div class="dr-tile"><b>${t.start ? dayList(t.start, t.end).length : tripLen(t)}</b><small>ימים</small></div><div class="dr-tile"><b>${M.visited.length}</b><small>מקומות ש${TX.visited}</small></div><div class="dr-tile"><b>${Dm && Dm.walk ? fmtKm(Dm.walk, { num: true }) : '—'}</b><small>ק״מ ברגל</small></div></div>`);
+  const hero = `<div class="mem-hero" style="--mh:${th.primary || 'var(--primary)'};--ma:${th.accent || 'var(--favorite)'}">${tripCoverHTML(id)}<div class="mem-hero-in"><span class="mem-kicker">${cancelled ? msi('block', { size: 16 }) + 'בוטל' : t.archived ? msi('auto_stories', { size: 16 }) + 'זיכרון' + SEP + 'לקריאה בלבד' : (live ? '' : msi('auto_stories', { size: 16 })) + tripStateLine(t) /* built HTML, never escaped again: a trip in progress or upcoming brings its own line icon */}</span><h2 class="display"><span${tripNameAttr(t)}>${escH(String(t.name).split(' · ')[0])}</span></h2>
+    <div class="mem-sub">${[t.start ? tmFmt('range', [t.start, t.end], { year: true }) : '', flags, t.travelers ? escH(t.travelers) : ''].filter(Boolean).join(SEP)}</div></div></div>`
+    + (cancelled ? '' : `<div class="mem-tiles-w"><div class="dr-tiles mem-tiles${memRideTileHTML(Dm, id) ? ' mem-4' : ''}"><div class="dr-tile"><b>${t.start ? dayList(t.start, t.end).length : tripLen(t)}</b><small>ימים</small></div><div class="dr-tile"><b>${M.visited.length}</b><small>מקומות ש${TX.visited}</small></div><div class="dr-tile"><b>${Dm && Dm.walk ? fmtKm(Dm.walk, { num: true }) : '—'}</b><small>ק״מ ברגל</small></div>${memRideTileHTML(Dm, id)}</div></div>`); // ride-km: four tiles - two rows of two when narrow for their numbers (.mem-tiles-w)
   const acts = `<div class="mem-acts brow fill">${t.archived ? `<button class="btn-nav" id="memView" data-act="memory.memView">${msi('menu_book', { size: 18 })} עיון מלא</button>` : ''}<button class="btn-outline" id="memClone" data-act="memory.memClone">${msi('content_copy', { size: 18 })} טיול על בסיסו</button></div>`;
   { const e = screenTop(), tools = e && e.tab === 'memory' && e.el.querySelector('.screen-tools');
     if (tools) tools.innerHTML = `<button type="button" class="top-ic" id="memShare" data-act="memory.memShare" aria-label="שיתוף" title="שיתוף">${msi('share')}</button><button type="button" class="top-ic" id="memMore" data-act="memory.memMore" aria-label="עוד פעולות" title="עוד פעולות">${msi('more_vert')}</button>`; }
-  let html = hero + acts; // 5.15.0 (ד6): no "🖼️ זיכרון" title - the colored card says it
+  let html = hero + acts + ppMemRowHTML(t, msi('chevron_right', { cls: 'ent-go' })); // passport-book (Q3): "החותמות של הטיול בדרכון"; 5.15.0 (ד6): no "🖼️ זיכרון" title - the colored card says it
   if (!cancelled) {
     if (typeof memorySection === 'function') html += memorySection(M, 'top');
     html += memMapBlockHTML(M); // 4.36.0: a live map
     if (typeof memorySection === 'function') html += memorySection(M, 'middle');
-    const plan = planAsItWasHTML(M);
+    const plan = planAsItWasHTML(M, { sv: true });
     if (plan) html += `<div class="accordion">${accHTML('mem-plan', msi('calendar_month', { size: 20 }) + ' התוכנית כפי שהייתה', `<div class="mem-plan">${plan}</div>`, false)}</div>`;
     if (typeof memorySection === 'function') html += memorySection(M, 'bottom');
   } else html += `<div class="callout">הטיול סומן כבוטל. התוכנית והסימונים שלו נשמרו, ו-${msi('undo', { cls: 'msi-in' })} פתיחה מחדש מחזירה אותו.</div>`;

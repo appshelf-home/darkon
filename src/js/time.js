@@ -23,6 +23,7 @@ function isoAdd(iso, n) { const d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(d
 function daysBetween(a, b) { return Math.round((Date.parse(b + 'T12:00:00Z') - Date.parse(a + 'T12:00:00Z')) / 864e5); }
 function nightsBetween(a, b) { return a && b ? daysBetween(a, b) : 0; }
 function tmWeekday(iso) { return new Date(iso + 'T12:00:00Z').getUTCDay(); }
+function tmParseDMY(s) { const m = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(String(s || '')); return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : null; } // one-way (9): the parse role - "27.12.2026" (tmFmt 'date') -> "2026-12-27"; anything else -> null
 function tmMin(hm) { return +String(hm).slice(0, 2) * 60 + +String(hm).slice(3, 5); }
 function tmHM(m) { m = ((Math.round(m) % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); }
 function tmAddMin(hm, n) { return tmHM(tmMin(hm) + n); }

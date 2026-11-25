@@ -7,7 +7,7 @@ function openRestore(raw) { layerNote(openRestore, arguments);
     keys.includes('edits') ? fmChips(F, 'mode', { label: PART_INFO.edits.label, value: other ? 'merge' : 'replace', options: [['merge', 'מיזוג עם שלי'], ['replace', 'החלפה']] }) : ''];
   // 10.9.0 (design-forms, gap 60, design-gaps Q18): a short title with the line icon and ⓘ, the source on its own line, one explanation line
   partsWin(F, { key: 'openRestore', title: `♻️ ${isEdits ? 'שחזור עריכות' : 'שחזור מגיבוי'} ${tipI('restore.how')}`,
-    intro: `<span class="pw-src">${[data.device ? 'מ' + fmEsc(data.device) : '', data.createdAt ? tmFmt('date', data.createdAt) : '', data.appVersion ? 'גרסה ' + fmEsc(data.appVersion) : ''].filter(Boolean).join(SEP)}</span><br>חלק שבוחרים מחליף את מה שיש עכשיו; חלק שלא בוחרים לא משתנה.`,
+    intro: `<span class="pw-src">${[data.device ? 'מ' + escH(data.device) : '', data.createdAt ? tmFmt('date', data.createdAt) : '', data.appVersion ? 'גרסה ' + escH(data.appVersion) : ''].filter(Boolean).join(SEP)}</span><br>חלק שבוחרים מחליף את מה שיש עכשיו; חלק שלא בוחרים לא משתנה.`,
     body, send: { act: 'restore.go', label: msi('restore', { size: 18 }) + ' שחזור' } });
 }
 act('restore.go', c => { const F = fmOf(c.el); if (!F) return; const data = F.opts.data, parts = fmGet(F, 'parts') || [];

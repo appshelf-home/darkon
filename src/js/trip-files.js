@@ -53,9 +53,11 @@ function buildTripFile(id, picks, noDates, goal) {
     rebuildTripDays(t, { mode: 'none', segs, wd: String(tmWeekday(t.start)) }, td); delete td.parked; picks = picks.filter(k => k !== 'bookings' && k !== 'mementos'); }
   let personal = {}; // the rows of the chosen parts (ק4), each field by its row in the registry
   picks.forEach(k => (PART_BY[k] || { rows: [] }).rows.forEach(r => (REG_BY[r].where.td || []).forEach(f => { if (td[f] !== undefined && f !== 'flightsSeeded' && f !== 'tl') personal[f] = td[f]; }))); // 11.9.0 (timeline-import, Q4): a friend's file has no path or visit times (tl)
+  if (!picks.includes('companions')) { delete personal.companions; if (personal.highlights) personal.highlights = personal.highlights.map(({ by, ...h }) => h); } // hidden-data (H4): a fellow traveller's marks only when the window names them
+  if (goal === 'improve') delete personal.hidden; // hidden-data (H6): the AI needs no hides of mine (they reach it as the edits' "skip")
   personal = Object.keys(personal).length ? { ...mapPersonalRefs(personal, x => portableRef(x, t)), refs: 'dest' } : null;
   const out = { app: BACKUP_APP, kind: 'trip', format: 1, appVersion: APP_VERSION, createdAt: new Date().toISOString(), device: STATE.settings.deviceName || '', signature: `${t.name} · טיול · ${tmFmt('date', Date.now())} · v${APP_VERSION}`,
-    trip: schedRefsOut(JSON.parse(JSON.stringify(t)), t), destinations: tripDests(t).map(did => destPayload(DESTS[did], picks.includes('edits'), t.start)), personal };
+    trip: tvStopsOut(schedRefsOut(JSON.parse(JSON.stringify(t)), t), t), destinations: tripDests(t).map(did => destPayload(DESTS[did], picks.includes('edits'), t.start)), personal };
   if (personal && personal.planItems) out.minAppVersion = BACKUP_MIN_APP; // 10.0.0: an older app would drop the notes silently
   if (picks.includes('mementos')) { const m = tripMementosOut(id); if (m) out.mementos = m; }
   if (goal === 'improve') { out.unlocated = unlocatedOut(placesOffMapIn(t)); out.infoMissing = infoMissingOut(tripDests(t)); } // ה8: the places off the map go by themselves; 11.43.0 (info-complete, item 3): and the missing general info sections
@@ -78,7 +80,6 @@ function destPayload(d, withEdits, onDate) {
     const lids = new Set(d.meta.layers.map(l => d.idBase + l.id)); e.layers = {};
     Object.entries(STATE.edits.layers).forEach(([id, x]) => { if (lids.has(Number(id)) || (x.op === 'add' && x.data.dest === d.id)) e.layers[id] = x; });
     if (STATE.edits.layerOrder[d.id]) e.layerOrder = STATE.edits.layerOrder[d.id];
-    if ((STATE.edits.infoNA || {})[d.id]) e.infoNA = STATE.edits.infoNA[d.id]; // 11.43.0 (info-complete): the user's "not relevant" sections travel with the destination's edits
     out.edits = e; out.idBase = d.idBase; }
   return out;
 }
@@ -101,6 +102,9 @@ async function deliverFile(blob, name, type) {
   }
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); return true;
 }
+// one-way (10): a text goes out the same way - the share sheet, or where there is none (or it fails) the clipboard with msg
+// (copyWithFallback). Resolves true (shared), false (copied) or null (the user closed the sheet: nothing went out).
+function deliverText(text, msg) { return (navigator.share ? navigator.share({ text }).then(() => true).catch(e => e && e.name === 'AbortError' ? null : false) : Promise.resolve(false)).then(ok => { if (ok === false) copyWithFallback(text, msg); return ok; }); }
 const fileStamp = () => tmFmt('date', Date.now()).replace(/\./g, '-');
 function installDestination(dp) {
   // returns 'new' | 'updated' | 'same'; existing destinations keep their idBase (and the device's edits)
@@ -128,11 +132,10 @@ function mergeDestEdits(dp, into, take) {
   // edits in a file use the sender's ids; map them by the destination's idBase on this device
   if (!dp.edits || !destEditsAligned(dp)) return 0; const shift = (DESTS[dp.id].idBase || 0) - (dp.idBase || 0); let n = 0;
   const sh = v => typeof v === 'number' && v < 1e11 ? v + shift : v; // pack ids shift; ids of things added on a phone (Date.now) don't
-  into.layers = into.layers || {}; into.layerOrder = into.layerOrder || {}; into.infoNA = into.infoNA || {};
+  into.layers = into.layers || {}; into.layerOrder = into.layerOrder || {};
   Object.entries(dp.edits.places || {}).forEach(([id, x]) => { const nid = x.op === 'add' ? Number(id) : Number(id) + shift; if (!into.places[nid] || tk('place', nid)) { const data = { ...x.data, ...(x.data && x.data.layer != null ? { layer: sh(x.data.layer) } : {}) }; into.places[nid] = x.op === 'add' ? { ...x, data: { ...data, dest: dp.id } } : { ...x, data }; n++; } });
   Object.entries(dp.edits.layers || {}).forEach(([id, x]) => { const nid = x.op === 'add' ? Number(id) : Number(id) + shift; if (!into.layers[nid] || tk('layer', nid)) { into.layers[nid] = x.op === 'add' ? { ...x, data: { ...x.data, dest: dp.id } } : x; n++; } });
   if (dp.edits.layerOrder && (!into.layerOrder[dp.id] || tk('order', dp.id))) { into.layerOrder[dp.id] = dp.edits.layerOrder.map(sh); n++; }
-  if (Array.isArray(dp.edits.infoNA) && dp.edits.infoNA.length && (!into.infoNA[dp.id] || tk('infoNA', dp.id))) { into.infoNA[dp.id] = dp.edits.infoNA; n++; } // 11.43.0 (info-complete): as the layers' order - mine stays unless chosen from the file
   Object.entries(dp.edits.status || {}).forEach(([id, x]) => { const nid = STATE.edits.places[id] && STATE.edits.places[id].op === 'add' ? Number(id) : Number(id) + shift; if (!into.status[nid] || tk('status', nid)) { into.status[nid] = x; n++; } });
   return n;
 }
@@ -141,18 +144,20 @@ function mergeDestEdits(dp, into, take) {
 // undo-history: no undo of its own - the history restores the draft, the trips, the edits, the destinations and the mementos
 function importTripNow(data, mode, afterInstall, tail, opt) {
       opt = opt || {}; const pk = k => !opt.picks || opt.picks.includes(k), t = data.trip;
+      const nj = addJoinFile(data, pk('dests'), pk('trip')); // add-key (Q3): a place an AI completed for one I added joins mine, before anything is installed
       (data.destinations || []).forEach(dp => { if (pk('dests') || !DESTS[dp.id]) installDestination(dp); }); // 8.0.0 (ק18): an unchecked part stays as it is
       if (afterInstall) afterInstall();
       let n = 0; if (pk('edits')) { const edits = JSON.parse(JSON.stringify(STATE.edits)); (data.destinations || []).forEach(dp => { n += mergeDestEdits(dp, edits, opt.take); }); STATE.edits = edits; ensureEditsShape(); }
       stashActive();
       const nid = mode === 'copy' ? 't_' + Date.now().toString(36) : t.id, keepTrip = mode === 'update' && !pk('trip') && STATE.trips[nid];
       if (!keepTrip) {
-        const oldLod = mode === 'copy' ? [] : ((STATE.trips[nid] || {}).lodging || []), oldSch = mode === 'copy' ? [] : ((STATE.trips[nid] || {}).schedule || []);
+        const oldArch = mode === 'copy' ? null : (STATE.trips[nid] || {}).archived; const oldLod = mode === 'copy' ? [] : ((STATE.trips[nid] || {}).lodging || []), oldSch = mode === 'copy' ? [] : ((STATE.trips[nid] || {}).schedule || []);
         STATE.trips[nid] = { ...JSON.parse(JSON.stringify(t)), id: nid, name: mode === 'copy' ? t.name + ' (עותק)' : t.name };
         STATE.trips[nid].lodging = (STATE.trips[nid].lodging || []).map(l => { const o = oldLod.find(x => x.id === l.id); if (!o) return l; const keep = {}; LODGING_USER_FIELDS.forEach(f => { if (o[f] && !l[f]) keep[f] = o[f]; }); return { ...l, ...keep }; }); // 4.18.0: an updated trip keeps what you added to its hotels
         lodgingToDevice(STATE.trips[nid]); schedToDevice(STATE.trips[nid]); // 9.3.0 (ס11); kit-fixes (A2.1): a program line's destination place too
         normalizeTrip(STATE.trips[nid], [].concat(...(data.destinations || []).map(dp => (dp.places || []).map(q => ({ ...q, id: (dp.idBase || 0) + q.id, dest: dp.id })))));
         schedPathsKeep(STATE.trips[nid].schedule, oldSch); // 11.4.0 (the 11.2.0 review's miss): a group travel's kept path survives the update
+        if (STATE.trips[nid].archived && !(mode === 'update' && oldArch && !oldArch.recv)) STATE.trips[nid].archived.recv = 1; // passport-book (Q6): a trip received closed is another's memory - it stamps no passport (closed here again after a reopen, it does)
       }
       const hn = hotelsToTrips([STATE.trips[nid]]); // 9.3.0 (ס11): a hotel is always the trip's - moved here, told in the toast, undone with it
       if (mode !== 'update' || !STATE.tripData[nid]) STATE.tripData[nid] = { favorites: [], visited: [], itinerary: {}, times: {}, planItems: {}, flightsSeeded: true };
@@ -165,6 +170,6 @@ function importTripNow(data, mode, afterInstall, tail, opt) {
       infoSpotClear(); // back-exit 2b: a file update stays on its screen, at its top, with the bar
       if (nid === STATE.activeTrip) { loadPersonal(nid); applyActiveTrip(); syncFlightsToPlan(); persist(); updateHeader(); pageTop(); navShow(); } else { persist(); switchTrip(nid, true); }
       if (pk('plan')) propAfterImport(data, nid, opt.propGone); // 11.5.0 (schedule-proposal): a proposal that came in the file waits in the plan (the same undo row)
-      showUndoToast(`${mode === 'update' ? 'עודכן' : 'נוסף'} טיול: ${STATE.trips[nid].name}${n ? ` (+${n} עריכות)` : ''}${tail ? ` (${tail})` : ''}${hotelsMovedText(hn)}`);
+      showUndoToast(`${mode === 'update' ? 'עודכן' : 'נוסף'} טיול: ${STATE.trips[nid].name}${n ? ` (+${n} עריכות)` : ''}${tail ? ` (${tail})` : ''}${addJoinedText(nj)}${hotelsMovedText(hn)}`);
 }
 

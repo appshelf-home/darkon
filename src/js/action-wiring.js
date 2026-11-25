@@ -37,7 +37,8 @@ function refOf(el) {
 var _redrawQ = 0, _inAct = 0; // var: saving can happen before this line runs (startup)
 // 6.1.0: every change of my data counts (_dataGen) and is drawn once: inside an action the mechanism decides after it ends;
 // anywhere else (a gesture, a late completion, an undo from a timer) the draw is scheduled here - so no code draws after saving
-function dataChanged() { _dataGen = (_dataGen || 0) + 1; if (!_inAct && typeof redrawSoon === 'function' && document.getElementById('main')) redrawSoon(); }
+function dataChanged() { _dataGen = (_dataGen || 0) + 1; if (!_inAct && typeof redrawSoon === 'function' && document.getElementById('main')) redrawSoon(DATA_TYPING.n > 0); } // ride-no-home (G133): a letter's typing reaction redraws the screen only
+const DATA_TYPING = {n: 0}; // ride-no-home (G133): >0 while a text field's typing reaction runs (fmFieldChanged), never its window (fmFieldChanged)
 var _redrawWin = false;
 function redrawSoon(screenOnly) { // the one draw after data changed: the screen (render) and the top window (its draw), same scroll
   if (!screenOnly) _redrawWin = true;
@@ -51,12 +52,26 @@ const ACT_ERRORS = []; // what went wrong in an action (the guard crawl reads it
 // catches (a failed action, an uncaught error) offers "משהו השתבש · לדווח" - once per error per opening, only where a report can go
 // out (not in the in-Claude copy); elsewhere the plain line. var: an error may come before this line runs.
 var ERR_RING = [], ERR_OFFERED = new Set(), ERR_N = 0;
-function errNote(where, err) { const msg = String((err && (err.message || (typeof err === 'string' ? err : err.name))) || err || '?').replace(/\s+/g, ' ').slice(0, 160);
-  const e = { id: ++ERR_N, at: Date.now(), where: String(where || '').slice(0, 60), msg }; ERR_RING.push(e); if (ERR_RING.length > 10) ERR_RING.shift(); return e; }
+// arch-guard (2): every error kept names the src/ part it came from (part), with its line and column in the page (line, col): the
+// window's error gives them; otherwise the first frame of the error's stack in this page (a note with no error - a text - the caller's
+// frame). The part comes from PART_AT, the table of where each part starts in the page, written in front of the main script: by
+// tests/build.py from esbuild's source map in the built page, by tests/join.py from the join's line map in the tests' source copy.
+// Without the table (a page that has none) the part is '' and the line and column still go.
+function errPos(err, line, col, caller) {
+  if (!line) { const st = String((err && err.stack) || (caller ? new Error().stack : '') || ''), here = String(location.href).split(/[?#]/)[0];
+    for (const f of st.split('\n').slice(caller && !(err && err.stack) ? 3 : 0)) { const m = f.match(/([^\s()]+):(\d+):(\d+)\)?\s*$/); if (m && m[1].split(/[?#]/)[0] === here) { line = +m[2]; col = +m[3]; break; } } }
+  let part = ''; const T = self.PART_AT;
+  if (line && T && T.at) { let lo = 0, hi = T.at.length - 1, k = -1; // the last start at or before (line, col)
+    while (lo <= hi) { const mid = (lo + hi) >> 1, a = T.at[mid]; if (a[0] < line || (a[0] === line && a[1] <= (col || 0))) { k = mid; lo = mid + 1; } else hi = mid - 1; }
+    if (k >= 0) part = T.parts[T.at[k][2]] || ''; }
+  return { line: line || 0, col: col || 0, part }; }
+function errNote(where, err, line, col) { const msg = String((err && (err.message || (typeof err === 'string' ? err : err.name))) || err || '?').replace(/\s+/g, ' ').slice(0, 160);
+  let p = { line: 0, col: 0, part: '' }; try { p = errPos(err, line, col, typeof err === 'string'); } catch (x) {}
+  const e = { id: ++ERR_N, at: Date.now(), where: String(where || '').slice(0, 60), msg, ...p }; ERR_RING.push(e); if (ERR_RING.length > 10) ERR_RING.shift(); return e; }
 function errOffer(e) { const k = e.where + '|' + e.msg;
   if (!reportCan() || ERR_OFFERED.has(k)) { showToast(TX.actFailed); return; }
   ERR_OFFERED.add(k); showToast('משהו השתבש', { act: 'report.err', v: String(e.id), label: 'לדווח', ic: 'error', ms: 7000 }); }
-sysOn(window, 'error', e => { if (!e || !e.message || /^Script error\.?$/.test(e.message)) return; errOffer(errNote(e.lineno ? 'שורה ' + e.lineno : 'דף', e.error || e.message)); }); // a system event: an uncaught error
+sysOn(window, 'error', e => { if (!e || !e.message || /^Script error\.?$/.test(e.message)) return; errOffer(errNote(e.lineno ? 'שורה ' + e.lineno + (e.colno ? ':' + e.colno : '') : 'דף', e.error || e.message, e.lineno, e.colno)); }); // a system event: an uncaught error
 // 10.11.0 (task memory-leak, decisions 2026-11-08 Q4): a quiet self-check. On a screen change (2 s after it settles) the app counts
 // the long-lived things (LIFE, at the top of this script) against what it expects: no map of the map library left outside the page,
 // and no more intervals, observers or global listeners than at the first check - plus what each live map brings (the map library's
@@ -65,12 +80,15 @@ sysOn(window, 'error', e => { if (!e || !e.message || /^Script error\.?$/.test(e
 // user and nothing is disposed (self-cleaning would hide the bug, and might dispose a map in use).
 function lifeCount() { const ls = {}; LIFE.maps.forEach(m => { if (!m._mapPane) LIFE.maps.delete(m); }); // removed (a map never shown fires no 'unload')
   LIFE.ls.forEach((m, k) => { let n = 0; m.forEach(s => { n += s.size; }); if (n) ls[k] = n; });
+  if (SYS_FAN) SYS_FAN.forEach((fs, k) => { const b = k.replace(/:c$/, ''), n = (ls[b] || 0) - 1 + fs.size; if (n) ls[b] = n; else delete ls[b]; }); // one-way (4): the coalesced listener stands for its functions
   const maps = [...LIFE.maps], on = maps.filter(m => { const c = m.getContainer(); return c && c.isConnected; }).length;
-  return { maps: maps.length, onScreen: on, intervals: LIFE.iv.size, timeouts: LIFE.to.size, observers: LIFE.ob.size, mapObs: maps.filter(m => m._ctlW).length * 2, listeners: ls }; } // mapObs (11.8.0): the observers a live map's edge-arrow watcher holds (mapCtlWatch)
+  const gl = [...LIFE.gl]; // map-3d: the 3D maps (MapLibre) - one at most, alive only while on the page
+  return { maps: maps.length, onScreen: on, gl: gl.length, glOff: gl.filter(m => { const c = m.getContainer(); return !c || !c.isConnected; }).length, intervals: LIFE.iv.size, timeouts: LIFE.to.size, observers: LIFE.ob.size, mapObs: maps.filter(m => m._ctlW).length * 2, listeners: ls }; } // mapObs (11.8.0): the observers a live map's edge-arrow watcher holds (mapCtlWatch)
 function lifeExcess(base, now, slack) { const out = [], s = slack || 0, dm = now.maps - base.maps, perMap = { 'window:resize': 1 };
   if (now.maps > now.onScreen) out.push(`maps ${now.maps} alive, ${now.onScreen} on the page`);
+  if (now.glOff) out.push(`3D maps ${now.glOff} alive off the page`);
   if (now.intervals > base.intervals + s) out.push(`intervals ${now.intervals}, expected ${base.intervals}`);
-  const eo = base.observers + dm + (now.mapObs || 0) - (base.mapObs || 0); if (now.observers > eo + s) out.push(`observers ${now.observers}, expected ${eo}`);
+  const eo = base.observers + dm + (now.mapObs || 0) - (base.mapObs || 0) + (now.gl || 0) - (base.gl || 0); // a 3D map holds one ResizeObserver if (now.observers > eo + s) out.push(`observers ${now.observers}, expected ${eo}`);
   Object.keys(now.listeners).forEach(k => { const b = (base.listeners[k] || 0) + (perMap[k] || 0) * dm; if (now.listeners[k] > b + s) out.push(`${k} listeners ${now.listeners[k]}, expected ${b}`); });
   return out; }
 let _lifeBase = null, _lifeTab = null, _lifeT = 0; const _lifeSaid = new Set();
@@ -113,8 +131,17 @@ act('sure.ok', () => { const go = SURE_GO; sureDismiss(); if (go) return go(); r
 act('sure.no', () => { sureDismiss(); return 'quiet'; });
 // 9.0.0 (נ3): the named exceptions of the action wiring by kind, one function each - events of the system (dark mode, turning
 // the phone, full screen, a key or a touch that stops a scroll return) and the layer manager's own (unsaved changes, Escape, a tap outside)
-function sysOn(t, ev, f, o) { if (t.addEventListener) t.addEventListener(ev, f, o); else if (t.addListener) t.addListener(f); }
-function sysOff(t, ev, f) { if (t.removeEventListener) t.removeEventListener(ev, f); else if (t.removeListener) t.removeListener(f); }
+// one-way (4): the window's and the document's resize, scroll, online and offline go through here only - one browser listener per event
+// (and capture), coalesced: it calls every function registered for it, in the order they came, each on its own (an error in one is
+// reported as before and the rest still run); lifeCount counts each registered function as the listener it was
+var SYS_FAN; // var with no value: sysOn runs before this line (data-registry.js, the error listener above)
+function sysFanKey(t, ev, o) { return (t === window || t === document) && ['resize', 'scroll', 'online', 'offline'].includes(ev) && !(o && o.once) ? (t === window ? 'window' : 'document') + ':' + ev + (o === true || (o && o.capture) ? ':c' : '') : null; }
+function sysOn(t, ev, f, o) { const k = sysFanKey(t, ev, o);
+  if (k) { if (!SYS_FAN) SYS_FAN = new Map(); let fs = SYS_FAN.get(k);
+    if (!fs) { const set = fs = new Set(); SYS_FAN.set(k, fs); t.addEventListener(ev, e => [...set].forEach(g => { if (!set.has(g)) return; try { g(e); } catch (err) { setTimeout(() => { throw err; }, 0); } }), { capture: k.endsWith(':c'), passive: true }); }
+    fs.add(f); return; }
+  if (t.addEventListener) t.addEventListener(ev, f, o); else if (t.addListener) t.addListener(f); }
+function sysOff(t, ev, f, o) { const k = sysFanKey(t, ev, o); if (k) { const fs = SYS_FAN && SYS_FAN.get(k); if (fs) fs.delete(f); return; } if (t.removeEventListener) t.removeEventListener(ev, f, o); else if (t.removeListener) t.removeListener(f); }
 function layerOn(t, ev, f, o) { t.addEventListener(ev, f, o); }
 function actOff(el) { return el.disabled || el.getAttribute('aria-disabled') === 'true' || !!el.closest('fieldset[disabled]'); }
 document.addEventListener('click', e => {

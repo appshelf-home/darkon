@@ -12,6 +12,7 @@
 .set-head-t { display: contents; } .set-head-t b { grid-column: 1; display: block; font-size: var(--fs-title-medium); font-weight: 500; } .set-head-t .set-ver { grid-column: 1; margin: 0; } .set-head-t .set-copy { grid-column: 1 / -1; margin-top: 2px; }
 .set-head .logo { grid-column: 2; grid-row: 1 / span 2; width: 56px; } .set-head .set-copy bdi { white-space: nowrap; } /* the years stay whole */
 .set-head-t .set-links { grid-column: 1 / -1; column-gap: var(--sp-4); row-gap: 0; margin: 0; } .set-links .link-btn { display: inline-flex; align-items: center; min-height: 40px; } /* 11.39.0 (legal-page): the terms page and "מקורות ורישיונות" under the copyright line */
+.src-note { font-size: var(--fs-label-small); color: var(--on-surface-variant); overflow-wrap: anywhere; } /* legal-credits-2 (C19): a source's required notice */
 .src-list { list-style: none; margin: 0 0 var(--sp-3); padding: 0; } .src-row { display: flex; flex-direction: column; gap: 2px; padding: var(--sp-2) 0; border-bottom: 1px solid var(--outline-variant); overflow-wrap: anywhere; } .src-row:last-child { border-bottom: none; } .src-row span { color: var(--on-surface-variant); font-size: var(--fs-body-small); } /* 11.39.0 (legal-page): "מקורות ורישיונות" */
 .rep-terms { margin: var(--sp-2) 0 0; } /* 11.39.0 (legal-page): the notice at the report form, with the link to the terms page */
 .acc-grp-h { margin: var(--sp-4) var(--sp-1) var(--sp-2); color: var(--primary); font-size: var(--fs-label-small); font-weight: 500; } /* 10.13.0 (Q14): a menu screen's group header */
@@ -77,6 +78,14 @@ body.layers-aside .sheet-backdrop { display: none !important; }
 .screen-layer { --header-h: calc(49px + var(--safe-top)); } /* sticky bars inside a screen (draft, closing steps) sit under its head */
 body.screen-on .map-fs { z-index: 2950; }
 @media (min-width: 1024px) { .screen-layer > .screen-head, .screen-layer > .screen-main { max-width: 1000px; } }
+.screen-layer.site-page { z-index: 3100; display: flex; flex-direction: column; overflow: hidden; padding-bottom: 0; } /* task terms-inside: a page of the app's site inside the app - over every window, the frame scrolls itself */
+.site-page > .screen-head { width: 100%; flex: none; } .site-page > .site-frame { flex: 1 1 auto; width: 100%; min-height: 0; border: 0; display: block; background: var(--surface); }
+/* survival-words (Q4): "להראות" - the local script as large as fits (wordsFit sets its size), the meaning and the transliteration small under it */
+.screen-layer.words-show { display: flex; flex-direction: column; } .words-show > .screen-head { width: 100%; flex: none; }
+.words-show > .ws-body { flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-2); padding: 16px; min-height: 0; text-align: center; }
+.ws-loc { display: block; max-width: 100%; line-height: 1.25; font-weight: 600; color: var(--on-surface); unicode-bidi: isolate; overflow-wrap: normal; word-break: normal; }
+.ws-loc.ws-wrap { overflow-wrap: anywhere; }
+.ws-he { margin: 0; font-size: var(--fs-title-medium); font-weight: 600; } .ws-say { margin: 0; color: var(--on-surface-variant); }
 /* 5.5.0: one frame for every window (imvwfw0d4 decision 7) - a handle on bottom sheets, full-screen windows, the unsaved question */
 .sheet-head { position: sticky; }
 .sheet-handle { position: absolute; top: 4px; left: 50%; transform: translateX(-50%); width: 40px; height: 4px; border-radius: var(--r-pill); background: var(--outline-variant); pointer-events: none; }
@@ -254,7 +263,7 @@ button.iw-status { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .imp-door { }
 .pw-link:has(> .lk-tx), .link-btn:has(> .lk-tx) { text-decoration: none; } .lk-tx { text-decoration: underline; } /* phone-round-2b-fixes P6 (G56): a text link that starts with an icon underlines its words' span only - the buttons are flex boxes, and an underline on a flex box reaches every child, the icon too */
 .pw-link, .link-btn { border: none; background: none; padding: 2px 0; color: var(--primary); text-decoration: underline; font: inherit; font-size: var(--fs-body-small); cursor: pointer; align-self: center; }
-.pw-intro { margin-bottom: 6px; } .pw-body { display: flex; flex-direction: column; gap: 10px; } .pw-conf { margin: 0; }
+.pw-intro { margin-bottom: 6px; } .pw-intro > .cl-part { margin-top: 4px; padding-bottom: 10px; } /* along-time-field (G106): the request to the AI - one block (a div, never an inline span: a box per wrapped line tore it) */ .pw-body { display: flex; flex-direction: column; gap: 10px; } .pw-conf { margin: 0; }
 .cl-part { border-top: 1px solid var(--outline-variant); margin-top: 10px; padding-top: 8px; font-size: var(--fs-body); } .cl-part[hidden] { display: none; } .cl-part p { margin: 2px 0; } .cl-part .claude-steps { margin: 4px 0; padding-inline-start: 20px; }
 .bk-status .bk-now { width: 100%; justify-content: center; }
 
@@ -293,9 +302,12 @@ button.iw-status { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 /* 4.37.1: the ✕ sits on the label's line, so the date field keeps its full width (a phone's date field can't shrink) */
 .sh-times > .sh-field { min-width: 0; }
 /* final-review-fixes (family B, 9b): a date or time field is never narrower than its digits (10 digits and signs or "07:30 AM", the picker's icon, the clear ✕ when
-   it shows, the padding - in rem, so it follows the text size and holds either format); when a pair does not fit side by side each takes a full row */
-.sh-times { flex-wrap: wrap; } .sh-times > .sh-field:has(input[type=date]) { min-width: calc(7.4rem + 26px); } .sh-times > .sh-field:has(input[type=time]) { min-width: calc(6rem + 30px); }
-.sh-times > .sh-field:has(input[type=date] ~ .date-clr:not([hidden])) { min-width: calc(7.4rem + 56px); } .sh-times > .sh-field:has(input[type=time] ~ .date-clr:not([hidden])) { min-width: calc(6rem + 60px); } .sh-three > .sh-field:first-child { flex: 1.4 1 0; } .sh-three > .sh-field:last-child { flex: .8 1 0; }
+   it shows, the padding - in rem, so it follows the text size and holds either format); when a pair does not fit side by side each takes a full row.
+   along-time-field: each floor is the field's measured need - the widest value in the app's font ("04:44 AM", "04/04/2030"), the engine's room beside it
+   (tests/dtroom.py), the 12 px padding and 1 px border - and with the ✕ shown its fixed 68 px from the field's end (right: 40px + its 28 px box), the
+   text's part in rem and the fixed parts in px, +2 px; the old floors (6rem + 60px for a time with its ✕) put "09:00 AM" 5 px under the ✕ at 320, ×0.9 */
+.sh-times { flex-wrap: wrap; } .sh-times > .sh-field:has(input[type=date]) { min-width: calc(6.8rem + 39px); } .sh-times > .sh-field:has(input[type=time]) { min-width: calc(5.5rem + 50px); }
+.sh-times > .sh-field:has(input[type=date] ~ .date-clr:not([hidden])) { min-width: calc(5.8rem + 90px); } .sh-times > .sh-field:has(input[type=time] ~ .date-clr:not([hidden])) { min-width: calc(4.5rem + 90px); } .sh-three > .sh-field:first-child { flex: 1.4 1 0; } .sh-three > .sh-field:last-child { flex: .8 1 0; }
 .sheet-save-bar [hidden] { display: none !important; }
 .date-clr { flex: 0 0 auto; padding: 2px 8px; border-radius: var(--r-chip); border: 1px solid var(--outline); background: var(--surface); color: var(--on-surface-variant); font-size: var(--fs-label-small); font-weight: 500; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .date-clr[hidden] { display: none; }

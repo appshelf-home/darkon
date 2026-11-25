@@ -139,12 +139,13 @@ function openTravelEditor(id, o) { layerNote(openTravelEditor, arguments); o = o
     : fmEnd(F, side, { label: side === 'from' ? 'מ-' : 'אל', req: !grp, value: { name: v0[side] || '', loc: v0[side + 'Loc'] || null }, travel: () => tvDraft(F), side });
   const nDays = o.draft ? tripLen(t) : TRIP_DAYS.length, dayOpts = () => Array.from({ length: nDays }, (_, i) => vDate(i + 1)).map(v => [v, tmFmt('pick', v)]);
   const mOpts = MARGIN_STEPS.map(m => [String(m), marginText(m)]);
-  const srcLine = grp && !o.draft && schedEdChanged(raw) ? [raw.start ? fmEsc(raw.start + (raw.end ? '–' + raw.end : '')) : 'בלי שעה', schedKindIc(raw.kind, fmEsc(SCHED_KIND_NAME[raw.kind] || '')), raw.title && fmEsc(raw.title)].filter(Boolean).join(SEP) : '';
+  const srcLine = grp && !o.draft && schedEdChanged(raw) ? [raw.start ? escH(raw.start + (raw.end ? '–' + raw.end : '')) : 'בלי שעה', schedKindIc(raw.kind, escH(SCHED_KIND_NAME[raw.kind] || '')), raw.title && escH(raw.title)].filter(Boolean).join(SEP) : '';
   sheet.innerHTML = `${fmHead(`<span data-tvttl>${travelKindName(v0)}</span>${grp ? (SEP + 'קבוצתי') : ''}`)}
     ${fmChips(F, 'mode', { label: 'סוג', value: v0.mode || 'flight', options: Object.entries(TRAVEL_MODES).map(([k, v]) => [k, msi(TRAVEL_MS[k], { size: 18 }) + ' ' + v[1]]), on: () => tvKind(F) })}
     ${fmText(F, 'title', { label: 'כותרת', value: v0.title || '' })}
     ${dated ? fmDate(F, 'date', { label: 'תאריך', req: true, value: v0.date || '', on: () => tiLand(F) }) : fmChips(F, 'date', { label: 'תאריך', req: true, value: v0.date || '', options: dayOpts(), on: () => tiLand(F) })}
     ${end('from')}${end('to')}
+    ${grp ? '' : fmStops(F, 'stops', { label: 'עצירות בדרך', value: v0.mode === 'car' ? v0.stops || [] : [], order: (v, G) => tvStopsOrder(tvDraft(G), v, tvCtx(t)), hint: 'ברכב: מקומות בדרך, לפי סדר הדרך. הדרך עוברת דרכם.' })}
     <div class="sh-times sh-three">${fmText(F, 'airline', { label: 'חברה', value: v0.airline || '' })}${fmText(F, 'number', { label: W.number, value: v0.number || '', dir: 'ltr' })}${fmText(F, 'terminal', { label: 'טרמינל', value: v0.terminal || '', dir: 'ltr' })}</div>
     <div class="sh-times">${fmTime(F, 'depart', { label: W.depart + ' <small class="fm-note">(שעון מקומי)</small>', value: v0.depart || '', clear: true, on: () => tiLand(F) })}${fmTime(F, 'arrive', { label: W.arrive + ' <small class="fm-note">(שעון מקומי)</small>', value: v0.arrive || '', clear: true, on: () => tiLand(F) })}</div>
     ${fmChips(F, 'arriveDay', { label: W.day, value: String(Number(v0.arriveDay) || 0), options: [['-1', '−1'], ['0', 'אותו יום'], ['1', '+1'], ['2', '+2']], hint: '<span id="tiLandTx"></span>', on: () => tiLand(F) })}
@@ -165,16 +166,18 @@ function tvDraft(F) { const g = k => F.kinds[k] ? fmGet(F, k) : undefined, e = k
 function tvKind(F, first) { const m = fmGet(F, 'mode'), W = travelWords(m), lb = (id, tx) => { const l = fmW(F, id) && fmW(F, id).querySelector('.fm-lbl'); if (l && l.firstChild) l.firstChild.textContent = tx; };
   lb('number', W.number); lb('depart', W.depart + ' '); lb('arrive', W.arrive + ' '); lb('arriveDay', W.day);
   const tw = fmW(F, 'terminal'); if (tw) tw.hidden = !W.terminal; const row = tw && tw.parentElement; if (row) row.classList.toggle('sh-three', W.terminal);
+  const sw = fmW(F, 'stops'); if (sw) sw.hidden = m !== 'car'; // along-drive: stops only on a drive
   const tt = fmRoot(F).querySelector('[data-tvttl]'); if (tt) tt.textContent = travelKindName({ mode: m });
   if (!first) { const cur = F.opts.cur, own = cur && (cur.before != null || cur.after != null), d = travelMarginDef(m); if (!own) { fmSet(F, 'before', String(d[0]), true); fmSet(F, 'after', String(d[1]), true); } fmSums(F); } }
 function tvMarginSum(F) { const m = fmGet(F, 'mode'), b = Number(fmGet(F, 'before')), a = Number(fmGet(F, 'after')), d = travelMarginDef(m);
-  return fmEsc(marginLine(b, a)) + (b === d[0] && a === d[1] ? SEP + 'ברירת המחדל ל' + fmEsc(travelKindName({ mode: m })) : ''); }
+  return escH(marginLine(b, a)) + (b === d[0] && a === d[1] ? SEP + 'ברירת המחדל ל' + escH(travelKindName({ mode: m })) : ''); }
 // the editor's values -> a travel's fields
 function tvValues(F) { const v = {}, home = (F.kinds.from === 'text' || F.kinds.to === 'text');
   ['mode', 'title', 'date', 'airline', 'number', 'terminal', 'depart', 'arrive', 'note'].forEach(k => { const x = fmGet(F, k); v[k] = x == null ? '' : String(x).trim(); });
   ['from', 'to'].forEach(side => { const x = fmGet(F, side); if (x && typeof x === 'object') { v[side] = String(x.name || '').trim(); v[side + 'Loc'] = x.loc || null; } else { v[side] = String(x || '').trim(); v[side + 'Loc'] = null; } });
   if (v.mode !== 'flight') v.terminal = ''; v.arriveDay = Number(fmGet(F, 'arriveDay')) || 0;
   const d = travelMarginDef(v.mode), b = Number(fmGet(F, 'before')), a = Number(fmGet(F, 'after')); v.before = b === d[0] && a === d[1] ? null : b; v.after = b === d[0] && a === d[1] ? null : a;
+  const st = v.mode === 'car' && F.kinds.stops ? fmGet(F, 'stops') || [] : []; v.stops = st.length ? st.map(x => ({ name: String(x.name || '').trim(), loc: x.loc })) : null; // along-drive
   void home; return v; }
 function tvCheck(F, v, t) { if (!v.date) return fmFail(F, 'date', 'חסר תאריך'); if (!F.opts.grp && !v.from) return fmFail(F, 'from', 'חסר מאיפה'); if (!F.opts.grp && !v.to) return fmFail(F, 'to', 'חסר לאן'); // mine: both ends required; the group's: as its program gave them
   if (!F.opts.draft && isHM(v.depart) && isHM(v.arrive)) { const z = travelZones(t, F.opts.cur || { ...v }); if (z.arr && tmMoment(isoAdd(v.date, v.arriveDay), v.arrive, z.arr) <= tmMoment(v.date, v.depart, z.dep)) return fmFail(F, 'arrive', 'הנחיתה יוצאת לפני ההמראה - בודקים את השעות או את יום הנחיתה'); }
@@ -191,8 +194,8 @@ function travelSavedWord(f) { return travelKindName(f) + (TRAVEL_FEM[(f && f.mod
 function tvClean(o) { Object.keys(o).forEach(k => { if (o[k] == null || o[k] === '' || (k === 'arriveDay' && !o[k])) delete o[k]; }); return o; }
 function tvLineWrite(s, v) { TV_FIELDS.forEach(k => { const lk = TV_LINE_KEY[k] || k, x = v[k]; if (x == null || x === '' || (k === 'arriveDay' && !x)) delete s[lk]; else s[lk] = x; }); s.kind = v.mode === 'flight' ? 'flight' : 'transfer'; }
 function trip_travelWrite(t, cur, v, conv) { t.travels = t.travels || [];
-  if (cur) { const o = t.travels.find(x => x.id === cur.id), was = JSON.stringify([o.mode, o.fromLoc, o.toLoc]); TV_FIELDS.forEach(k => { if (v[k] == null) delete o[k]; else o[k] = v[k]; });
-    if (JSON.stringify([o.mode, o.fromLoc, o.toLoc]) !== was) { delete o.path; delete o.pathK; delete o.pathNear; } } // 11.2.0: its kept path was for the old kind and ends
+  if (cur) { const o = t.travels.find(x => x.id === cur.id), was = JSON.stringify([o.mode, o.fromLoc, o.toLoc, o.stops || null]); TV_FIELDS.concat('stops').forEach(k => { if (v[k] == null) delete o[k]; else o[k] = v[k]; }); // along-drive: a drive's stops
+    if (JSON.stringify([o.mode, o.fromLoc, o.toLoc, o.stops || null]) !== was) { delete o.path; delete o.pathK; delete o.pathNear; } } // 11.2.0: its kept path was for the old kind and ends (along-drive: and stops)
   else t.travels.push({ ...v, id: 'f_user_' + Date.now().toString(36) });
   t.travels.sort((a, b) => (a.date + (a.depart || '')).localeCompare(b.date + (b.depart || '')));
   if (conv) removeFromDayQuiet(conv.day, conv.id); }
@@ -213,37 +216,39 @@ act('travel.hide', c => { const F = fmOf(c.el); if (!F) return; const { raw } = 
 // night's hotel, the day's places, the trip's own places), "מקום אחר" (a point on the map); typing adds the address search's results and
 // "השם בלבד" (the name edited, the location kept)
 let _endF = null;
-function openEndChoice(F, side) { const f = tvDraft(F), t = F.opts.t || activeTripObj(), drf = !!F.opts.draft, cur = F.vals[side] || {}, W = travelWords(f.mode), rows = [], seen = new Set();
+function openEndChoice(F, side) { const stop = F.kinds[side] === 'stops', f = tvDraft(F), t = F.opts.t || activeTripObj(), drf = !!F.opts.draft, cur = stop ? {} : F.vals[side] || {}, W = travelWords(f.mode), rows = [], seen = new Set(); // along-drive: "＋ עצירה" chooses one more stop the same way
   const add = (group, ic, name, sub, pick) => { const k = group + '|' + name; if (!name || seen.has(k)) return; seen.add(k); rows.push({ v: 'r' + rows.length, group, html: `${msi(ic, { size: 20 })} ${nameB(name)}`, text: name, sub, pick }); };
-  const p = endProposal({ ...f, [side]: cur.name || '', [side + 'Loc']: null }, side, t);
-  if (p) add('מוצע', 'location_on', p.name, `לפי ״${fmEsc(p.q)}״${SEP}בחירה מאשרת`, { name: p.name, loc: { lat: p.lat, lng: p.lng } });
+  const p = stop ? null : endProposal({ ...f, [side]: cur.name || '', [side + 'Loc']: null }, side, t);
+  if (p) add('מוצע', 'location_on', p.name, `לפי ״${escH(p.q)}״${SEP}בחירה מאשרת`, { name: p.name, loc: { lat: p.lat, lng: p.lng } });
   const me = F.opts.cur && String(F.opts.cur.id), day = f.date, pts0 = [];
   // the review of 11.0.0 (Q4): the ends of every travel of the trip (in the draft, the draft's) - that day's first, then by date, each point once
   const onDay = x => !!day && (x.date === day || travelLandDate(x) === day);
   travelsOf(t).filter(x => String(x.id) !== me).map((x, i) => [x, i]).sort((a, b) => (onDay(b[0]) ? 1 : 0) - (onDay(a[0]) ? 1 : 0) || a[1] - b[1]).forEach(([x]) => ['from', 'to'].forEach(sd => { const e = travelEnd(x, sd, t); if (!e.loc || !e.name) return; const w = travelWords(x.mode);
     const c = endCoord(e.loc, t), k = e.loc.pid != null ? 'p' + e.loc.pid : ''; if (pts0.some(q => (k && q.k === k) || (c && q.c && distanceKm(q.c, c) < 0.05))) return; pts0.push({ k, c });
-    add('נסיעות הטיול', TRAVEL_MS[x.mode] || 'flight', e.name, fmEsc([onDay(x) ? '' : tmFmt('dayN', sd === 'to' ? travelLandDate(x) : x.date), [x.airline, x.number].filter(Boolean).join(' '), sd === 'from' ? (x.depart ? w.depart + ' ' + x.depart : '') : (x.arrive ? w.arrive + ' ' + x.arrive : '')].filter(Boolean).join(SEP)), { name: e.name, loc: e.loc }); }));
+    add('נסיעות הטיול', TRAVEL_MS[x.mode] || 'flight', e.name, escH([onDay(x) ? '' : tmFmt('dayN', sd === 'to' ? travelLandDate(x) : x.date), [x.airline, x.number].filter(Boolean).join(' '), sd === 'from' ? (x.depart ? w.depart + ' ' + x.depart : '') : (x.arrive ? w.arrive + ' ' + x.arrive : '')].filter(Boolean).join(SEP)), { name: e.name, loc: e.loc }); }));
   const dd = drf ? null : TRIP_DAYS.find(d => d.date === day), pts = [];
   (drf ? [] : tripLodging()).filter(l => day && l.checkIn <= day && day <= l.checkOut && l.placeId != null).forEach(l => { const q = POINTS.find(x => x.id === l.placeId); if (q) add('מקומות הטיול', 'hotel', q.name, `${TX.lodging}${SEP}${tmFmt('range', [l.checkIn, l.checkOut])}`, { name: q.name, loc: { pid: q.id } }); });
   if (dd) { mergedIds(dd.key).forEach(id => { const q = planItem(id); if (q && !isNote(q)) pts.push(POINTS.find(x => x.id === (q.dup ? copyRef(id) : id))); }); scheduleOf(dd.date).forEach(s => { if (s.placeId != null && !isTravelKind(s.kind)) pts.push(POINTS.find(x => x.id === s.placeId)); }); }
   if (!drf) (t.places || []).forEach(q => pts.push(POINTS.find(x => x.id === q.id)));
-  pts.filter(q => q && routeCoordOf(q)).forEach(q => add('מקומות הטיול', 'location_on', q.name, fmEsc(destName(q.dest || layerDef(q.layer).dest) || ''), { name: q.name, loc: { pid: q.id } }));
+  pts.filter(q => q && routeCoordOf(q)).forEach(q => add('מקומות הטיול', 'location_on', q.name, escH(destName(q.dest || layerDef(q.layer).dest) || ''), { name: q.name, loc: { pid: q.id } }));
   rows.push({ v: 'map', group: 'מקום אחר', html: `${msi('pin_drop', { size: 20 })} סימון במפה`, text: 'סימון במפה', keep: true, pick: 'map' });
   _endF = { F, side };
-  const center = (() => { const c = cur.loc && endCoord(cur.loc, t); if (c) return [c.lat, c.lng]; const d = endDest(f, side, t); return d && Array.isArray(d.meta.center) ? d.meta.center : undefined; })();
-  openFmChoice({ title: `${side === 'from' ? 'מ-' : 'אל'}${SEP}${fmEsc(fmGet(F, 'title') || travelKindName(f) + (f.to ? ' ל' + f.to : ''))}`, search: true, searchHint: 'חיפוש כתובת או שם', key: 'openEndChoice', options: rows,
-    lead: q => [{ v: 'name', group: 'השם', html: `${msi('edit', { size: 20 })} ${nameB(q)}`, text: q, sub: cur.loc ? 'השם בלבד, המיקום נשאר' : 'השם בלבד, בלי מיקום', pick: { name: q, loc: cur.loc || null } }],
+  const center = (() => { const c = cur.loc && endCoord(cur.loc, t); if (c) return [c.lat, c.lng]; if (stop) { const P = travelPts(f, tvCtx(t)); if (P) return [(P.a.lat + P.b.lat) / 2, (P.a.lng + P.b.lng) / 2]; } const d = endDest(f, stop ? 'from' : side, t); return d && Array.isArray(d.meta.center) ? d.meta.center : undefined; })();
+  openFmChoice({ title: `${stop ? 'עצירה בדרך' : side === 'from' ? 'מ-' : 'אל'}${SEP}${escH(fmGet(F, 'title') || travelKindName(f) + (f.to ? ' ל' + f.to : ''))}`, search: true, searchHint: 'חיפוש כתובת או שם', key: 'openEndChoice', options: rows,
+    lead: stop ? null : q => [{ v: 'name', group: 'השם', html: `${msi('edit', { size: 20 })} ${nameB(q)}`, text: q, sub: cur.loc ? 'השם בלבד, המיקום נשאר' : 'השם בלבד, בלי מיקום', pick: { name: q, loc: cur.loc || null } }], // a stop needs its point
     ps: psHost({ box: () => document.getElementById('fmChList'), near: () => center, map: () => { closeSheet(); setTimeout(() => endPickOnMap(fmLive(F), side, center), 0); }, pick: () => {},
       ret: () => tvRet(fmLive(F), side) }), // 11.20.0 (place-search-upgrade): the one place search; 11.21.0 (Q3): an unsaved travel too, with its whole form; 11.21.1: a draft's travel and a conversion too
-    psRow: (x, i) => ({ v: 'f' + i, group: 'תוצאות חיפוש', html: `${msi(x.ic || 'search', { size: 20 })} ${nameB(x.name)}`, text: x.name, sub: fmEsc([x.sub || x.country, x.km != null ? fmtKm(x.km) : ''].filter(Boolean).join(SEP)), pick: { name: x.name, loc: { lat: x.coord.lat, lng: x.coord.lng } } }) },
-  (v, x) => { const pk = x && x.pick; if (!pk) return; const G = fmLive(F); if (pk === 'map') { endPickOnMap(G, side, center); return; } fmSet(G, side, { name: pk.name, loc: pk.loc || null }); });
+    psRow: (x, i) => ({ v: 'f' + i, group: 'תוצאות חיפוש', html: `${msi(x.ic || 'search', { size: 20 })} ${nameB(x.name)}`, text: x.name, sub: escH([x.sub || x.country, x.km != null ? fmtKm(x.km) : ''].filter(Boolean).join(SEP)), pick: { name: x.name, loc: { lat: x.coord.lat, lng: x.coord.lng } } }) },
+  (v, x) => { const pk = x && x.pick; if (!pk) return; const G = fmLive(F); if (pk === 'map') { endPickOnMap(G, side, center); return; } endFieldSet(G, side, { name: pk.name, loc: pk.loc || null }); });
 }
 // 11.21.1 (form-keep-everywhere, found 1): the travel a Google Maps share comes back to - saved or unsaved, mine, a draft's (by the draft's
 // own time) or a place being turned into a travel (its conv) - with its whole form (psFormRet); PS_FORMS.travel reopens it
 function tvRet(G, side) { if (!G) return null; const dr = !!G.opts.draft;
   return psFormRet(G, () => ({ k: 'travel', id: G.opts.cur ? G.opts.cur.id : null, tid: dr ? null : STATE.activeTrip, dat: dr && DRAFT ? DRAFT.at : null, conv: G.opts.conv || null }), side); }
-function endPickOnMap(F, side, center) { const cur = F.vals[side] || {}, c = cur.loc && endCoord(cur.loc), s = c ? [c.lat, c.lng] : center || curDest().meta.center;
-  openPick({ how: 'btn', has: !!c, start: s, zoom: c ? 16 : 12, ret: () => tvRet(fmLive(F), side), onPick: r => fmSet(fmLive(F), side, { name: cur.name || r.name || 'מיקום במפה', loc: { lat: +r.coord.lat, lng: +r.coord.lng } }) }); }
+function endPickOnMap(F, side, center) { const cur = F.kinds[side] === 'stops' ? {} : F.vals[side] || {}, c = cur.loc && endCoord(cur.loc), s = c ? [c.lat, c.lng] : center || curDest().meta.center;
+  openPick({ how: 'btn', has: !!c, start: s, zoom: c ? 16 : 12, ret: () => tvRet(fmLive(F), side), onPick: r => endFieldSet(fmLive(F), side, { name: cur.name || r.name || 'מיקום במפה', loc: { lat: +r.coord.lat, lng: +r.coord.lng } }) }); }
+// an end takes the chosen point; the stops' list (along-drive) adds it as one more stop, in the road's order
+function endFieldSet(G, side, v) { if (!G) return; if (G.kinds[side] === 'stops') fmStopAdd(G, side, v); else fmSet(G, side, v); }
 // the card's chip (Q13 / done-when): the editor, straight on the end that waits
 act('travel.endFix', c => { const [id, side] = String(c.v).split('|'); openTravelEditor(id, { end: side }); });
 // ---- a card of the wrong kind (Q20a): place <-> travel, one quiet row at the end of the editor; it keeps the name, the day, the time,
@@ -298,3 +303,29 @@ function openDraftTravels() { layerNote(openDraftTravels, arguments); const t = 
 act('draft.travels', () => openDraftTravels());
 act('draft.travelEdit', c => openTravelEditor(c.v, { draft: true }));
 act('draft.travelEndFix', c => { const [id, side] = String(c.v).split('|'); openTravelEditor(id, { draft: true, end: side }); }); // phone-round-2b-fixes P9 (G59): the chip is the plan card's button - the editor on the first open end
+// ---- a drive's stops on its card (along-drive; the owner, 23.11.2026, option 1): the names in the road's order under its ends, and a chip
+// "N עצירות" that opens their list - each row with ✕ (one undo snackbar). Added from "📚 לאורך הדרך" (travelStopAdd) or in the editor.
+function tvStopsOf(f) { return f && f.mode === 'car' && !f.group && Array.isArray(f.stops) ? f.stops.filter(s => s && s.loc) : []; }
+function travelStopsLine(f) { const ss = tvStopsOf(f); return ss.length ? `<span class="mc-desc tv-stopsl" dir="auto">${msi('location_on', { size: 16, cls: 'msi-in' })}${ss.map(s => `<bdi>${escH(s.name || 'מיקום במפה')}</bdi>`).join(SEP)}</span>` : ''; }
+function travelStopsChip(f, ro) { const n = tvStopsOf(f).length; if (!n || ro) return '';
+  return `<button type="button" class="tl-tag tv-stopsc" data-act="travel.stops" data-v="${escH(String(f.id))}">${tagIc('location_on')}${n === 1 ? 'עצירה אחת' : n + ' עצירות'}</button>`; }
+function openTravelStops(id) { layerNote(openTravelStops, arguments); const t = activeTripObj(), f = t && travelById(id, t), ss = tvStopsOf(f); if (!f || !ss.length) { closeSheet(); return; }
+  const C = tvCtx(t), L = travelLine(f, C), at = s => { const c = tvStopC(s, C); return c && L ? fmtKm(lineNear(L.pts, c).km) + ' מ' + escH(f.from || 'היציאה') : ''; };
+  document.getElementById('sheet').innerHTML = `${fmHead(`${msiT('location_on', 'עצירות בדרך')}${SEP}${nameB(travelTitle(f))}`, 'tvStClose')}
+    <p class="sh-hint">לפי סדר הדרך. הדרך עוברת דרכן, והיום בתוכנית נשאר כמו שהוא.</p>
+    <div class="dl-list">${ss.map((s, i) => stopRowHTML(s, `data-act="travel.stopDel" data-v="${escH(f.id + '|' + i)}"`, at(s))).join('')}</div>`;
+  showSheetBackdrop('openTravelStops'); }
+act('travel.stops', c => openTravelStops(c.v));
+act('travel.stopDel', c => { const [id, i] = String(c.v).split('|'), t = activeTripObj(), o = (t.travels || []).find(x => String(x.id) === id), s = o && Array.isArray(o.stops) ? o.stops[+i] : null; if (!s) return;
+  o.stops = o.stops.filter((x, k) => k !== +i); if (!o.stops.length) delete o.stops; delete o.path; delete o.pathK; delete o.pathNear;
+  persist(); showUndoToast(SY.del + ' הוסרה מהדרך: ' + (s.name || 'מיקום במפה')); }); // the mechanism draws the card and the window (none left: the window closes itself)
+// a stop added to a drive (from "לאורך הדרך": the place just saved) - in the road's order; its kept road goes, asked again through the stops
+function travelStopAdd(id, st) { const t = activeTripObj(), o = t && (t.travels || []).find(x => String(x.id) === String(id)); if (!o || o.mode !== 'car' || !st || !st.loc) return false;
+  o.stops = tvStopsOrder(o, (o.stops || []).concat([st]), tvCtx(t)); delete o.path; delete o.pathK; delete o.pathNear; return true; }
+// a drive's stops in a trip file (along-drive; the kit's file-format.md "Travel"): a place of the trip by its id ({ pid }, as an end), any
+// other place by its point (at the door: tvStopsClean, js/files.js)
+function tvStopsOut(c, t) { const own = new Set((t.places || []).map(p => p.id)), C = tvCtx(t);
+  (c.travels || []).forEach(f => { if (f.stops == null) return; if (f.mode !== 'car' || !Array.isArray(f.stops)) { delete f.stops; return; }
+    f.stops = f.stops.map(s => { if (!s || !s.loc) return null; if (s.loc.pid == null || own.has(s.loc.pid)) return s; const p = tvStopC(s, C);
+      return p ? { name: s.name || '', loc: { lat: +(+p.lat).toFixed(6), lng: +(+p.lng).toFixed(6) } } : null; }).filter(Boolean);
+    if (!f.stops.length) delete f.stops; }); return c; }

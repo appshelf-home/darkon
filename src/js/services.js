@@ -12,7 +12,6 @@
 // server is "no network" (ש4), whatever navigator.onLine says. None of them is ever kept as "not found".
 // Guard test: t810 (no outside request outside this block; every row complete; rates and concurrency under a mocked
 // network; failures never kept as empty; every request counted; attribution wherever a provider's data is shown).
-const SVC_CHECKED = '2.11.2026'; // the date the published terms below were read (a row the legal review confirmed carries its own date)
 const SVC_REVIEWED = '21.11.2026'; // legal-credits (S7): the rows the legal review of 21.11.2026 read at the source
 const OSM_ATTR = { t: '© OpenStreetMap contributors', u: 'https://www.openstreetmap.org/copyright', fix: 'https://www.openstreetmap.org/fixthemap', print: 'openstreetmap.org/copyright' }; // legal-credits: "לתקן את המפה" on the OSM map (S11); the address printed in pictures and prints (C3)
 // rate: gap = the least time between two requests that start (ms); day = a published daily limit (counted, shown in diagnostics)
@@ -24,49 +23,56 @@ const PROVIDERS = {
     terms: { u: 'https://operations.osmfoundation.org/policies/nominatim/', at: SVC_REVIEWED }, note: 'עד בקשה בשנייה לכל האפליקציה יחד - נשמר בתור המשותף בשרת (legal-server); תשובות נשמרות שם 30 יום, בלי כתובת הרשת של מי ששאל. כשהשרת לא עונה: ישירות, בקשת רקע אחת ל-3 שניות מכל טלפון' },
   photon: { name: 'פוטון (Komoot)', hosts: ['photon.komoot.io'], priv: { sends: 'search text with the map centre; addresses; Timeline points when Nominatim is busy', via: 'phone', country: 'DE', keeps: 'network addresses up to 90 days' }, rate: { gap: 1100, day: null }, conc: 1, ident: 'כתובת הדף (Referer)', budget: null, key: null, attr: OSM_ATTR,
     terms: { u: 'https://photon.komoot.io', at: SVC_REVIEWED }, note: 'שימוש הוגן בלי מספר - ערך זהיר' },
-  fossgis: { name: 'מסלולים (FOSSGIS)', hosts: ['routing.openstreetmap.de'], priv: { sends: 'the two ends of a leg', via: 'phone', country: 'DE', keeps: 'its server log' }, rate: { gap: 1100, day: null }, conc: 1, ident: 'כתובת הדף (Referer)', budget: null, key: null,
-    attr: { t: ('מסלולים © FOSSGIS' + SEP + '© OpenStreetMap contributors'), u: 'https://routing.openstreetmap.de/about.html', fix: 'https://www.openstreetmap.org/fixthemap' },
-    terms: { u: 'https://routing.openstreetmap.de/about.html', at: SVC_REVIEWED }, note: 'עד בקשה בשנייה' },
+  // walk-time (decisions 2026-11-24 · "מה במרחק הליכה"): Valhalla's /isochrone on valhalla1 is a host of the same provider - FOSSGIS's terms name both under one rule (one request a second), so one queue
+  // limits-and-safety (S7): FOSSGIS's one a second for the whole app - through the shared queue
+  fossgis: { name: 'מסלולים וטבעות הליכה (FOSSGIS)', hosts: ['routing.openstreetmap.de', 'valhalla1.openstreetmap.de'], priv: { sends: 'the two ends of a leg; a point for the walking rings', via: 'server', country: 'DE', keeps: 'its server log; the site\'s queue keeps the address asked and the answer 30 days, never who asked' }, rate: { gap: 1100, day: null }, conc: 1, queue: 'fossgis', direct: 3000, ident: 'דרך התור המשותף בשרת של האפליקציה (User-Agent עם שם האפליקציה וכתובת הקשר)', budget: null, key: null,
+    attr: { t: ('מסלולים © FOSSGIS' + SEP + '© OpenStreetMap contributors'), u: 'https://routing.openstreetmap.de/about.html', fix: 'https://www.openstreetmap.org/fixthemap', parts: [['מסלולים © FOSSGIS', 'https://routing.openstreetmap.de/about.html'], [OSM_ATTR.t, OSM_ATTR.u]], print: OSM_ATTR.print }, // legal-credits-2 (S6, C18): each owner its own link; the walking rings carry it too
+    terms: { u: 'https://routing.openstreetmap.de/about.html', at: SVC_REVIEWED }, note: 'עד בקשה בשנייה לכל האפליקציה יחד, בתור המשותף בשרת (תשובות נשמרות שם 30 יום); כשהשרת לא עונה - ישירות, בקשת רקע ל-3 שניות' },
   transitous: { name: 'תחבורה ציבורית (Transitous)', hosts: ['api.transitous.org'], priv: { sends: 'the two ends of a leg, its date and departure time', via: 'server', country: 'EU', keeps: 'up to two days' }, rate: { gap: 1100, day: null }, conc: 1, queue: 'transitous', direct: 3000, ident: 'דרך התור המשותף בשרת של האפליקציה (User-Agent עם שם האפליקציה וכתובת הקשר)', budget: null, key: null,
     attr: { t: 'Transitous', u: 'https://transitous.org/sources/' }, terms: { u: 'https://transitous.org/api/', at: SVC_REVIEWED }, note: 'לא מסחרי; דרך התור המשותף בשרת (legal-server, Q13): בקשה בשנייה לכל המשתמשים יחד, ועד 700 תכנונים (/plan) ביום לכולם - מתחת ל-720' },
   openmeteo: { name: 'Open-Meteo', hosts: ['api.open-meteo.com', 'archive-api.open-meteo.com'], priv: { sends: 'points and dates', via: 'phone', country: 'CH', keeps: 'server logs 90 days' }, rate: { gap: 500, day: 10000 }, conc: 1, ident: 'כתובת הדף (Referer)', budget: null, key: null,
-    attr: { t: 'Weather data by Open-Meteo.com', u: 'https://open-meteo.com/', elev: 'Elevation data by Open-Meteo.com' }, terms: { u: 'https://open-meteo.com/en/terms', at: SVC_REVIEWED }, note: 'פחות מ-600 לדקה, 5,000 לשעה, 10,000 ליום; בקשה עם כמה מקומות נספרת ככמה' },
+    attr: { t: 'Weather data by Open-Meteo.com', u: 'https://open-meteo.com/', elev: 'Elevation data by Open-Meteo.com' + SEP + 'Copernicus DEM GLO-90' } /* legal-credits-2 (S2): Open-Meteo's elevation page asks a clear credit to the Copernicus programme beside its own */, terms: { u: 'https://open-meteo.com/en/terms', at: SVC_REVIEWED }, note: 'פחות מ-600 לדקה, 5,000 לשעה, 10,000 ליום; בקשה עם כמה מקומות נספרת ככמה' },
   // legal-credits (C4): attr.text / textU / from / after - the licence of Wikipedia's text passed on in pages and files (wikiTextCreditHTML)
-  wikimedia: { name: 'ויקיפדיה (Wikimedia)', hosts: ['he.wikipedia.org', 'en.wikipedia.org', 'upload.wikimedia.org'], priv: { sends: 'the map centre; article names; picture addresses', via: 'phone', country: 'US', keeps: 'most data 90 days' }, rate: { gap: 200, day: null }, conc: 1,
+  wikimedia: { name: 'ויקיפדיה (Wikimedia)', hosts: ['he.wikipedia.org', 'en.wikipedia.org', 'upload.wikimedia.org'], priv: { sends: 'the map centre, or points along a drive\'s road ("along the drive"); article names; picture addresses', via: 'phone', country: 'US', keeps: 'most data 90 days' }, rate: { gap: 310, day: null }, conc: 1, // limits-and-safety (S5): under 200 a minute
     ident: 'כותרת Api-User-Agent', headers: { 'Api-User-Agent': 'Darkon trip app (https://darkon-eran.netlify.app)' }, headerHosts: ['he.wikipedia.org', 'en.wikipedia.org'], budget: null, key: null,
-    attr: { t: 'ויקיפדיה (CC BY-SA)', u: 'https://he.wikipedia.org/wiki/ויקיפדיה:זכויות_יוצרים', text: 'CC BY-SA 4.0', textU: 'https://en.wikipedia.org/wiki/Wikipedia:Text_of_the_Creative_Commons_Attribution-ShareAlike_4.0_International_License', from: 'מתוך ויקיפדיה', after: 'על פי ויקיפדיה' }, terms: { u: 'https://foundation.wikimedia.org/wiki/Policy:Wikimedia_Foundation_API_Usage_Guidelines', at: SVC_REVIEWED }, note: 'בקשה אחרי בקשה. תנאי השימוש של הקרן: foundation.wikimedia.org/wiki/Policy:Terms_of_Use. תמונה מ-Commons רק ברישיון חופשי ידוע, עם היוצר והרישיון שלה' },
+    attr: { t: 'ויקיפדיה (CC BY-SA)', u: 'https://he.wikipedia.org/wiki/ויקיפדיה:זכויות_יוצרים', text: 'CC BY-SA 4.0', textU: 'https://en.wikipedia.org/wiki/Wikipedia:Text_of_the_Creative_Commons_Attribution-ShareAlike_4.0_International_License', from: 'מתוך ויקיפדיה', after: 'על פי ויקיפדיה' }, terms: { u: 'https://foundation.wikimedia.org/wiki/Policy:Wikimedia_Foundation_API_Usage_Guidelines', at: SVC_REVIEWED }, note: 'בקשה אחרי בקשה, פחות מ-200 בדקה (mediawiki.org/wiki/Wikimedia_APIs/Rate_limits). תנאי השימוש של הקרן: foundation.wikimedia.org/wiki/Policy:Terms_of_Use. תמונה מ-Commons רק ברישיון חופשי ידוע, עם היוצר והרישיון שלה' },
   wikidata: { name: 'ויקינתונים (Wikidata)', hosts: ['www.wikidata.org'], priv: { sends: 'an area\'s name typed in Hebrew', via: 'phone', country: 'US', keeps: 'its policy' }, rate: { gap: 500, day: null }, conc: 1, // 11.28.2 (area-search-he): the English name of an area typed in Hebrew
     ident: 'כותרת Api-User-Agent', headers: { 'Api-User-Agent': 'Darkon trip app (https://darkon-eran.netlify.app)' }, budget: null, key: null,
     attr: { t: 'Wikidata (CC0)', u: 'https://www.wikidata.org/wiki/Wikidata:Licensing' }, terms: { u: 'https://foundation.wikimedia.org/wiki/Policy:Terms_of_Use', at: '19.11.2026' }, note: 'בקשה אחרי בקשה; רק כשמחפשים אזור בעברית' },
-  overpass1: { name: 'אוברפס (overpass-api.de)', hosts: ['overpass-api.de'], priv: { sends: 'an area\'s rectangle around a destination', via: 'phone', country: 'DE', keeps: 'its policy' }, rate: { gap: 1000, day: 100 }, conc: 1, ident: 'כתובת הדף (Referer)', budget: null, key: null, attr: OSM_ATTR,
+  overpass1: { name: 'אוברפס (overpass-api.de)', hosts: ['overpass-api.de'], priv: { sends: 'an area\'s rectangle around a destination, or a drive\'s road ("along the drive")', via: 'phone', country: 'DE', keeps: 'its policy' }, rate: { gap: 1000, day: 100 }, conc: 1, ident: 'כתובת הדף (Referer)', budget: null, key: null, attr: OSM_ATTR,
     terms: { u: 'https://dev.overpass-api.de/overpass-doc/en/preface/commons.html', at: SVC_REVIEWED }, note: 'עד 2 בבת אחת לכתובת; כ-100 שאילתות ו-10MB ליום בשימוש קבוע' },
   // legal-credits (S8): kumi.systems is now run by Private.coffee too ("now managed by Private.coffee", 21.11.2026) - two addresses of one operator, under its terms
-  overpass2: { name: 'אוברפס של Private.coffee (kumi.systems)', hosts: ['overpass.kumi.systems'], priv: { sends: 'an area\'s rectangle around a destination', via: 'phone', country: 'AT', keeps: 'part of the network address up to 48 hours' }, rate: { gap: 1000, day: null }, conc: 1, ident: 'כתובת הדף (Referer)', budget: null, key: null, attr: OSM_ATTR,
+  overpass2: { name: 'אוברפס של Private.coffee (kumi.systems)', hosts: ['overpass.kumi.systems'], priv: { sends: 'an area\'s rectangle around a destination, or a drive\'s road ("along the drive")', via: 'phone', country: 'AT', keeps: 'part of the network address up to 48 hours' }, rate: { gap: 1000, day: null }, conc: 1, ident: 'כתובת הדף (Referer)', budget: null, key: null, attr: OSM_ATTR,
     terms: { u: 'https://overpass.private.coffee/', at: SVC_REVIEWED }, note: 'מנוהל בידי Private.coffee, כמו overpass.private.coffee. התנאים שלהם: לא לשמור מידע אישי בבקשות, לזהות את האפליקציה, להודיע לפני יותר מעשר בקשות בשנייה או עשר בבת אחת - אנחנו בבקשה אחת בכל פעם' },
-  overpass3: { name: 'אוברפס של Private.coffee', hosts: ['overpass.private.coffee'], priv: { sends: 'an area\'s rectangle around a destination', via: 'phone', country: 'AT', keeps: 'part of the network address up to 48 hours' }, rate: { gap: 1000, day: null }, conc: 1, ident: 'כתובת הדף (Referer)', budget: null, key: null, attr: OSM_ATTR,
+  overpass3: { name: 'אוברפס של Private.coffee', hosts: ['overpass.private.coffee'], priv: { sends: 'an area\'s rectangle around a destination, or a drive\'s road ("along the drive")', via: 'phone', country: 'AT', keeps: 'part of the network address up to 48 hours' }, rate: { gap: 1000, day: null }, conc: 1, ident: 'כתובת הדף (Referer)', budget: null, key: null, attr: OSM_ATTR,
     terms: { u: 'https://overpass.private.coffee/', at: SVC_REVIEWED }, note: 'אותו מפעיל כמו overpass.kumi.systems ואותם תנאים: לא לשמור מידע אישי בבקשות, לזהות את האפליקציה, להודיע לפני יותר מעשר בקשות בשנייה או עשר בבת אחת' },
-  openfreemap: { name: 'OpenFreeMap', hosts: ['tiles.openfreemap.org'], priv: { sends: 'tile areas shown or downloaded; the trip picture\'s background; the live map of a friends\' page', via: 'phone', country: 'HU', keeps: 'network addresses only in error logs, 7 days' }, rate: { gap: 0, day: null }, conc: 4, ident: 'כתובת הדף (Referer), בלי פרמטרים בכתובת', noQuery: true,
-    budget: { tiles: 3000, bytes: 50 * 1048576, per: 'טיול' }, key: null, attr: { t: ('OpenFreeMap © OpenMapTiles' + SEP + 'Data © OpenStreetMap contributors'), u: 'https://openfreemap.org', print: 'openstreetmap.org/copyright' }, // legal-credits (C2): the attribution OpenFreeMap asks of printed media and other clients
+  openfreemap: { name: 'OpenFreeMap', hosts: ['tiles.openfreemap.org'], priv: { sends: 'tile areas shown or downloaded; the trip picture\'s background; the live map of a friends\' page; the 3D map\'s view and its style', via: 'phone', country: 'HU', keeps: 'network addresses only in error logs, 7 days' }, rate: { gap: 0, day: null }, conc: 4, ident: 'כתובת הדף (Referer), בלי פרמטרים בכתובת', noQuery: true,
+    budget: { tiles: 3000, bytes: 50 * 1048576, per: 'טיול' }, key: null, attr: { t: ('OpenFreeMap © OpenMapTiles' + SEP + 'Data © OpenStreetMap contributors'), u: 'https://openfreemap.org', print: 'openstreetmap.org/copyright',
+      parts: [['OpenFreeMap', 'https://openfreemap.org'], ['© OpenMapTiles', 'https://openmaptiles.org/'], ['Data © OpenStreetMap contributors', OSM_ATTR.u]] }, // legal-credits-2 (C18): each owner linked - OpenMapTiles' licence asks its link, OSM's guidelines the /copyright page // legal-credits (C2): the attribution OpenFreeMap asks of printed media and other clients
     terms: { u: 'https://openfreemap.org/tos/', at: SVC_REVIEWED }, note: 'תשובת המייסד במייל, 26.10.2026: Origin / Referer מספיקים לזיהוי של אפליקציה בדפדפן (בלי User-Agent משלנו), בלי פרמטרים בכתובת (הם עוקפים את המטמון שלהם), 4 בבת אחת, הורדה לטיול עד 3,000 אריחים / 50MB (כולל רקע התמונה). גם המפה החיה בקבצים שנשלחים לחברים' },
   osm: { name: 'אריחי OpenStreetMap', hosts: ['tile.openstreetmap.org'], priv: { sends: 'tile areas viewed', via: 'phone', country: 'UK', keeps: 'its policy' }, rate: { gap: 0, day: null }, conc: 2, ident: 'כתובת הדף (Referer)', budget: null, key: null, viewOnly: true,
     tiles: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', attr: OSM_ATTR, terms: { u: 'https://operations.osmfoundation.org/policies/tiles/', at: SVC_REVIEWED }, note: 'רק מה שאדם מסתכל עליו (סעיף 4); נשמרים 7 ימים לפחות; הכתובת המדויקת, בלי תת-דומיין; "לתקן את המפה" בקרדיט. רק במפות של האפליקציה עצמה - קובץ שנשלח לחברים אין לו כתובת דף, והמפה החיה בו מ-OpenFreeMap' },
   // legal-credits (S12, Q20): the path the About page publishes, https://{a|b|c}.tile.opentopomap.org/{z}/{x}/{y}.png - the three hosts by turn ({abc}, svcTileHost)
   opentopomap: { name: 'OpenTopoMap', hosts: ['a.tile.opentopomap.org', 'b.tile.opentopomap.org', 'c.tile.opentopomap.org'], priv: { sends: 'tile areas shown', via: 'phone', country: 'DE', keeps: 'its policy' }, rate: { gap: 0, day: null }, conc: 4, ident: 'כתובת הדף (Referer)', budget: null, key: null,
-    tiles: 'https://{abc}.tile.opentopomap.org/{z}/{x}/{y}.png', attr: { t: ('Map data: © OpenStreetMap contributors, SRTM' + SEP + 'Map style: © OpenTopoMap (CC BY-SA)'), u: 'https://opentopomap.org/about', give: 'https://opentopomap.org/about#unterstuetzen', print: 'openstreetmap.org/copyright' },
+    tiles: 'https://{abc}.tile.opentopomap.org/{z}/{x}/{y}.png', attr: { t: ('Map data: © OpenStreetMap contributors, SRTM' + SEP + 'Map style: © OpenTopoMap (CC BY-SA)'), u: 'https://opentopomap.org/about', give: 'https://opentopomap.org/about#unterstuetzen', print: 'openstreetmap.org/copyright',
+      parts: [['© OpenStreetMap contributors', OSM_ATTR.u], ['© OpenTopoMap (CC BY-SA)', 'https://opentopomap.org/about']] }, // legal-credits-2 (C18): OSM's part links its licence page
     terms: { u: 'https://opentopomap.org/about', at: SVC_REVIEWED }, note: 'דף האודות (21.11.2026): מותר להשתמש באריחים "כל עוד השרת שלנו לא עמוס מדי, למשל מהורדות המוניות", בלי הבטחה שיעבוד תמיד; הסגנון ברישיון CC BY-SA, ומפה מודפסת נמסרת באותם תנאים. ההורדות לבלי רשת נשארות קטנות' },
   // legal-server (11.41.0; Q9): keyed services only (the app's key, or the person's own) - the keyless server.arcgisonline.com is gone; noCache: out of the worker's tile cache (build.py), Esri's terms forbid storing its data
-  esri: { name: 'Esri (לוויין ותבליט)', hosts: ['ibasemaps-api.arcgis.com', 'static-map-tiles-api.arcgis.com'], priv: { sends: 'satellite and relief tile areas; the app\'s key or the person\'s own', via: 'phone', country: 'US', keeps: 'its policy; the app stores none of its tiles' }, noCache: true, rate: { gap: 0, day: null }, conc: 4, ident: 'המפתח של האפליקציה (ArcGIS Location Platform, מוגבל לכתובות האתר), או מפתח אישי אם הוכנס', budget: null,
-    key: 'esri', attr: { t: 'Powered by Esri' + SEP + 'Tiles © Esri, Maxar, Earthstar Geographics, and the GIS User Community', u: 'https://www.esri.com', hillshade: 'Powered by Esri' + SEP + 'Hillshade © Esri, USGS', labels: 'Esri' }, // legal-credits: the relief layer's own credit, from the row (never a fixed string); legal-server (Q9): "Powered by Esri" and the data providers, wherever the layer shows or is drawn
+  esri: { name: 'Esri (לוויין)', hosts: ['ibasemaps-api.arcgis.com', 'static-map-tiles-api.arcgis.com'], priv: { sends: 'satellite tile areas; the app\'s key or the person\'s own', via: 'phone', country: 'US', keeps: 'its policy; the app stores none of its tiles' }, noCache: true, rate: { gap: 0, day: null }, conc: 4, ident: 'המפתח של האפליקציה (ArcGIS Location Platform, מוגבל לכתובות האתר), או מפתח אישי אם הוכנס', budget: null,
+    key: 'esri', attr: { t: 'Powered by Esri' + SEP + 'Tiles © Esri, Vantor, Earthstar Geographics, and the GIS User Community', u: 'https://www.esri.com', hillshade: 'Powered by Esri' + SEP + 'Hillshade © Esri, USGS', labels: 'Labels © Esri, TomTom, Garmin, FAO, NOAA, USGS, © OpenStreetMap contributors, and the GIS User Community' }, // legal-credits-2 (S1, read 24.11.2026): World Imagery's accessInformation names Vantor; trip-picture-credits (decisions 2026-11-24 · Review of chain step 1 legal-credits-2, Q5; re-read 24.11.2026): the labels' providers as Esri publishes them for the exact service the app uses (ArcGIS Imagery Labels, static basemap tiles - developers.arcgis.com/rest/static-basemap-tiles/arcgis-imagery-labels-tile-get) // legal-credits: the relief layer's own credit, from the row (never a fixed string) - relief-phone: only an old kept background's (schemCredit); legal-server (Q9): "Powered by Esri" and the data providers, wherever the layer shows or is drawn
     terms: { u: 'https://www.esri.com/content/dam/esrisites/en-us/media/legal/ma-translations/english.pdf', at: SVC_REVIEWED }, note: 'נקרא ב-21.11.2026: הסכם האב (E204CW, 14.8.2026) - 2.6(3): מותר לשבץ אישור גישה של האפליקציה באפליקציה שפתוחה לכולם, לשירותים שפתוחים לכולם; 3.2(b): תמונה סטטית עם קרדיט מותרת; 3.2(c): לא לשמור ולא להוריד מידע (חוץ מחבילות התוכן של Esri) - לכן אין מטמון אריחים ואין הורדה לבלי רשת; B.1(g): לא להסתיר קרדיט. התנאים לפי מוצר (E300, 10.11.2026), ArcGIS Location Platform, הערות 16 ו-89: מותר להפיץ אפליקציה שניגשת דרך אימות (Authentication - כל מנגנון ש-Esri נותנת, מפתח API בכלל זה). המפתח של האפליקציה: מפתח ציבורי, הרשאת Basemaps בלבד, מוגבל לכתובות האתר, מתחדש פעם בשנה. מפתח אישי, אם הוכנס, רק בטלפון' },
+  // relief-phone: the relief's heights (terms read 21.11.2026: notes/terrain-check/index.md §5)
+  mapterhorn: { name: 'Mapterhorn (גבהים לתבליט)', hosts: ['tiles.mapterhorn.com'], priv: { sends: 'terrain tile areas of the relief map and the 3D map shown', via: 'phone', country: 'US', keeps: 'network address, referrer and user agent up to 30 days' }, rate: { gap: 0, day: null }, conc: 4, ident: 'כתובת הדף (Referer)', budget: null, key: null,
+    tiles: 'https://tiles.mapterhorn.com/{z}/{x}/{y}.webp', attr: { t: '© Mapterhorn', u: 'https://mapterhorn.com/attribution', print: 'mapterhorn.com/attribution', // legal-credits-2 (C19): pictures and prints with relief name its sources' list
+      notice: 'produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved. The organisations in charge of the Copernicus programme by law or by delegation do not incur any liability for any use of the Copernicus WorldDEM-30.' }, terms: { u: 'https://mapterhorn.com/privacy-policy/', at: SVC_REVIEWED }, // notice: the WorldDEM-30 licence, Art. 6(b) and 6(c), its exact words ('מקורות ורישיונות')
+    note: 'בלי מפתח, מכסה או קצב מפורסם - 4 בבת אחת; מותר לשמור עותקים; הקרדיט עם רשימת המקורות' },
   erapi: { name: 'Exchange Rate API', hosts: ['open.er-api.com'], priv: { sends: 'a currency code, once a day', via: 'phone', country: 'IE', keeps: 'its policy' }, rate: { gap: 1000, day: null }, conc: 1, ident: 'כתובת הדף (Referer)', budget: null, key: null,
     attr: { t: 'Rates By Exchange Rate API', u: 'https://www.exchangerate-api.com' }, terms: { u: 'https://www.exchangerate-api.com/terms', at: SVC_REVIEWED }, note: 'פעם ב-24 שעות (המלצת הספק)' },
   site: { name: 'האתר של האפליקציה (Netlify Forms ופונקציית הקישורים)', hosts: ['darkon-eran.netlify.app'], priv: { sends: 'every opening; reports; shared Google Maps short links; the queue\'s requests', via: 'phone', country: 'US', keeps: 'reports up to a year' }, rate: { gap: 2000, day: 30 }, conc: 1, ident: 'כתובת הדף (Referer); שדה מלכודת לרובוטים', budget: null, key: null, // 10.7.0 (task feedback): reports from inside the app
-    attr: { t: 'Netlify Forms', u: 'https://www.netlify.com/platform/core/forms/' }, terms: { u: 'https://www.netlify.com/legal/self-serve-subscription-agreement/', at: SVC_REVIEWED }, note: 'הסכם השירות של Netlify (Self-Serve Subscription Agreement), עם הסכם עיבוד הנתונים (DPA, www.netlify.com/pdf/netlify-dpa) ומדיניות השימוש המקובל (AUP, www.netlify.com/legal/acceptable-use-policy/). דיווח תקלה או רעיון; מייל לערן. פונקציית הקישורים: פותחת קישור מקוצר של גוגל מפות ומחזירה רק את הכתובת הסופית (11.20.0). חינם בתוכניות הקרדיטים, 100 בחודש באתר בתוכנית הישנה; עד 8MB לבקשה' },
+    attr: { t: 'Netlify Forms', u: 'https://www.netlify.com/platform/core/forms/' }, terms: { u: 'https://www.netlify.com/legal/self-serve-subscription-agreement/', at: SVC_REVIEWED }, note: 'הסכם השירות של Netlify (Self-Serve Subscription Agreement), עם הסכם עיבוד הנתונים (DPA, www.netlify.com/pdf/netlify-dpa) ומדיניות השימוש המקובל (AUP, www.netlify.com/legal/acceptable-use-policy/). דיווח תקלה או רעיון; מייל לכתובת הקשר של האפליקציה. פונקציית הקישורים: פותחת קישור מקוצר של גוגל מפות ומחזירה רק את הכתובת הסופית (11.20.0). חינם בתוכניות הקרדיטים, 100 בחודש באתר בתוכנית הישנה; עד 8MB לבקשה' },
   siteIds: { name: 'האתר של האפליקציה (פונקציית המזהים של גוגל)', hosts: ['darkon-eran.netlify.app'], priv: { sends: 'a place\'s name, destination and point', via: 'phone', country: 'US', keeps: 'nothing; only the id comes back' }, rate: { gap: 2100, day: null }, conc: 1, ident: 'כתובת הדף (Referer)', budget: null, key: null, // 11.23.0 (place-gid-2): its own queue, so the background lookups never wait in front of a report or a short link
     attr: { t: 'Google Maps', u: 'https://developers.google.com/maps/documentation/places/web-service/policies' }, terms: { u: 'https://cloud.google.com/maps-platform/terms', at: SVC_REVIEWED },
     note: 'מחפשת בשרת את המזהה של מקום בגוגל לפי השם והמיקום, ושומרת רק את המזהה (המיקום של גוגל לא נשמר ולא מוצג). המפתח רק באתר; מונה חודשי עוצר ב-9,000 בקשות פרטים, וגוגל עוצרת ב-300 ביום. בקשה כל 2.1 שניות, מתחת ל-30 לדקה' },
-  jsdelivr: { name: 'jsDelivr (גבולות מדינות)', hosts: ['cdn.jsdelivr.net'], priv: { sends: 'a fixed file of country borders', via: 'phone', country: 'US', keeps: 'usage data' }, rate: { gap: 0, day: null }, conc: 2, ident: 'כתובת הדף (Referer)', budget: null, key: null,
-    attr: { t: 'Natural Earth (world-atlas)', u: 'https://github.com/topojson/world-atlas' }, terms: { u: 'https://www.jsdelivr.com/terms', at: SVC_CHECKED }, note: 'קובץ קבוע' },
 };
 const PROVIDER_FIELDS = ['name', 'hosts', 'priv', 'rate', 'conc', 'ident', 'budget', 'key', 'attr', 'terms'];
 // legal-server (11.41.0; decisions 2026-11-21 · Review of the legal-page summary, Q2): priv - the facts the terms page states about each provider: what it
@@ -90,6 +96,8 @@ const SERVICES = {
     status: { icon: 'route', what: 'קטעים' }, diag: 'תקלה אחרונה' },
   transit: { name: 'תחבורה ציבורית', providers: ['transitous'], memory: 'routes', keep: { ok: 14, empty: 30 }, prio: 'bg', offline: 'wait',
     status: { icon: 'route', what: 'קטעים' }, diag: 'תקלה אחרונה' },
+  // walk-time: three walking-time rings (10 / 20 / 30 min) around a point - one request with three contours; the tool keeps the answers for the session (WALK_ISO), nothing stored
+  walkIso: { name: 'טבעות זמן הליכה', providers: ['fossgis'], memory: null, keep: { ok: 0, empty: 0 }, prio: 'screen', offline: 'none', status: null, diag: 'תקלה אחרונה' },
   elev: { name: 'גובה', providers: ['openmeteo'], memory: 'elev', keep: { ok: Infinity, empty: 0 }, prio: 'bg', offline: 'wait', status: null, diag: 'תקלה אחרונה' },
   forecast: { name: 'תחזית', providers: ['openmeteo'], memory: 'wx', keep: { ok: 3 / 24, empty: 0, drop: 4 }, prio: 'bg', offline: 'memory', status: null, diag: 'תקלה אחרונה' },
   climate: { name: 'אקלים לתאריכים', providers: ['openmeteo'], memory: 'clim', keep: { ok: Infinity, empty: 0 }, prio: 'bg', offline: 'memory', status: null, diag: 'תקלה אחרונה' },
@@ -98,13 +106,19 @@ const SERVICES = {
   discOsm: { name: 'תגליות OSM', providers: ['overpass1', 'overpass2', 'overpass3'], memory: 'disc', keep: { ok: Infinity, empty: Infinity }, prio: 'screen', offline: 'memory', status: null, diag: 'תקלה אחרונה' },
   pointImage: { name: 'תמונה למקום ותמונות תגליות', providers: ['wikimedia'], memory: 'picwiki', keep: { ok: Infinity, empty: 30 }, prio: 'bg', offline: 'memory',
     status: { icon: 'auto_stories', what: 'תמונות של מקומות' }, diag: 'תקלה אחרונה' },
-  schem: { name: 'רקע סכמטי', providers: ['openfreemap', 'overpass1', 'overpass2', 'overpass3', 'jsdelivr', 'esri'], memory: 'schem', keep: { ok: Infinity, empty: 0 }, prio: 'bg', offline: 'wait',
+  schem: { name: 'רקע סכמטי', providers: ['openfreemap', 'overpass1', 'overpass2', 'overpass3', 'mapterhorn'], memory: 'schem', keep: { ok: Infinity, empty: 0 }, prio: 'bg', offline: 'wait',
     status: { icon: 'draw', what: 'חלקים של רקע המפה' }, diag: 'חלק שלא נטען' },
   offmaps: { name: 'מפות לבלי רשת', providers: ['openfreemap'], memory: 'offmaps', keep: { ok: Infinity, empty: Infinity }, prio: 'bg', offline: 'wait',
     status: { icon: 'download', what: 'אריחים' }, diag: 'הורדה שנעצרה' },
-  picTiles: { name: 'מפה לתמונת הטיול', providers: ['openfreemap', 'opentopomap', 'esri'], memory: 'schem', keep: { ok: Infinity, empty: 0 }, prio: 'screen', offline: 'wait',
+  picTiles: { name: 'מפה לתמונת הטיול', providers: ['openfreemap', 'opentopomap', 'esri', 'mapterhorn'], memory: 'schem', keep: { ok: Infinity, empty: 0 }, prio: 'screen', offline: 'wait',
     status: { icon: 'map', what: 'אריחים לתמונה' }, diag: 'תמונה שלא נבנתה' },
-  screenTiles: { name: 'אריחי המפה על המסך', providers: ['osm', 'opentopomap', 'esri'], memory: 'viewedTiles', keep: { ok: 7, empty: 0 }, prio: 'screen', offline: 'memory', status: null, diag: 'נטענים על ידי ספריית המפה (מוצהר בלבד)', declared: true },
+  // hebrew-map: "מפה בעברית" - the vector tiles of the view, asked by the map's own layer (heTile); with no network a downloaded area draws from the phone
+  heMap: { name: 'מפה בעברית', providers: ['openfreemap'], memory: null, keep: { ok: 0, empty: 0 }, prio: 'screen', offline: 'memory', status: null, diag: 'תקלה אחרונה' },
+  screenTiles: { name: 'אריחי המפה על המסך', providers: ['osm', 'opentopomap', 'esri', 'mapterhorn'], memory: 'viewedTiles', keep: { ok: Infinity, empty: 0 }, /* limits-and-safety (S12): kept by the worker until its 200 MB */ prio: 'screen', offline: 'memory', status: null, diag: 'נטענים על ידי ספריית המפה (מוצהר בלבד)', declared: true },
+  // map-3d: the 3D map's style through the client (m3StyleRaw, kept for the session); its tiles, glyphs and heights are loaded by the engine itself (as the screen tiles by the map library)
+  map3d: { name: 'מפה בתלת־ממד', providers: ['openfreemap', 'mapterhorn'], memory: null, keep: { ok: 0, empty: 0 }, prio: 'screen', offline: 'none', status: null, diag: 'תקלה אחרונה' },
+  // relief-phone: the relief's tiles, for its worker (reliefAsk)
+  relief: { name: 'תבליט', providers: ['mapterhorn'], memory: null, keep: { ok: 0, empty: 0 }, prio: 'screen', offline: 'memory', status: null, diag: 'תקלה אחרונה' },
   esriCheck: { name: 'בדיקת מפתח Esri', providers: ['esri'], memory: 'esri', keep: { ok: Infinity, empty: 0 }, prio: 'bg', offline: 'wait', status: null, diag: 'תוצאת הבדיקה בהגדרות' },
   // 11.20.0 (place-search-upgrade, Q9): a Google Maps short link followed by the app's own server function (no key; Google Maps' link hosts only)
   mapsLink: { name: 'קישור מקוצר מגוגל מפות', providers: ['site'], memory: null, keep: { ok: 0, empty: 0 }, prio: 'screen', offline: 'none', status: null, diag: 'תקלה אחרונה' },
@@ -134,12 +148,16 @@ function svcBudgetOf(trip) { const b = (svcDiag().budget || {})[trip]; return b 
 function svcBlocked(prov) { const b = svcDiag().blocked[prov]; return !!b && b === tmPhoneDate(); }
 // ---- no network (ש4): the phone says so (navigator.onLine), or a request did not reach its server - then that provider is
 // "not reached" and tried again after 30 s → 2 → 5 min (the others go on; one unreachable host is not "no network" for all) ----
-function svcNetDown() { return !navigator.onLine; }
+// one-way (12): "is there a network" and "the network is back" are asked here only - svcOnline (the phone's word), svcOnBack(fn): fn runs
+// when the network comes back, after the client's own resume below (the one 'online' listener, coalesced by sysOn, in the order registered)
+function svcOnline() { return !!navigator.onLine; }
+function svcOnBack(fn) { sysOn(window, 'online', fn); }
+function svcNetDown() { return !svcOnline(); }
 function svcProvDown(prov) { const P = SVC.p[prov]; return svcNetDown() || (!!P && !!P.downUntil && svcT() < P.downUntil); }
 function svcNetLost(prov) { const P = SVC.p[prov]; if (P) P.downUntil = svcT() + [30e3, 120e3, 300e3][Math.min(P.downStep = (P.downStep || 0) + 1, 3) - 1]; svcTick(); }
 function svcNetBack(prov) { const P = SVC.p[prov], was = !!(P && P.downStep); if (P) { P.downUntil = 0; P.downStep = 0; } if (was) svcResume(); }
 function svcResume() { SVC.gaveUp = {}; if (typeof SCHEM_FAILED !== 'undefined') SCHEM_FAILED.clear(); Object.keys(SVC.p).forEach(svcPump); svcTick(); if (document.getElementById('main')) redrawSoon(); } // waiting work is asked again by the screens that need it
-window.addEventListener('online', () => { Object.values(SVC.p).forEach(P => { P.downUntil = 0; P.downStep = 0; }); svcResume(); });
+svcOnBack(() => { Object.values(SVC.p).forEach(P => { P.downUntil = 0; P.downStep = 0; }); svcResume(); });
 // ---- the queue: one per provider (its rate, how many at once), someone waiting on screen before background ----
 function svcAsk(svc, o) { // o: { build(prov) -> {url, init, as: 'json'|'text'|'bytes'|'img', ms} | null, parse(data, prov) -> value | SVC_EMPTY, prio, key }
   const S = SERVICES[svc]; if (!S) return Promise.resolve({ kind: 'error', why: 'no service' });
@@ -164,12 +182,18 @@ function svcPump(prov) {
   const P = SVC.p[prov], R = PROVIDERS[prov]; clearTimeout(P.timer);
   while (P.q.length && P.active < R.conc) {
     if (svcProvDown(prov)) { const q = P.q.splice(0); q.forEach(j => { svcWaitMark(j.svc, j.o.key); j.res({ kind: 'offline' }); }); svcTick(); return; } // not reached (or no network): the work waits for the network
-    const now = svcT(), gap = R.queue && svcQueueDown(prov) && P.q[0].prio !== 'screen' ? R.direct : R.rate.gap; // legal-server: the queue down - background requests at the slow direct pace
-    const wait = Math.max(P.pauseUntil - now, P.last + gap - now);
+    const now = svcT(), bg = P.q[0].prio !== 'screen', viaQ = R.queue && !svcQueueDown(prov), gap = R.queue && !viaQ && bg ? R.direct : R.rate.gap; // legal-server: the queue down - background requests at the slow direct pace
+    const wait = Math.max(P.pauseUntil - now, P.last + gap - now, viaQ && bg ? svcQueueBgWait(now) : 0); // round6-behaviour: the background's share of the edge's minute
     if (wait > 0) { P.timer = setTimeout(() => svcPump(prov), wait); return; }
-    const job = P.q.shift(); P.active++; P.last = now; svcRun(prov, job).finally(() => { P.active--; svcPump(prov); });
+    const job = P.q.shift(); if (job.o.alive && !job.o.alive()) { svcDone(job, { kind: 'error', why: 'not wanted' }); continue; } // limits-and-safety: o.alive - still wanted
+    if (viaQ && bg) SVC_QBG.push(now);
+    P.active++; P.last = now; svcRun(prov, job).finally(() => { P.active--; svcPump(prov); });
   }
 }
+// limits-and-safety (along-stuck Q2): { name, ms } of the soonest paused provider when all a service can ask are paused, else null
+function svcWaitLeft(svc) { const now = svcT(), ps = SERVICES[svc].providers.filter(p => !svcBlocked(p));
+  if (!ps.length || ps.some(p => SVC.p[p].pauseUntil <= now)) return null; const p = ps.reduce((a, b) => SVC.p[b].pauseUntil < SVC.p[a].pauseUntil ? b : a);
+  return { name: PROVIDERS[p].name, ms: SVC.p[p].pauseUntil - now }; }
 function svcWaitMark(svc, key) { (SVC.wait[svc] = SVC.wait[svc] || new Set()).add(key || '*'); }
 async function svcRun(prov, job) {
   const req = job.o.build(prov), R = PROVIDERS[prov]; let r = null;
@@ -179,7 +203,7 @@ async function svcRun(prov, job) {
       im.onload = () => fin(im.naturalWidth > 0); im.onerror = () => fin(null); setTimeout(() => fin(false), req.ms || 20000); im.src = req.url; });
     // an image gives no status: a failed load counts as "error" (or no network when the phone says so), a timeout as busy
     if (im) { svcNetBack(prov); return svcDone(job, { kind: 'ok', value: im, prov }); }
-    if (!navigator.onLine) { svcNetLost(prov); return svcDone(job, { kind: 'offline' }); }
+    if (!svcOnline()) { svcNetLost(prov); return svcDone(job, { kind: 'offline' }); }
     return svcRetry(job, prov, im === false ? 'busy' : 'error', im === false ? 'timeout' : 'image');
   }
   if (R.queue && !svcQueueDown(prov) && await svcViaQueue(prov, job, req)) return; // legal-server (Q12): the shared queue first; false (null) - not answered, so directly
@@ -188,7 +212,11 @@ async function svcRun(prov, job) {
   try { r = await fetch(req.url, { ...(req.init || {}), headers: { ...((req.init || {}).headers || {}), ...(R.headers && (!R.headerHosts || R.headerHosts.some(h => req.url.includes('//' + h + '/'))) ? R.headers : {}) }, signal: ac ? ac.signal : undefined }); }
   catch (e) { clearTimeout(tm);
     if (e && e.name === 'AbortError') return svcRetry(job, prov, 'busy', 'timeout');
-    svcNetLost(prov); svcWaitMark(job.svc, job.o.key); return svcDone(job, { kind: 'offline' }); } // did not reach the server
+    svcNetLost(prov);
+    // limits-and-safety (along-stuck Q2): one server refused, the phone online - the next server at once
+    { const provs = svcProvsOf(job), nx = provs.findIndex((p, i) => i > job.pi && !svcBlocked(p) && !svcProvDown(p) && job.o.build(p));
+      if (svcOnline() && nx >= 0 && job.tries < 3) { svcTrouble(prov, job.svc, 'לא נענה'); job.pi = nx; return svcEnqueue(job); } }
+    svcWaitMark(job.svc, job.o.key); return svcDone(job, { kind: 'offline' }); } // did not reach the server
   clearTimeout(tm); svcNetBack(prov);
   return svcAnswer(prov, job, req, r, '');
 }
@@ -208,32 +236,7 @@ async function svcAnswer(prov, job, req, r, via) { let value;
   const P = SVC.p[prov]; P.step = 0;
   return svcDone(job, { kind: value === SVC_EMPTY ? 'empty' : 'ok', value, prov });
 }
-// ---- the shared queue (legal-server, 11.41.0; decisions 2026-11-21 · Review of the legal-review report, Q12, Q13 item 1) ----
-// A provider row with `queue` is asked through the site's function /api/queue (netlify/functions/queue.mjs), which sends the request on at
-// the provider's pace for all users together, keeps answers in a shared cache and names the app (User-Agent). Its every answer carries
-// X-Queue: 1 - an answer without it (the site's own error page, no function), a 5xx of the function itself or a failure to reach the site
-// means "not answered": the queue is skipped for SVC_QUEUE_REST and the request goes to the service directly (background requests at the
-// row's `direct` pace). The service's own answers (200, 4xx, 429 / 503 with Retry-After) come back through it as they came; the day's cap
-// for all users (429 { error: 'day' }) and a full queue (503 { error: 'busy' }) are "busy" - never a reason to ask directly.
-// legal-server-fixes (Q3): so is a timeout of the service at the queue (504 with X-Queue) and Netlify's own rate limit at the edge (429 with no
-// X-Queue - SVC_EDGE_WAIT).
-const SVC_QUEUE = '/api/queue', SVC_QUEUE_REST = 10 * 60e3, SVC_EDGE_WAIT = 60e3; // the edge's 429: a minute's wait (legal-server-fixes)
-function svcQueueDown(prov) { const P = SVC.p[prov]; return !!(P && P.qDownUntil && svcT() < P.qDownUntil); }
-function svcQueueLost(prov) { const P = SVC.p[prov]; if (P) P.qDownUntil = svcT() + SVC_QUEUE_REST; }
-function svcQueueUrl(prov, url) { const R = PROVIDERS[prov], h = R.hosts.find(x => url.startsWith('https://' + x + '/')); if (!h) return '';
-  return SVC_QUEUE + '?p=' + encodeURIComponent(R.queue) + '&u=' + encodeURIComponent(url.slice(('https://' + h + '/').length)); }
-async function svcViaQueue(prov, job, req) { // -> true when the queue answered (the job is done or retried), null when it did not
-  const qu = svcQueueUrl(prov, req.url); if (!qu || req.as === 'img') return null;
-  const ac = window.AbortController ? new AbortController() : null, tm = setTimeout(() => { if (ac) ac.abort(); }, 15000); let r;
-  try { r = await fetch(qu, { headers: { ...((req.init || {}).headers || {}) }, signal: ac ? ac.signal : undefined }); }
-  catch (e) { clearTimeout(tm); svcQueueLost(prov); return null; } // the site not reached (or too slow): directly - if the phone has no network, that fails too and says so
-  clearTimeout(tm);
-  // legal-server-fixes (Q3): a 429 without X-Queue is Netlify's own rate limit at the site's edge (60 a minute per caller) - the queue is up, this
-  // phone asked too often: a wait of about a minute in the queue, never a reason to go directly
-  if (r.status === 429 && !(r.headers && r.headers.get('X-Queue') === '1')) { svcNetBack(prov); svcRetry(job, prov, 'busy', 'HTTP 429 (מגבלת האתר)', SVC_EDGE_WAIT); return true; }
-  if (!r.headers || r.headers.get('X-Queue') !== '1' || (r.status >= 500 && r.status !== 503 && r.status !== 504)) { svcQueueLost(prov); return null; }
-  svcNetBack(prov); await svcAnswer(prov, job, req, r, ' (התור המשותף)'); return true;
-}
+// the shared queue's client (svcViaQueue, the background's share of the edge's minute) is in js/services-queue.js, the next part (split at this seam in round6-behaviour, when this part reached its size light)
 // busy: the provider waits (as asked, or longer each time), the next provider answers meanwhile, the request goes back to the queue
 // error: the next provider at once, up to 3 tries, then until the next open; blocked: until tomorrow
 function svcRetry(job, prov, kind, why, ms) {
@@ -287,20 +290,25 @@ act('txt.full', c => { const e = c.el; if ([e, ...e.querySelectorAll('.head-f, .
 act('svc.explain', c => { SVC_EXPLAIN_DEST = c.el.dataset.dest || ''; openSvcExplain(c.v); });
 const SVC_MS = { geocode: 'location_on', placeSearch: 'search', route: 'route', transit: 'directions_transit', elev: 'landscape', forecast: 'partly_cloudy_day', climate: 'thermostat',
   mclim: 'thermostat', discWiki: 'auto_stories', discOsm: 'travel_explore', pointImage: 'image', schem: 'map', offmaps: 'download_for_offline', picTiles: 'map', screenTiles: 'map',
-  esriCheck: 'key', rate: 'currency_exchange' };
+  esriCheck: 'key', rate: 'currency_exchange', relief: 'landscape', map3d: 'view_in_ar' };
 function openSvcExplain(svc) { layerNote(openSvcExplain, arguments); const sheet = document.getElementById('sheet'), S = SERVICES[svc]; if (!S) return;
   const sfx = svcSuffix(svc, svcGaveUpCount(svc)), off = { wait: 'בלי רשת העבודה נעצרת, וממשיכה לבד כשהרשת חוזרת. בינתיים מוצגת הערכה מסומנת ≈ כשיש.', memory: 'בלי רשת מוצג מה שנשמר בטלפון, עם השעה שבה נשמר.', none: 'בלי רשת הפעולה לא זמינה.' }[S.offline];
   const credit = SERVICES[svc].declared ? '' : svcCredits(S.providers);
   // 10.5.0 (design-4 part 2, look.md "Pop-ups and system states"): icon and name, what it does, what happens offline, a related action, the credits small
   sheet.innerHTML = `${fmHead(`${msi(SVC_MS[svc] || 'info', { cls: 'head-ic' })} ${nameB(S.name)}`)}
     <p>${SVC_EXPLAIN[svc] || ''}</p>${sfx ? `<p class="sh-hint">עכשיו: ${sfx}${svcGaveUpCount(svc) && !svcNetDown() ? ' - השרת לא ענה עליהם, וננסה שוב בפתיחה הבאה' : ''}.</p>` : ''}<div class="svc-off">${msi('cloud_off', { size: 20 })}<span>${off}</span></div>
-    ${svc === 'geocode' ? `<button type="button" class="sh-secondary svc-act" data-act="svc.diagPlaces" data-v="${_qe(SVC_EXPLAIN_DEST)}">${msi('monitor_heart', { size: 18 })} מקומות שלא על המפה</button>` : ''}
+    ${svc === 'geocode' ? `<button type="button" class="sh-secondary svc-act" data-act="svc.diagPlaces" data-v="${escH(SVC_EXPLAIN_DEST)}">${msi('monitor_heart', { size: 18 })} מקומות שלא על המפה</button>` : ''}
     <p class="svc-credit">${credit}</p>`;
   showSheetBackdrop('openSvcExplain'); }
 // ---- attribution (ש6): from the provider's row, wherever its data is shown ----
 // legal-credits: o.as names another credit of the same row (the relief of Esri: as 'hillshade'); o.fix adds "לתקן את המפה", o.give the donation link
 function svcCredit(prov, o) { const A = PROVIDERS[prov].attr, esc = escH; o = o || {};
-  return `<span class="svc-cr" data-prov="${prov}"><a href="${esc(A.u)}" target="_blank" rel="noopener">${esc(o.as ? A[o.as] : A.t)}</a>${o.fix && A.fix ? `${SEP}<a href="${esc(A.fix)}" target="_blank" rel="noopener">לתקן את המפה</a>` : ''}${o.give && A.give ? `${SEP}<a href="${esc(A.give)}" target="_blank" rel="noopener">תרומה</a>` : ''}</span>`; }
+  return `<span class="svc-cr" data-prov="${prov}">${o.as ? `<a href="${esc(A.u)}" target="_blank" rel="noopener" dir="auto">${esc(A[o.as])}</a>` : svcCreditLinks(A)}${o.fix && A.fix ? `${SEP}<a href="${esc(A.fix)}" target="_blank" rel="noopener">לתקן את המפה</a>` : ''}${o.give && A.give ? `${SEP}<a href="${esc(A.give)}" target="_blank" rel="noopener">תרומה</a>` : ''}</span>`; }
+// legal-credits-2 (C18): a row's credit as links - one link to its page, or, when the row has `parts` ([text, address] in the order of its
+// text), each owner's part linked to its own address and the words between them plain (t810: the parts are found in the text, in order)
+// G121: each link isolated (dir=auto): its © stays with its owner
+function svcCreditLinks(A) { const esc = escH, a = (t, u) => `<a href="${esc(u)}" target="_blank" rel="noopener" dir="auto">${esc(t)}</a>`; if (!A.parts) return a(A.t, A.u);
+  let rest = A.t, out = ''; A.parts.forEach(([t, u]) => { const i = rest.indexOf(t); if (i < 0) return; out += esc(rest.slice(0, i)) + a(t, u); rest = rest.slice(i + t.length); }); return out + esc(rest); }
 // final-review 8: the credit line of several providers - each credit once, in the providers' order: providers that share one attribution
 // (the OpenStreetMap ones) are named once, and a credit already said inside another provider's credit (OpenFreeMap's names the
 // OpenStreetMap contributors) is not repeated
@@ -329,28 +337,8 @@ async function svcPageVecTile(z, x, y) {
   if (!SVC_PAGE.got.has(u)) { if (SVC_PAGE.got.size > 300) SVC_PAGE.got.clear(); SVC_PAGE.got.set(u, svcPageGet(u).then(async b => b ? mvtLayers(await vtUnzip(b), OFF_LAYERS) : null).catch(() => null)); }
   const L = await SVC_PAGE.got.get(u); return L ? { z: zt, x: tx, y: ty, L } : null; }
 function svcProvOfUrl(u) { const h = (String(u).match(/^https?:\/\/([^/]+)/) || [])[1] || ''; return Object.keys(PROVIDERS).find(p => PROVIDERS[p].hosts.includes(h)) || ''; }
-// ---- 🩺 service health (ש11) ----
-function svcHealthHTML() { const d = svcDiag(), esc = escH;
-  const st = id => svcBlocked(id) ? `<b>חסום עד מחר</b>${SEP}<a href="${esc(PROVIDERS[id].terms.u)}" target="_blank" rel="noopener">התנאים</a>` : svcProvDown(id) ? 'לא מגיעים לשרת' : SVC.p[id].pauseUntil > svcT() ? `${msi('pause', { size: 16, cls: 'msi-in' })} עמוס עוד ${tmFmt('until', SVC.p[id].pauseUntil - svcT())}` : '✓ עובד';
-  const provs = Object.keys(PROVIDERS).filter(id => !PROVIDERS[id].viewOnly).map(id => { const R = PROVIDERS[id], n = svcCountToday(id);
-    return `<div class="svc-h"><b>${esc(R.name)}</b><span>${st(id)}</span><small>היום <bdi>${n}</bdi>${R.rate.day ? ` מתוך <bdi>${R.rate.day}</bdi>` : ''} בקשות${SVC.p[id].q.length ? `${SEP}<bdi>${SVC.p[id].q.length}</bdi> בתור` : ''}</small></div>`; }).join('');
-  const mem = Object.entries(SERVICES).filter(([, S]) => S.memory && REG_BY[S.memory] && REG_BY[S.memory].where.ls).map(([id, S]) => { const r = REG_BY[S.memory], n = Object.keys(regRead(S.memory) || {}).length, cap = /cap:(\d+)/.exec(r.clean);
-    return `<div class="svc-h"><b>${esc(S.name)}</b><small>שמור <bdi>${n}</bdi>${cap ? ` מתוך <bdi>${cap[1]}</bdi>` : ''}</small></div>`; }).join('');
-  const errs = d.errs.slice(-50).reverse().map(e => `<div class="svc-e"><bdi>${tmFmt('date', e.at)} ${tmFmt('stamp', e.at)}</bdi>${SEP}${esc((PROVIDERS[e.p] || {}).name || e.p)}${SEP}${esc((SERVICES[e.s] || {}).name || e.s)}${SEP}<bdi>${esc(e.why)}</bdi></div>`).join('');
-  return `<p class="sh-hint">הספקים, הבקשות של היום, ומה שנשמר בטלפון.</p>${MAP_AVAILABLE ? '<p class="sh-hint"><a href="#" class="svc-diag-link" data-act="set.diagOpen">מקום שלא מופיע על המפה? ← מקומות שלא על המפה ›</a></p>' : ''}
-    <div class="svc-hs">${provs}</div><div class="wx-sub"><b>זיכרונות</b></div><div class="svc-hs">${mem}</div>
-    <div class="wx-sub"><b>תקלות אחרונות</b></div>${errs || '<p class="sh-hint">אין תקלות.</p>'}
-    <button type="button" class="btn-nav btn-ghost" data-act="svc.copyReport">${msi('content_copy', { size: 18 })} העתקת הדוח</button>`; }
-function svcReportText() { const d = svcDiag();
-  return ['מצב השירותים - ' + APP.appTitle + ' ' + APP_VERSION + SEP + tmFmt('date', Date.now()),
-    ...Object.keys(PROVIDERS).filter(id => !PROVIDERS[id].viewOnly).map(id => `${PROVIDERS[id].name}: ${svcBlocked(id) ? 'חסום עד מחר' : SVC.p[id].pauseUntil > svcT() ? 'עמוס' : 'עובד'}${SEP}היום ${svcCountToday(id)}${PROVIDERS[id].rate.day ? '/' + PROVIDERS[id].rate.day : ''}`),
-    ...(() => { const bad = []; Object.entries(PROVIDERS).forEach(([id, R]) => PROVIDER_FIELDS.forEach(f => { if (R[f] === undefined) bad.push(id + '.' + f); })); Object.entries(SERVICES).forEach(([id, S]) => SERVICE_FIELDS.forEach(f => { if (S[f] === undefined) bad.push(id + '.' + f); })); return bad.length ? ['שורות חסרות ברישום: ' + bad.join(', ')] : []; })(),
-    'תקלות:', ...d.errs.slice(-50).map(e => `${tmFmt('date', e.at)} ${tmFmt('stamp', e.at)}${SEP}${e.p}${SEP}${e.s}${SEP}${e.why}`)].join('\n'); }
-act('svc.copyReport', () => { copyWithFallback(svcReportText(), 'הדוח הועתק'); return 'quiet'; });
-act('set.diagOpen', () => { ACC_OPEN['set-diag'] = true; setTimeout(() => reveal(document.querySelector('#main [data-acc="set-diag"]'), false, { align: 'start' }), 80); return 'redraw'; }); // 9.6.0 (12ו, batch 14.5)
-act('svc.diagPlaces', c => { DIAG_DEST = c.v || ''; DIAG_ONCE = true; closeSheet(); ACC_OPEN['set-diag'] = true; goTab('settings'); });
-var DIAG_DEST = '', DIAG_ONCE = false; // 🩺 opened from a destination's "N בלי מיקום" line: only that destination
-window.addEventListener('load', () => setTimeout(() => { try { rateDaily(); } catch (e) {} }, 5000)); // the rate, once a day in the background (ש8)
+// the 🩺 service health window (svcHealthHTML, its report and its actions) continues in js/service-health.js (split at this seam in legal-credits-2, when this part reached its size light)
+sysOn(window, 'load', () => setTimeout(() => { try { rateDaily(); } catch (e) {} }, 5000)); // the rate, once a day in the background (ש8)
 // 11.29.0 (task launch-fast; decisions 2026-11-19 · The launch screen, Q6 (a)): a library the page loads after its first screen (the map
 // library, js/map-library.js) - its style and its script added to the page; not a service (no provider, no quota): the service worker's
 // library cache answers both (cache-first). done(ok) once both are in or failed; ok = the script loaded
@@ -361,17 +349,7 @@ function svcLibrary(js, css, done, sri) {
   if (css && !document.querySelector('link[data-lib="' + css + '"]')) { const l = document.createElement('link'); l.rel = 'stylesheet'; pin(l, sri && sri.css); l.href = css; l.dataset.lib = css; l.onload = one; l.onerror = () => { l.remove(); one(); }; document.head.appendChild(l); } else one();
   const s = document.createElement('script'); pin(s, sri && sri.js); s.src = js; s.async = true; s.onload = () => { okJs = true; one(); }; s.onerror = () => { s.remove(); one(); }; document.head.appendChild(s);
 }
-// 11.46.0 (phone-round-4c-fixes P3; decisions 2026-11-21 · Review of the `phone-round-4b-fixes` summary, Q2; standard ui-look-layout
-// "Waiting on an outside service"): "in progress" - the one indicator of a screen or window waiting on an outside service. waitOn(host, o)
-// puts a moving bar under the host's head (o.head: the element it goes after; else the host's first child), writes the stage line with
-// moving dots into o.line (o.stage: its words, no "…"), and dims o.map with a pulsing ring on its middle - the estimated area. It returns
-// { stage(words), done() }: done takes the bar, the line and the dimming off (the screen then writes its result or its failure line);
-// both are safe after the host left the page. waitLineHTML(words) is the stage line alone - every "searching…" line of the app.
-function waitLineHTML(t) { return `<small class="ps-line ps-busy wait-line" role="status">${escH(t)}<span class="wait-dots">…</span></small>`; }
-function waitOn(host, o) { o = o || {}; if (!host) return { stage() {}, done() {} };
-  const bar = document.createElement('div'); bar.className = 'wait-bar'; bar.setAttribute('role', 'progressbar'); bar.setAttribute('aria-label', o.stage || 'בטעינה');
-  const after = o.head && o.head.parentElement === host ? o.head : null; if (after) after.after(bar); else host.prepend(bar);
-  const line = o.line || null, map = o.map || null, stage = t => { if (line && line.isConnected) line.innerHTML = waitLineHTML(t); bar.setAttribute('aria-label', t); };
-  if (o.stage) stage(o.stage); let ring = null; if (map) { map.classList.add('wait-map'); ring = document.createElement('div'); ring.className = 'wait-ring'; ring.setAttribute('aria-hidden', 'true'); map.appendChild(ring); }
-  let on = true; return { stage: t => { if (on) stage(t); }, done: () => { if (!on) return; on = false; bar.remove(); if (ring) ring.remove(); if (map) map.classList.remove('wait-map'); if (line && line.querySelector('.wait-line')) line.innerHTML = ''; } }; }
-// ================= END EXTERNAL SERVICES =================
+// countries-visited: a data file of the app's own site (same origin, no provider, no quota; the worker keeps it in the shell) - parsed JSON or null
+const SVC_SITE = new Map();
+function svcSiteFile(f) { if (!SVC_SITE.has(f)) SVC_SITE.set(f, fetch(f, { credentials: 'same-origin' }).then(r => r.ok ? r.json() : null).catch(() => null).then(j => { if (!j) SVC_SITE.delete(f); return j; })); return SVC_SITE.get(f); }
+// the one "in progress" indicator (waitOn, waitLineHTML) continues in js/wait-on.js (split at this seam in map-3d, when this part reached its size light)

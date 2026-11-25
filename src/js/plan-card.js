@@ -38,18 +38,17 @@ function entryTok(e) { return e.land ? 'land:' + e.land.id : e.sched ? 's:' + e.
 function entryOfTok(tok) { if (String(tok).startsWith('s:')) { const s = rawSched(tok.slice(2)); return s ? { sched: schedEff(s) } : null; } const p = planItem(pid(tok)); return p ? { p } : null; }
 function isTravelItem(p) { return !!(p && isNote(p) && p.travel); } // 11.0.0 (Q16): a note's airport icon no longer makes it a travel
 function entryName(e) { return e.sched ? e.sched.title : (e.p && e.p.name) || ''; }
-const _escH = escH;
 // 10.2.0 (design-2): no time column and no source symbols - the time is the first chip of the tags row: "14:30" (a tap changes
 // it), "קביעת שעה" when there is none, or "הוזמן · 16:00" when booked for that time (a tap opens the booking); a travel's time
 // is only shown (its editor, from the card's window, changes it); a group item says "קבוצתי" in its tags.
 function planTimeChip(day, e, t) {
   if (!e.sched && isTravelItem(e.p)) { if (!t || !t.start) return '';
     const tf = tripFlights().find(x => x.id === e.p.id), ld = tf ? Number(tf.arriveDay) || 0 : 0; // 7.0.0 (ז9): a landing on another day
-    const end = ld && isHM(tf.arrive) ? `${_escH(tf.arrive)}<sup class="sym-tip" data-act="tip" data-v="sym.nextDay">${ld > 0 ? '+' : '−'}${Math.abs(ld)}</sup>` : (t.end && t.end !== t.start ? _escH(t.end) : '');
-    return travelTimeChip(e.p.id, `${_escH(t.start)}${end ? '–' + end : ''}`); }
+    const end = ld && isHM(tf.arrive) ? `${escH(tf.arrive)}<sup class="sym-tip" data-act="tip" data-v="sym.nextDay">${ld > 0 ? '+' : '−'}${Math.abs(ld)}</sup>` : (t.end && t.end !== t.start ? escH(t.end) : '');
+    return travelTimeChip(e.p.id, `${escH(t.start)}${end ? '–' + end : ''}`); }
   if (!e.sched) { const p = e.p, base = p.dup ? copyRef(p.id) : (p.planOnly ? null : p.id), bk = base != null && !isNote(p) ? bookingOf(base) : null, dd = dayByKey(day);
-    if (bk && bk.time && dd && bk.date === dd.date) return `<button type="button" class="tl-tag cd-when bkd" data-act="place.booking" title="הוזמן לשעה הזו - נגיעה פותחת את ההזמנה">${tagIc('event_available')}הוזמן${SEP}<span dir="ltr">${_escH(bk.time)}</span></button>`; }
-  return t && t.start ? `<button type="button" class="tl-tag cd-when time" data-act="plan.time" aria-label="שינוי השעה">${tagIc('schedule')}<span dir="ltr">${_escH(t.start)}${t.end && t.end !== t.start ? '–' + _escH(t.end) : ''}</span></button>`
+    if (bk && bk.time && dd && bk.date === dd.date) return `<button type="button" class="tl-tag cd-when bkd" data-act="place.booking" title="הוזמן לשעה הזו - נגיעה פותחת את ההזמנה">${tagIc('event_available')}הוזמן${SEP}<span dir="ltr">${escH(bk.time)}</span></button>`; }
+  return t && t.start ? `<button type="button" class="tl-tag cd-when time" data-act="plan.time" aria-label="שינוי השעה">${tagIc('schedule')}<span dir="ltr">${escH(t.start)}${t.end && t.end !== t.start ? '–' + escH(t.end) : ''}</span></button>`
     : `<button type="button" class="tl-tag cd-when settime" data-act="plan.time">${tagIc('more_time')}קביעת שעה</button>`;
 }
 // the visited toggle: a check circle (grey outline / filled green) with a small "היינו" under it, at the card's top left - from
@@ -58,26 +57,26 @@ function visMarkOn() { const s = tripState(activeTripObj()); return s === 'durin
 function visBtnHTML(id, visited) { if (!visited && !visMarkOn()) return ''; return `<button type="button" class="tl-vis" data-act="place.visit" data-active="${visited}" aria-pressed="${visited}" aria-label="${visited ? TX.visited + ' - נגיעה מבטלת' : 'סימון: ' + TX.visited}" title="${TX.visited}: נגיעה, או החלקה ימינה על הכרטיס (שמאלה מבטלת)">${msi('check_circle', { size: 22 })}<span>${TX.visited}</span></button>`; }
 // the booking tag (a tap opens the booking window, also in the mini card): booked (with its time), must, recommended
 function bookTag(bk, rc) { const rv = `type="button" data-act="place.booking" title="הזמנה: מה זה, וסימון כהוזמן"`;
-  return bk ? `<button ${rv} class="tl-tag ok">${tagIc('event_available')}הוזמן${bk.time ? `${SEP}<span dir="ltr">${_escH(bk.time)}</span>` : ''}</button>` : rc === 'resv-must' ? `<button ${rv} class="tl-tag must">${tagIc('event')}חובה להזמין</button>` : rc === 'resv-rec' ? `<button ${rv} class="tl-tag rec">${tagIc('event')}מומלץ להזמין</button>` : ''; }
+  return bk ? `<button ${rv} class="tl-tag ok">${tagIc('event_available')}הוזמן${bk.time ? `${SEP}<span dir="ltr">${escH(bk.time)}</span>` : ''}</button>` : rc === 'resv-must' ? `<button ${rv} class="tl-tag must">${tagIc('event')}חובה להזמין</button>` : rc === 'resv-rec' ? `<button ${rv} class="tl-tag rec">${tagIc('event')}מומלץ להזמין</button>` : ''; }
 const planRmBtn = l => `<button type="button" class="tl-act tl-rm a-rm" data-act="plan.remove" aria-label="${l}" title="${l} - &quot;שהוסרו&quot; בסוף היום מחזיר">${actIc('event_busy')}</button>`;
 // 10.15.0 (design-review Q9): a travel's card is changed in its editor, not by dragging - the travel tone, no border, no lift; its time chip
 // is a button that opens the travel editor (every time chip acts on tap), and a pencil at the card's bottom corner on the chip's row does the same
 const travelRO = () => document.body.classList.contains('read-only');
 function travelTimeChip(id, inner) { const ro = travelRO(), tag = ro ? 'span' : 'button type="button"';
-  return `<${tag} class="tl-tag cd-when time"${ro ? '' : ` data-act="trip.editTravel" data-v="${_escH(String(id))}" aria-label="עריכת הנסיעה"`}>${tagIc('schedule')}<span dir="ltr">${inner}</span></${ro ? 'span' : 'button'}>`; }
-function travelEditBtn(id) { return travelRO() ? '' : `<button type="button" class="tl-tredit" data-act="trip.editTravel" data-v="${_escH(String(id))}" aria-label="עריכת הנסיעה" title="עריכת הנסיעה">${msi('edit')}</button>`; }
+  return `<${tag} class="tl-tag cd-when time"${ro ? '' : ` data-act="trip.editTravel" data-v="${escH(String(id))}" aria-label="עריכת הנסיעה"`}>${tagIc('schedule')}<span dir="ltr">${inner}</span></${ro ? 'span' : 'button'}>`; }
+function travelEditBtn(id) { return travelRO() ? '' : `<button type="button" class="tl-tredit" data-act="trip.editTravel" data-v="${escH(String(id))}" aria-label="עריכת הנסיעה" title="עריכת הנסיעה">${msi('edit')}</button>`; }
 // 11.0.0 (travels-1-model): one card for every travel - mine (a plan item with the travel's id) or the group's (a program line of a travel's
 // kind, token s:<id>): the travel tone, its title, then the tags - the time ("קביעת שעה" without one; both open the travel's editor),
 // "קבוצתי", the kind's name (Q23: "טיסה", "אוטובוס" - never "נסיעה"), and while an end has no confirmed location the chip "מיקום מוצע,
 // לאישור" ("חסר מיקום" when nothing was found), built like "קביעת שעה": a tap opens the editor on that end. A group travel also carries
 // "עודכן במקור" / "שלי" as every program line. It does not move by dragging (its editor changes it); the pencil at the far end.
-function travelCardHTML(f, day, slotKey, mapNum, o) { o = o || {}; const esc = _escH, ro = travelRO(), id = String(f.id), sid = f.group ? f.src : null;
+function travelCardHTML(f, day, slotKey, mapNum, o) { o = o || {}; const esc = escH, ro = travelRO(), id = String(f.id), sid = f.group ? f.src : null;
   const raw = sid != null ? rawSched(sid) : null, upd = raw ? schedSrcUpdates(raw).length : 0, mine = raw ? schedEdChanged(raw) : false;
   const ld = Number(f.arriveDay) || 0, end = ld && isHM(f.arrive) ? `${esc(f.arrive)}<sup class="sym-tip" data-act="tip" data-v="sym.nextDay">${ld > 0 ? '+' : '−'}${Math.abs(ld)}</sup>` : (f.arrive && f.arrive !== f.depart && isHM(f.arrive) ? esc(f.arrive) : '');
   const time = isHM(f.depart) ? travelTimeChip(id, `${esc(f.depart)}${end ? '–' + end : ''}`) : ro ? '' : `<button type="button" class="tl-tag cd-when settime" data-act="trip.editTravel" data-v="${esc(id)}">${tagIc('more_time')}קביעת שעה</button>`;
   const st = travelEndsState(f), side = travelFirstOpenEnd(f), stTx = st === 'prop' ? 'מיקום מוצע, לאישור' : 'חסר מיקום';
   const prop = !st || ro || ARCHIVE_VIEW || (activeTripObj() || {}).archived ? '' /* a memory confirms nothing */ : `<button type="button" class="tl-tag cd-when settime tv-prop" data-act="travel.endFix" data-v="${esc(id + '|' + side)}">${tagIc('location_on')}${stTx}</button>`;
-  const tags = [time, f.group ? grpTag() : '', cdMeta([esc(travelKindName(f))]), prop,
+  const tags = [time, f.group ? grpTag() : '', cdMeta([esc(travelKindName(f))]), prop, svBtnHTML(svTravelRoute(f, day), { tag: true }) /* map-side-view: a drive's "גובה" */, alongBtnHTML(f, day, ro) /* along-drive: "📚 לאורך הדרך" */, travelStopsChip(f, ro),
     upd ? `<button type="button" class="tl-tag upd" data-act="sched.upd">${tagIc('update')}עודכן במקור</button>` : '',
     mine && !upd ? `<span class="tl-tag mine" title="${esc('שונה אצלי: ' + schedChangeText(raw))}">${tagIc('edit')}שלי</span>` : '',
     o.visited ? `<span class="tl-tag vis-on">${tagIc('check_circle')}${TX.visited}</span>` : ''];
@@ -85,20 +84,20 @@ function travelCardHTML(f, day, slotKey, mapNum, o) { o = o || {}; const esc = _
   return cdCard({ cls: `itin-card tl-entry tl-travel${isHM(f.depart) ? ' timed' : ''}${sid != null ? ' tl-sched' : ''}`,
     attrs: ` data-iday="${day}" data-islot="${slotKey}" data-ipid="${esc(tok)}" data-ref="plan:${day}|${esc(tok)}"${isHM(f.depart) ? ` data-start="${esc(f.depart)}" data-end="${esc(f.arrive || '')}"` : ''}`,
     body: ' data-act="plan.open"', lead: leadHTML('travel', msi(TRAVEL_MS[f.mode] || 'flight', { size: 18 }), '', mapNum), name: esc(travelTitle(f)), tags,
-    desc: travelEndsLine(f), acts: travelActsRow(f, ro) });
+    desc: travelEndsLine(f) + travelStopsLine(f), acts: travelActsRow(f, ro) });
 }
 // travels-2-plan (Q13; picture travels-map-1): the line of both ends ("<from> ← <to>"; one end alone as "מ-…" / "אל …"), and the actions
 // row of a place card - navigate to the departure point (only a confirmed one: never a guess, Q5; not at home, Q6), show on the day map,
 // and the pencil at the far end (not in a memory)
 function travelEndsLine(f) { const a = String(f.from || '').trim(), b = String(f.to || '').trim(); if (!a && !b) return '';
-  return `<span class="mc-desc tv-ends" dir="auto">${a && b ? `${_escH(a)} ← ${_escH(b)}` : a ? 'מ-' + _escH(a) : 'אל ' + _escH(b)}</span>`; }
+  return `<span class="mc-desc tv-ends" dir="auto">${a && b ? `${escH(a)} ← ${escH(b)}` : a ? 'מ-' + escH(a) : 'אל ' + escH(b)}</span>`; }
 function travelNavUrl(f) { const e = travelEnd(f, 'from'); return e.coord && !e.home ? navUrl(e.coord.lat + ',' + e.coord.lng) : ''; }
 function travelActsRow(f, ro) { const nav = travelNavUrl(f), id = String(f.id); if (!nav && !MAP_AVAILABLE && ro) return '';
-  return `<div class="tl-acts mc-acts">${nav ? linkBtn('tl-act a-nav', nav, actIc('navigation'), 'ניווט למיקום היציאה') : ''}${MAP_AVAILABLE ? `<button type="button" class="tl-act a-map" data-act="travel.dayMap" aria-label="על מפת היום" title="על מפת היום">${actIc('map')}</button>` : ''}${ro ? '' : `<button type="button" class="tl-act a-ed" data-act="trip.editTravel" data-v="${_escH(id)}" aria-label="עריכת הנסיעה" title="עריכת הנסיעה">${actIc('edit')}</button>`}</div>`; }
+  return `<div class="tl-acts mc-acts">${nav ? linkBtn('tl-act a-nav', nav, actIc('navigation'), 'ניווט למיקום היציאה') : ''}${MAP_AVAILABLE ? `<button type="button" class="tl-act a-map" data-act="travel.dayMap" aria-label="על מפת היום" title="על מפת היום">${actIc('map')}</button>` : ''}${ro ? '' : `<button type="button" class="tl-act a-ed" data-act="trip.editTravel" data-v="${escH(id)}" aria-label="עריכת הנסיעה" title="עריכת הנסיעה">${actIc('edit')}</button>`}</div>`; }
 act('travel.dayMap', c => { const o = c.ref && c.ref.obj, k = o && o.day; if (!k) return; const tok = String(c.ref.id || '').split('|').slice(1).join('|'); // 11.3.0: that travel marked on the day map
   TV_MARK = tok ? { day: k, id: tok } : null; setViewMode('day_' + k, 'map'); openDays.add(k); revealLater(`#main [data-day-item="${k}"] .map-container`, false); return 'redraw'; });
 function itinCardHTML(day, slotKey, p, mapNum) { // my own item in the plan: a place, its copy, a note or a travel. A tap opens its window; a long press drags.
-  const t = getTime(day, p.id), esc = _escH, travel = isTravelItem(p), note = isNote(p);
+  const t = getTime(day, p.id), esc = escH, travel = isTravelItem(p), note = isNote(p);
   const baseId = p.dup ? copyRef(p.id) : p.id, base = !note ? POINTS.find(x => x.id === baseId) : null;
   const visited = STATE.visited.has(baseId);
   if (travel) { const f = tripFlights().find(x => String(x.id) === String(p.id)); if (f) return travelCardHTML(f, day, slotKey, mapNum, { p, t, visited }); }
@@ -113,7 +112,7 @@ function itinCardHTML(day, slotKey, p, mapNum) { // my own item in the plan: a p
 }
 function schedCardHTML(sItem, day, slotKey, mapNum) { // a line of the organized schedule, in the same timeline - the same card, with "קבוצתי"
   if (isTravelKind(sItem.kind)) { const f = grpTravelOf(rawSched(sItem.id), sItem, activeTripObj()); return travelCardHTML(f, day, slotKey, mapNum, { sched: sItem }); }
-  const pl = sItem.placeId != null && sItem.placeId !== '' ? POINTS.find(x => x.id === sItem.placeId) : null, esc = _escH;
+  const pl = sItem.placeId != null && sItem.placeId !== '' ? POINTS.find(x => x.id === sItem.placeId) : null, esc = escH;
   const raw = rawSched(sItem.id), upd = schedSrcUpdates(raw).length, mine = schedEdChanged(raw), hl = _SCH_LINKS && _SCH_LINKS.hotelLine[sItem.id];
   const vis = !!pl && STATE.visited.has(pl.id); // 4.48.1: a visited line dims like my own cards
   const tags = [planTimeChip(day, { sched: sItem }, sItem.start ? { start: sItem.start, end: sItem.end } : null), grpTag(),

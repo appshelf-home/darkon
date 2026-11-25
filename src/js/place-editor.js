@@ -46,7 +46,7 @@ function peCtx(opts) {
         newLayer: v => ({ draft: D, dest: String(v || dest0 + '|').split('|')[0] || dest0 }),
         dup: (F) => { const n = discNorm(fmGet(F, 'name')), dest = String(F.vals.layer || dest0 + '|').split('|')[0];
           const sim = n.length > 2 ? draftItems(D).filter(x => x.key !== key && x.src === dest && (m => m.length > 2 && (m.includes(n) || n.includes(m)))(discNorm(x.p.name))) : [];
-          return sim.length ? 'יש כבר בטיוטה: ' + sim.slice(0, 3).map(x => `<b>${fmEsc(x.p.name)}</b>`).join(', ') : ''; } };
+          return sim.length ? 'יש כבר בטיוטה: ' + sim.slice(0, 3).map(x => `<b>${escH(x.p.name)}</b>`).join(', ') : ''; } };
     }
     const x = draftItems(D).find(i => i.key === key); if (!x) return null; // a fix of a place of the draft
     const p = x.p, dp = x.dp, c = draftCoord(p);
@@ -69,22 +69,22 @@ function peCtx(opts) {
     regionsOf: v => destRegions(DESTS[v ? layerDef(+v).dest : curDest().id] || curDest()),
     newLayer: () => ({}),
     dup: F => { if (cur) return ''; const c = fmGet(F, 'loc'), sim = similarPlaces(fmGet(F, 'name'), id, c);
-      return sim.length ? 'יש כבר במאגר: ' + sim.map(x => `<button type="button" class="pe-dupb" data-act="pe.dupOpen" data-v="${x.p.id}"><b>${fmEsc(x.p.name)}</b>${x.m != null ? ` <small>(${x.m < 10 ? 'באותו מקום' : 'במרחק ' + fmtM(x.m)})</small>` : ''} ›</button>`).join(' ') : ''; } };
+      return sim.length ? 'יש כבר במאגר: ' + sim.map(x => `<button type="button" class="pe-dupb" data-act="pe.dupOpen" data-v="${x.p.id}"><b>${escH(x.p.name)}</b>${x.m != null ? ` <small>(${x.m < 10 ? 'באותו מקום' : 'במרחק ' + fmtM(x.m)})</small>` : ''} ›</button>`).join(' ') : ''; } };
 }
 function peLayerText(C, v) { const x = C.layerOpts().find(o => String(o.v) === String(v)); if (!x) return 'בחירת שכבה';
   const multi = new Set(C.layerOpts().map(o => o.group)).size > 1;
-  return `<span class="dd-dot" style="background:${x.l.color}"></span>${x.l.icon ? typeIcon(x.l.icon, { size: 18 }) : ''} ${fmEsc(x.l.label || x.l.name)}${multi || C.kind === 'add' ? SEP + fmEsc(x.group) : ''}${x.l.draftNew ? ' ' + claudeMark({ cls: 'cl-mark msi-in' }) : ''}`; } // 10.15.0: new from Claude - Claude's own mark
+  return `<span class="dd-dot" style="background:${x.l.color}"></span>${x.l.icon ? typeIcon(x.l.icon, { size: 18 }) : ''} ${escH(x.l.label || x.l.name)}${multi || C.kind === 'add' ? SEP + escH(x.group) : ''}${x.l.draftNew ? ' ' + claudeMark({ cls: 'cl-mark msi-in' }) : ''}`; } // 10.15.0: new from Claude - Claude's own mark
 function peRegionField(F, C, layerV) { const rs = C.regionsOf(layerV);
   if (!rs.length) { delete F.kinds.region; return `<div class="sh-field fm-f" data-fmw="region" hidden></div>`; }
   const cur0 = F.kinds.region ? F.vals.region : C.region, v = rs.some(r => r.id === cur0) ? cur0 : '';
-  return fmChips(F, 'region', { label: 'אזור', value: v, options: [['', 'בלי אזור'], ...rs.map(r => [r.id, fmEsc(r.name)])] }); }
+  return fmChips(F, 'region', { label: 'אזור', value: v, options: [['', 'בלי אזור'], ...rs.map(r => [r.id, escH(r.name)])] }); }
 function openPlaceEditor(opts) { layerNote(openPlaceEditor, arguments);
   opts = opts || {}; const C = peCtx(opts); if (!C) return;
   const F = fmNew({ C, opts }), cur = C.cur, sheet = document.getElementById('sheet');
   const scopeHint = v => { const d = DESTS[F.vals.layer ? layerDef(+F.vals.layer).dest : curDest().id] || curDest();
     return v === 'trip' ? 'נשמר רק בטיול הזה ועובר איתו כששולחים את הטיול. למשל מלון, אירוע חד-פעמי, דירה של חברים.' : `נשמר ביעד ${d.meta.name}, מופיע בכל טיול אליו ועובר עם קובץ היעד.`; };
   const regionName0 = () => { const r = C.regionsOf(F.vals.layer).find(x => x.id === fmGet(F, 'region')); return r ? r.name : ''; };
-  const maybeHTML = () => !cur && C.noGuess && !F.vals.layer && (C.maybe || []).length ? `<div class="pe-maybe">אולי: ${C.maybe.map(v => { const x = C.layerOpts().find(o => String(o.v) === String(v)); return x ? `<button type="button" class="chip" data-act="pe.maybe" data-v="${fmEsc(v)}">${ICON_EMOJI[x.l.icon] || ''} ${fmEsc(x.l.label || x.l.name)}</button>` : ''; }).join('')}</div>` : '';
+  const maybeHTML = () => !cur && C.noGuess && !F.vals.layer && (C.maybe || []).length ? `<div class="pe-maybe">אולי: ${C.maybe.map(v => { const x = C.layerOpts().find(o => String(o.v) === String(v)); return x ? `<button type="button" class="chip" data-act="pe.maybe" data-v="${escH(v)}">${ICON_EMOJI[x.l.icon] || ''} ${escH(x.l.label || x.l.name)}</button>` : ''; }).join('')}</div>` : '';
   sheet.innerHTML = `${fmHead(C.title)}
     ${C.hint ? `<p class="sh-hint">${C.hint}</p>` : ''}
     ${fmText(F, 'name', { label: 'שם', req: true, value: C.name, placeholder: 'שם המקום', dup: true, on: () => peDup(F) })}
@@ -97,10 +97,10 @@ function openPlaceEditor(opts) { layerNote(openPlaceEditor, arguments);
     ${fmSec(F, 'det', { title: 'פרטים', sum: F2 => [fmGet(F2, 'foreign') && 'שם מקומי', fmGet(F2, 'addr') && 'כתובת', fmGet(F2, 'desc') && 'תיאור', fmGet(F2, 'transit') && 'איך מגיעים', C.kind === 'place' && cur && gidOf({ gid: F2.locs.loc.gid }) && 'גוגל מפות ✓'].filter(Boolean).join(', ') },
       (C.kind === 'place' && cur ? fmGidField(F, 'loc') : '') /* place-find (Q3): Google's identity is not "where" - its row lives here */ + fmText(F, 'foreign', { label: 'שם מקומי', value: C.foreign, dir: 'auto', placeholder: 'השם בשפת המקום' }) /* kit-fixes (item 4): the local name, under the name in the place's window */ + fmText(F, 'addr', { label: 'כתובת', value: C.address }) + fmText(F, 'desc', { label: 'תיאור', value: C.desc, para: true }) + fmText(F, 'transit', { label: 'איך מגיעים', value: C.transit }))}
     ${fmSec(F, 'book', { title: 'הזמנה ומחיר', sum: bpPlaceSum }, bpPlaceFields(F, C.resv, C.price, peDestOf(C, opts)) /* 11.42.0 (booking-price, Q2-Q3): the booking choice and its note, the price's kind, level or amount, and its note */)}
-    ${fmSec(F, 'cls', { title: 'סיווג', sum: F2 => [regionName0() && fmEsc(regionName0()), C.kind === 'place' && hasTrip() && fmGet(F2, 'scope') === true && 'רק לטיול הזה' /* 10.4.0: a switch, off = in the destination */, C.kind === 'place' && fmGet(F2, 'key') && SYM_KEY].filter(Boolean).join(SEP) },
-      `${peRegionField(F, C, C.layer)}${C.kind === 'place' && hasTrip() ? fmToggle(F, 'scope', { label: 'רק לטיול הזה', value: C.scope === 'trip', hint: `<span id="peScopeHint">${fmEsc(scopeHint(C.scope))}</span>`, on: v => { const h = fmQ(F, '#peScopeHint'); if (h) h.textContent = scopeHint(v ? 'trip' : 'dest'); } }) : ''}
+    ${fmSec(F, 'cls', { title: 'סיווג', sum: F2 => [regionName0() && escH(regionName0()), C.kind === 'place' && hasTrip() && fmGet(F2, 'scope') === true && 'רק לטיול הזה' /* 10.4.0: a switch, off = in the destination */, C.kind === 'place' && fmGet(F2, 'key') && SYM_KEY].filter(Boolean).join(SEP) },
+      `${peRegionField(F, C, C.layer)}${C.kind === 'place' && hasTrip() ? fmToggle(F, 'scope', { label: 'רק לטיול הזה', value: C.scope === 'trip', hint: `<span id="peScopeHint">${escH(scopeHint(C.scope))}</span>`, on: v => { const h = fmQ(F, '#peScopeHint'); if (h) h.textContent = scopeHint(v ? 'trip' : 'dest'); } }) : ''}
       ${C.kind === 'place' ? fmToggle(F, 'key', { label: SYM_KEY + ' נקודת מפתח במסלול', value: C.key, hint: 'בולט במפת המסלול ובתמונת הטיול.' }) : ''}`)}
-    ${C.src && C.src.url ? `<p class="sh-hint">מקור: <a href="${fmEsc(C.src.url)}" target="_blank" rel="noopener">${srcLinkText(C.src)}</a></p>` : ''}
+    ${C.src && C.src.url ? `<p class="sh-hint">מקור: <a href="${escH(C.src.url)}" target="_blank" rel="noopener">${srcLinkText(C.src)}</a></p>` : ''}
     ${fmEndActs([C.kind === 'fix' && C.reset && { act: 'pe.reset', label: 'חזרה למקור', ic: 'restart_alt' },
       C.kind === 'place' && cur && hasTrip() && !activeTripObj().archived && { act: 'pe.toTravel', label: 'להפוך לנסיעה', ic: 'commute' }, // 11.0.0 (Q20a)
       C.kind === 'place' && cur && { act: 'pe.hide', label: 'הסתרה', ic: 'visibility_off' }, // 11.18.0 (place-hide-delete Q1): both, for every place
@@ -119,7 +119,7 @@ function openPlaceEditor(opts) { layerNote(openPlaceEditor, arguments);
 const PE_OPEN_KEEP = ['dest', 'tripOnly', 'noGuess', 'maybe', 'src', 'layer', 'name', 'coord', 'desc', 'region', 'mapsUrl', 'gid'];
 function peOpenKeep(opts) { const o = {}; opts = opts || {};
   PE_OPEN_KEEP.forEach(k => { const v = opts[k]; if (v != null && v !== '' && v !== false && !(Array.isArray(v) && !v.length)) o[k] = JSON.parse(JSON.stringify(v)); });
-  const a = opts.afterSave; if (a && a.day) o.afterSave = { day: a.day, slot: a.slot || 'unassigned', time: a.time || null, tv: a.tv != null ? a.tv : null, tid: STATE.activeTrip };
+  const a = opts.afterSave; if (a && a.day) o.afterSave = { day: a.day, slot: a.slot || 'unassigned', time: a.time || null, tv: a.tv != null ? a.tv : null, stop: a.stop != null ? a.stop : null, tid: STATE.activeTrip };
   return o; }
 // the destination a place belongs to (11.42.0: its currency is the price's default)
 function peDestOf(C, opts) { return C.kind === 'place' ? (C.cur ? C.cur.dest : (opts && opts.dest) || '') : C.kind === 'add' ? (C.a0 && C.a0.dest) || '' : (C.x && C.x.dp && C.x.dp.id) || ''; }
@@ -128,7 +128,7 @@ function peDup(F) { const C = F.opts.C; if (C.dup) fmDup(F, 'name', C.dup(F)); F
 function peNeedLayer(F) { const C = F.opts.C, w = fmW(F, 'layer'); if (w) w.classList.toggle('pe-need', !!C.noGuess && !F.vals.layer); }
 function peOpenLayers(F) { const C = F.opts.C, opts = C.layerOpts();
   openFmChoice({ title: 'שכבה', value: F.vals.layer, search: opts.length > 14, searchHint: 'חיפוש שכבה',
-    options: opts.map(o => ({ v: o.v, group: o.group, text: (o.l.label || o.l.name) + ' ' + (o.l.name || ''), html: `<span class="dd-dot" style="background:${o.l.color}"></span>${o.l.icon ? typeIcon(o.l.icon, { size: 18 }) : ''} ${fmEsc(o.l.name || o.l.label)}${o.l.draftNew ? ' ' + claudeMark({ cls: 'cl-mark msi-in' }) : ''}` })),
+    options: opts.map(o => ({ v: o.v, group: o.group, text: (o.l.label || o.l.name) + ' ' + (o.l.name || ''), html: `<span class="dd-dot" style="background:${o.l.color}"></span>${o.l.icon ? typeIcon(o.l.icon, { size: 18 }) : ''} ${escH(o.l.name || o.l.label)}${o.l.draftNew ? ' ' + claudeMark({ cls: 'cl-mark msi-in' }) : ''}` })),
     foot: `<div class="brow export-actions"><button type="button" class="chip" data-act="pe.newLayer">＋ שכבה חדשה</button></div>` }, v => { const F2 = fmOf(); if (F2 && F2.kinds.layer) { fmSet(F2, 'layer', v); peNeedLayer(F2); } }); }
 act('pe.maybe', c => { const F = fmOf(c.el); if (!F) return; fmSet(F, 'layer', c.v); peNeedLayer(F); return 'quiet'; });
 // ＋ שכבה חדשה: the layer editor opens on top (from the list of layers); its new layer comes back chosen in the form under it
@@ -142,10 +142,10 @@ act('pe.del', () => { const F = fmOf(); if (!F) return; const id = F.opts.C.id; 
 act('pe.hide', () => { const F = fmOf(); if (!F) return; openHideReason(F.opts.C.id, layerDirty(layerTop())); return 'quiet'; });
 function openHideReason(id, dirty) { layerNote(openHideReason, arguments); const p = POINTS.find(q => q.id === id); if (!p) return;
   const F = fmNew({ id }), sheet = document.getElementById('sheet');
-  sheet.innerHTML = `${fmHead(SY.hide + ' למה להסתיר?')}<p class="sh-hint"><b>${fmEsc(p.name)}</b> לא יוצג ברשימות ובמפה. מחזירים מ-${msi('visibility_off', { cls: 'msi-in' })} מוסתרים בסוף רשימת המקומות.</p>
+  sheet.innerHTML = `${fmHead(SY.hide + ' למה להסתיר?')}<p class="sh-hint"><b>${escH(p.name)}</b> לא יוצג ברשימות ובמפה. מחזירים מ-${msi('visibility_off', { cls: 'msi-in' })} מוסתרים בסוף רשימת המקומות.</p>
     ${dirty ? `<p class="sh-hint hr-dirty">${warnIc()} השינוי שלא נשמר בעורך לא יישמר.</p>` : ''}
     <div class="hr-list">${segHTML('hide.reason', HIDE_REASONS.map(r => [r, statusHTML(r)]), F.reason = 'skip')}</div>
-    ${fmSec(F, 'note', { title: '＋ הערה', sum: F2 => fmEsc(fmGet(F2, 'note') || '') }, fmText(F, 'note', { value: '', placeholder: 'למשל: נסגר לשיפוצים עד 2027' }))}
+    ${fmSec(F, 'note', { title: '＋ הערה', sum: F2 => escH(fmGet(F2, 'note') || '') }, fmText(F, 'note', { value: '', placeholder: 'למשל: נסגר לשיפוצים עד 2027' }))}
     <div class="brow sheet-actions sheet-save-bar"><button class="btn-nav" id="hrGo" data-act="hide.go">${msi('visibility_off', { size: 18 })} הסתרה</button></div>`; // 10.4.0 (design-4): the reason as a segmented choice, then "הסתרה"
   showSheetBackdrop('openHideReason'); fmAttach(F); }
 act('hide.reason', c => { const F = fmOf(c.el); if (!F || !HIDE_REASONS.includes(c.v)) return; F.reason = c.v; c.el.parentElement.querySelectorAll('button').forEach(b => { const on = b.dataset.v === c.v; b.dataset.active = String(on); b.setAttribute('aria-pressed', String(on)); }); return 'quiet'; });
@@ -205,6 +205,8 @@ act('pe.save', c => { const F = fmOf(c.el); if (!F) return; const C = F.opts.C, 
   // undo-history: from ＋ מקום the place and its day are one action - one toast, one row (the save's own toast is held back)
   const save = () => saveEditedPlace(C.id, data, cur && isGoneStatus(cur.status) ? { s: cur.status, note: cur.statusNote || '' } : undefined, hasTrip() ? (F.kinds.scope ? (fmGet(F, 'scope') ? 'trip' : 'dest') : C.scope) : undefined);
   const nid = aft ? undoHold(save) : save();
-  if (aft) { if (nid != null) { addAtPartEnd(aft.day, aft.slot, nid); if (aft.time) { STATE.times[timeKey(aft.day, nid)] = aft.time; placeTimed(aft.day, nid); } if (aft.then) aft.then(nid); persist(); } // 11.0.0: a travel turned into a place (aft.then removes it)
+  if (aft && aft.stop != null) { if (nid != null) { travelStopAdd(aft.stop, { name: data.name, loc: { pid: nid } }); persist(); } // along-drive: from a drive's "לאורך הדרך" - a stop of that drive, not a card of the day
+    showUndoToast(`＋ עצירה בדרך: ${data.name}`); }
+  else if (aft) { if (nid != null) { addAtPartEnd(aft.day, aft.slot, nid); if (aft.time) { STATE.times[timeKey(aft.day, nid)] = aft.time; placeTimed(aft.day, nid); } if (aft.then) aft.then(nid); persist(); } // 11.0.0: a travel turned into a place (aft.then removes it)
     showUndoToast(aft.msg ? aft.msg(data.name) : nid != null ? `＋ מקום חדש נוסף ל-${dayByKey(aft.day).label}: ${data.name}` : '＋ נוסף מקום: ' + data.name); }
 });

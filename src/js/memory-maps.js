@@ -66,7 +66,7 @@ function edgeArrowsSVG(fit, box, far, center, color, fs) {
     const label = `${f.name.slice(0, 28)}${f.n > 1 ? ` +${f.n - 1}` : ''}${SEP}${fmtKm(distanceKm(center, f.c))}`;
     const lx = onSide ? ex + (right ? -fs * 1.2 : fs * 1.2) : ex, ly = onSide ? ey + fs * .35 : ey + (dy > 0 ? -fs * 1.1 : fs * 1.6), anchor = onSide ? (right ? 'end' : 'start') : 'middle';
     s += `<g class="edge-arrow"><path transform="translate(${(box.x + ex).toFixed(1)} ${(box.y + ey).toFixed(1)}) rotate(${ang.toFixed(1)}) scale(${(fs / 18).toFixed(2)})" d="M16 0 L-8 -11 L-3 0 L-8 11 Z" fill="${color}" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/>
-      <text x="${(box.x + lx).toFixed(1)}" y="${(box.y + ly).toFixed(1)}" text-anchor="${anchor}" font-size="${fs}" font-weight="700" fill="${color}" stroke="#fff" stroke-width="${(fs / 3.5).toFixed(1)}" paint-order="stroke">${_qe(label)}</text></g>`;
+      <text x="${(box.x + lx).toFixed(1)}" y="${(box.y + ly).toFixed(1)}" text-anchor="${anchor}" font-size="${fs}" font-weight="700" fill="${color}" stroke="#fff" stroke-width="${(fs / 3.5).toFixed(1)}" paint-order="stroke">${escH(label)}</text></g>`;
   });
   return s;
 }
@@ -75,9 +75,8 @@ function edgeArrowsSVG(fit, box, far, center, color, fs) {
 const TILE_LIMIT = 200; // a picture never asks for more tiles than a few minutes of scrolling a map would
 function tileLayersFor(typeId) {
   const k = esriKey(); // legal-server (11.41.0): the person's key or the app's
-  if (typeId === '__hs') return [{ u: hillshadeUrl(k).replace('_Dark', ''), multiply: false, max: 13, attr: svcCreditText('esri', { as: 'hillshade' }) }];
   const id = BASE_MAPS[typeId] ? typeId : 'osm';
-  return BASE_MAPS[id].layers(k).map(([u, o]) => ({ u, multiply: o.className === 'hs-layer', max: Math.min(o.maxNativeZoom || o.maxZoom || 19, 19), attr: o.cr || '' })); } // legal-credits: a picture's credit is the row's plain text with the address to print (o.cr), never the screen's links
+  return BASE_MAPS[id].layers(k).filter(([u]) => u !== RELIEF_LYR && u !== OFM_VEC).map(([u, o]) => ({ u, multiply: o.className === 'hs-layer', max: Math.min(o.maxNativeZoom || o.maxZoom || 19, 19), attr: o.cr || '' })); } // legal-credits: a picture's credit is the row's plain text with the address to print (o.cr), never the screen's links
 // 7.1.0: no {s} - exact addresses (ש6); legal-credits (S12): a provider's own letter hosts ({abc}) by the tile, as on the screen (svcTileHost)
 function tileUrlOf(u, z, x, y) { return u.replace('{abc}', svcTileHost({ x, y })).replace('{z}', z).replace('{x}', x).replace('{y}', y); }
 // a raster tile for a picture, through the client (the provider is the one whose host serves it); null when it didn't load
@@ -85,7 +84,7 @@ async function loadTileImg(url, svc) { const prov = svcProvOfUrl(url); if (!prov
   const r = await svcAsk(svc || 'picTiles', { key: url, build: p => p === prov ? { url, as: 'img' } : null, parse: d => d }); return r.kind === 'ok' ? r.value : null; }
 // 7.1.0 (ש7): "🗺️ מפה" and "🏔️ תבליט" pictures are drawn from OpenFreeMap's vector tiles (OSM's terms forbid fetching tiles nobody
 // looks at), in the colors of the screen map, with every street, buildings close in and names (Hebrew when there is); the relief adds
-// Esri's hillshade on top, like the screen. Topographic and satellite stay the provider's own tiles. Counted in the trip's budget.
+// the relief drawn on the phone on top, like the screen (relief-phone: reliefInto, from Mapterhorn's heights). Topographic and satellite stay the provider's own tiles. Counted in the trip's budget.
 // 9.1.1 (12ג-6): the tile grid of a drawn map picture, once - which tiles cover the box at a zoom that fits the limit, and
 // where each tile lands; the vector tiles (vtRenderInto) and the image tiles (renderTileImage) use it
 function tileGrid(fit, x0, y0, w, h, z, per, limit) {
@@ -111,12 +110,16 @@ async function vtRenderInto(ctx, fit, x0, y0, w, h, scale, svc, onProg, opts) {
 }
 // region [x0, x0+w] × [y0, y0+h] in the fit's own pixels, drawn at `scale` (2.4 ≈ 200dpi on A3 for a 1000-wide picture)
 async function renderTileImage(fit, x0, y0, w, h, scale, typeId, onProg, opts) {
-  opts = opts || {}; const svc = opts.svc || 'picTiles', vec = typeId === 'osm' || typeId === 'relief';
+  opts = opts || {}; const svc = opts.svc || 'picTiles', vec = typeId === 'osm' || typeId === 'relief' || typeId === 'he', relief = typeId === 'relief' || typeId === '__hs'; // hebrew-map: its picture is the same vector drawing; '__hs': the relief alone (a route background's)
   const cv = document.createElement('canvas'); cv.width = Math.round(w * scale); cv.height = Math.round(h * scale);
   const ctx = cv.getContext('2d'); ctx.fillStyle = '#F2EFE9'; ctx.fillRect(0, 0, cv.width, cv.height);
   let credit = '', z = 0, nTiles = 0;
   if (vec) { const v = await vtRenderInto(ctx, fit, x0, y0, w, h, scale, svc, onProg, opts); if (!v) return null; credit = svcCreditText('openfreemap', { print: true }); z = v.z; nTiles = v.tiles; }
-  const layers = vec ? (typeId === 'relief' ? tileLayersFor('__hs') : []) : tileLayersFor(typeId);
+  // relief-phone: the relief drawn by the same core as the screen (reliefInto), light, over the map; its credit from Mapterhorn's row
+  if (relief) { const zr = Math.max(1, Math.min(vec ? 15 : 13, Math.ceil(Math.log2(fit.A * scale / 256) - 0.2))), G = tileGrid(fit, x0, y0, w, h, zr, 1, opts.limit || TILE_LIMIT);
+    const okR = await reliefInto(ctx, G, scale, fit.A / G.N * scale, vec ? null : onProg); if (!okR && !vec) return null;
+    if (okR) { credit = [credit, svcCreditText('mapterhorn', { print: true })].filter(Boolean).join(SEP); nTiles += G.cells.length; if (!vec) z = G.z; } }
+  const layers = vec || relief ? [] : tileLayersFor(typeId);
   if (layers.length) {
     const maxZ = Math.min(...layers.map(l => l.max));
     const G = tileGrid(fit, x0, y0, w, h, Math.max(0, Math.min(maxZ, Math.ceil(Math.log2(fit.A * scale / 256) - 0.2))), layers.length, opts.limit || TILE_LIMIT), zr = G.z, N = G.N;
@@ -212,7 +215,7 @@ function mvtLayers(buf, want) { const out = {}, r = pbfReader(buf);
       const props = {}; for (let i = 0; i + 1 < tags.length; i += 2) props[keys[tags[i]]] = V[tags[i + 1]]; return { type, props, rings: mvtGeom(geom) }; }) }; }
   return out; }
 async function vtUnzip(b) {
-  if (b.length && b[0] === 0x1f && b[1] === 0x8b && window.DecompressionStream) b = new Uint8Array(await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
+  if (b.length && b[0] === 0x1f && b[1] === 0x8b && window.DecompressionStream) b = await gunzipBytes(b);
   return b; }
 const vtX = (lng, z) => Math.floor((lng + 180) / 360 * 2 ** z), vtY = (lat, z) => { const r = lat * Math.PI / 180; return Math.floor((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * 2 ** z); };
 function vtTilesFor(bb, z) { const [s, w, n, e] = bb, x0 = vtX(w, z), x1 = vtX(e, z), y0 = vtY(n, z), y1 = vtY(s, z), out = [];

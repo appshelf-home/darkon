@@ -19,12 +19,17 @@ const PIC_PRESETS = {
   route: [['cities', 'ערים ומסלול', 'location_city'], ['stays', 'לינות ומסלול', 'hotel'], ['full', 'המסע המלא', 'route']], // 10.15.0 (design-review Q14): line icons
   city: [['hotel', 'הלינה והמקומות', 'hotel'], ['places', 'רק המקומות', 'location_on']],
 };
-const PIC_NUMS = { days: ['ימים', 'days'], dests: ['מדינות', 'countries'], cities: ['ערים', 'cities'], km: ['ק״מ', 'km'], flights: ['טיסות', 'flights'], places: ['מקומות ש' + TX.visited, 'places visited'], loved: ['❤️ אהבנו', '❤️ loved'], walk: ['ק״מ ברגל (משוער)', 'km on foot (est.)'] };
+const PIC_NUMS = { days: ['ימים', 'days'], dests: ['מדינות', 'countries'], cities: ['ערים', 'cities'], km: ['ק״מ', 'km'], flights: ['טיסות', 'flights'], places: ['מקומות ש' + TX.visited, 'places visited'], loved: ['❤️ אהבנו', '❤️ loved'], walk: ['ק״מ ברגל (משוער)', 'km on foot (est.)'], ride: RIDE_LABEL }; // ride-km (Q2): "(משוער)" / "(est.)" added when estimated (picNumLabel)
 const PIC_NUM_MAX = 4;
 const PIC_FS = { open: false }; // the full-screen view (PHOTOS: openPhotoView)
 var PIC_ED = null;                // the editor: { id, tab, q, outOpen, all (candidates incl. every destination place) }
 var PIC_CROP = null;              // the crop dialog
 const PIC_SRC_SESSION = new Map(); // `${trip}|${key}` -> dataURL of my own photo, kept for re-cropping while the app is open
+// a token's light value (the first :root rule - tokens.css), for drawings that leave the page (the trip picture is drawn light, in dark mode too)
+const TOKEN_LIGHT = {};
+function tokenLight(name, dflt) { if (name in TOKEN_LIGHT) return TOKEN_LIGHT[name] || dflt; let v = '';
+  try { for (const sh of document.styleSheets) { for (const r of sh.cssRules || []) { if (r.selectorText === ':root' && r.style) { v = r.style.getPropertyValue(name).trim(); if (v) break; } } if (v) break; } } catch (e) {}
+  TOKEN_LIGHT[name] = /^#[0-9a-f]{3,8}$/i.test(v) ? v : ''; return TOKEN_LIGHT[name] || dflt; }
 function picOf(id) { const td = STATE.tripData[id] || {}; return td.pic || {}; }
 // one change of the arrangement: copy, change, save, redraw, with undo (standard: every change gets the undo toast)
 // undo-history (Q5): the quick taps of the arrangement (style, frame, a level - `quiet`) are ordinary rows; a burst of them is one
@@ -35,7 +40,7 @@ function picBurstEnd() { if (!PIC_BURST.t) return; clearTimeout(PIC_BURST.t); PI
 sysOn(document, 'visibilitychange', () => { if (document.hidden) picBurstEnd(); }); undoBefore(picBurstEnd); // the app may close in the background: the row is written now
 function picChange(id, label, fn, quiet) {
   const td = tdOf(id), before = JSON.stringify(td.pic || {}), p = JSON.parse(before); fn(p);
-  if (JSON.stringify(p) === before) return; if (!quiet) picBurstEnd();
+  if (JSON.stringify(p) === before) return; if (!quiet) picBurstEnd(); if (before === '{}') p.pathNew = 1; // tl-paths (Q4): a picture first arranged from 11.48.0 takes the new defaults
   td.pic = p; tdSave(id); picRedraw(id);
   if (!quiet) { showUndoToast(label); return; }
   clearTimeout(PIC_BURST.t); PIC_BURST.labels.push(label); PIC_BURST.t = setTimeout(picBurstEnd, PIC_BURST.ms);
@@ -129,23 +134,35 @@ function picImgOf(id, key, o, x) { o = o || {}; if (o.src === 'none') return nul
 // the photos' credit: "Photos: Wikimedia Commons - <author> (<licence>), cropped; …" - each picture once, in the order of the markers
 // legal-server (finding 5): a file with no author's name is named by its file page's short address (<lang>.wikipedia.org/wiki/File:…), never
 // "unknown author"; a picture without its facts never reaches here (picImgOf) and is never written
-function picPhotoCredit(marks, en) { const seen = new Set(), items = [];
-  marks.forEach(q => { const im = q.img; if (!im || im.src !== 'wiki' || !im.cr || !im.cr.lic) return; const c = im.cr, who = c.a || picFilePage(c.fp), t = `${who} (${c.lic})`; if (!who || seen.has(t)) return; seen.add(t); items.push(t + (en ? ', cropped' : ', חתוכה')); });
-  if (!items.length) return ''; return `${en ? 'Photos' : 'תמונות'}: Wikimedia Commons - ${items.join('; ')}`; }
+// trip-picture-credits (C15; decisions 2026-11-24 · Review of the legal-review-2 report, Q7): with the look that turns the photos into drawings
+// (look: drawn - the app's PIC_DRAW_FILTER, or the AI's illustrated version) each photo is said to be adapted ("בעיבוד"), not only cropped
+function picPhotoCredit(marks, en, adapted) { const seen = new Set(), items = [], how = adapted ? (en ? ', adapted' : ', בעיבוד') : (en ? ', cropped' : ', חתוכה');
+  marks.forEach(q => { const im = q.img; if (!im || im.src !== 'wiki' || !im.cr || !im.cr.lic) return; const c = im.cr, who = c.a || picFilePage(c.fp), t = `${who} (${c.lic})`; if (!who || seen.has(t)) return; seen.add(t); items.push(t + how); });
+  if (!items.length) return ''; const lics = picLicAddrs(marks); return `${en ? 'Photos' : 'תמונות'}: Wikimedia Commons - ${items.join('; ')}${lics ? `; ${en ? 'licences' : 'רישיונות'}: ${lics}` : ''}`; }
+// legal-credits-2 (C16): each licence's address printed once beside its authors - a PNG or a print has no link (CC BY-SA 3.0 §4(a) asks its URI),
+// the scheme dropped ("creativecommons.org/licenses/by-sa/3.0"); a licence with no known address is named only
+function picLicAddrs(marks) { const seen = new Set(); marks.forEach(q => { const c = q.img && q.img.src === 'wiki' && q.img.cr; if (!c || !c.lic || !/^https?:\/\//.test(c.lu || '')) return;
+  const u = c.lu.replace(/^https?:\/\//, '').replace(/\/(deed\.[\w-]+|legalcode(\.[\w-]+)?)?\/?$/, ''); if (u) seen.add(u); }); return [...seen].join(SEP); }
 function picFilePage(fp) { try { const u = new URL(fp); return u.host + decodeURIComponent(u.pathname); } catch (e) { return ''; } }
 // a credit too long for one line, cut at its "; " and spaces into lines of about `cap` letters
 function picWrap(t, cap) { const out = []; let cur = ''; String(t).split(/(?<=; )|(?<= )/).forEach(w => { if (cur && (cur + w).length > cap) { out.push(cur.trimEnd()); cur = ''; } cur += w; }); if (cur.trim()) out.push(cur.trimEnd()); return out; }
 // ---- the frame: blocks I switch on and off ----
 function picFrameDefaults(D, kind) {
-  const nums = kind === 'city' ? ['days', 'places', 'loved', 'walk'] : ['days', D.dests.length > 1 ? 'dests' : 'places', 'cities', 'km'];
-  return { none: false, small: 'small', band: true, title: '', sub: '', dates: true, flags: true, nums, hl: true, col: true, elev: true, foot: true };
+  // ride-km (Q3): "ק״מ בנסיעות" checked by default only in a route picture - in the place of "ערים" (four numbers at most); offered, unchecked, in a city one
+  const nums = kind === 'city' ? ['days', 'places', 'loved', 'walk'] : ['days', D.dests.length > 1 ? 'dests' : 'places', D.ride && D.ride.km ? 'ride' : 'cities', 'km'];
+  return { none: false, small: 'small', band: true, title: '', sub: '', dates: true, flags: true, nums, hl: true, col: true, elev: true, foot: true, path: kind === 'city' };
 }
-function picFrame(id, D, kind, P) { const f = { ...picFrameDefaults(D, kind), ...(((P || picOf(id)).ov || {}).frame || {}) };
+// tl-paths (Q4): "המסלול שהלכנו" - on by default in a city picture, off in a route one. A picture saved before 11.48.0 (td.pic with settings and
+// no pathNew) drew the path in both kinds: it keeps that look (on) until its kind or this switch is changed (both set pathNew - picChange)
+function picFrame(id, D, kind, P) { P = P || picOf(id); const fo = (P.ov || {}).frame || {}, f = { ...picFrameDefaults(D, kind), ...fo };
+  if (typeof fo.path !== 'boolean' && picPathOld(P)) f.path = true;
   f.nums = (f.nums || []).filter(k => PIC_NUMS[k]).slice(0, PIC_NUM_MAX); return f; }
+function picPathOld(P) { return !!P && !P.pathNew && Object.keys(P).length > 0; }
 function picNumVal(k, D, M2) {
   const flights = travelsOf(D.t).filter(x => x.mode === 'flight').length, love = Object.values(D.rate).filter(r => r.r === 'love').length;
-  return { days: D.days, dests: D.dests.length, cities: M2.cityCount, km: D.totalKm, flights, places: D.visited.length, loved: love, walk: D.walk }[k];
+  return { days: D.days, dests: D.dests.length, cities: M2.cityCount, km: D.totalKm, flights, places: D.visited.length, loved: love, walk: D.walk, ride: D.ride ? D.ride.km : 0 }[k];
 }
+function picNumLabel(k, D, en) { const l = PIC_NUMS[k][en ? 1 : 0]; return k === 'ride' && D.ride && D.ride.est ? l + (en ? ' (est.)' : ' (משוער)') : l; }
 // what changed by hand, for "✋ N שינויים שלך": one line per change, each with its own ↺
 function picChanges(id) {
   const P = picOf(id), D = mementoData(id); if (!D) return [];
@@ -160,7 +177,7 @@ function picChanges(id) {
   Object.entries(P.img || {}).forEach(([k, o]) => { if (o && o.src) out.push({ kind: 'img', k, text: `${nm(k)}${SEP}תמונה: ${{ own: 'שלי', wiki: 'ויקיפדיה', none: 'בלי' }[o.src] || o.src}${o.crop ? ' (חיתוך)' : ''}` }); });
   (P.merges || []).forEach((g, i) => out.push({ kind: 'merge', i, text: `איחוד: ${g.map(nm).join(' + ')}` }));
   (P.extra || []).forEach(x => out.push({ kind: 'extra', k: x.key, text: `＋ ${x.city ? 'עיר' : 'מיקום'}: ${x.name}` }));
-  const fr = (P.ov || {}).frame || {}, FL = { none: 'בלי מסגרת', small: 'כותרת בלי מסגרת', band: 'פס הכותרת', title: 'כותרת', sub: 'כותרת משנה', dates: 'תאריכים', flags: 'דגלים', nums: 'מספרים', hl: 'רגעי השיא', col: 'מונה האוסף', elev: 'פרופיל הגובה', foot: 'שורה תחתונה' };
+  const fr = (P.ov || {}).frame || {}, FL = { none: 'בלי מסגרת', small: 'כותרת בלי מסגרת', band: 'פס הכותרת', title: 'כותרת', sub: 'כותרת משנה', dates: 'תאריכים', flags: 'דגלים', nums: 'מספרים', hl: 'רגעי השיא', col: 'מונה האוסף', elev: 'פרופיל הגובה', foot: 'שורה תחתונה', path: 'המסלול שהלכנו' };
   Object.keys(fr).forEach(k => out.push({ kind: 'frame', k, text: `מסגרת${SEP}${FL[k] || k}` }));
   return out;
 }
@@ -191,11 +208,24 @@ function picBoxes(m) {
 const PIC_FIT_PAD = { city: 84, route: 90 }, PIC_FIT_MIN_KM = 1; // 11.24.0 (pic-frame-fit): was 60 / 80 and the zoom cap alone
 const PIC_EDGE_BOTTOM = 30; // the credit line at the map box's bottom: no marker or name under it
 const picCrCap = w => Math.max(30, Math.floor((w - 32) / 6.6)); // legal-credits: about how many letters of the 13px credit fit across the map box
+// the credits block (legal-credits Q8, C3, S6; trip-picture-credits C15): the map's credit (with OpenStreetMap's address to print, and Open-Meteo
+// when the profile shows heights) on one line; the photos' credits - each Commons picture's author and licence - on lines of their own under it.
+// One source for the app's own picture and for the stamp on an illustrated one (picArtCredits), so the two never say different things
+function picCreditLines(m, L, mapCredit, adapted, w) { const ph = picPhotoCredit(L.marks, m.lang === 'en', adapted);
+  return [[mapCredit, L.elevBand ? svcCreditText('openmeteo', { as: 'elev' }) : ''].filter(Boolean).join(SEP)].concat(ph ? picWrap(ph, picCrCap(w)) : []).filter(Boolean); }
+// drawn at the box's bottom, in one group the app knows as its own (data-credit): on a light strip when there are several lines or `strip` asks
+function picCreditsSVG(mb, crLines, strip) { if (!crLines.length) return ''; const e = escH; let s = '';
+  if (strip || crLines.length > 1) { const sh = crLines.length * 16 + 8; s += `<rect class="pic-credits" x="${mb.x}" y="${mb.y + mb.h - sh}" width="${mb.w}" height="${sh}" fill="#fff" fill-opacity="${strip ? '.9' : '.82'}"/>`;
+    crLines.forEach((t, i) => { s += `<text x="${mb.x + 16}" y="${mb.y + mb.h - 12 - (crLines.length - 1 - i) * 16}" font-size="13" fill="#555">${e(t)}</text>`; }); }
+  else s += `<text x="${mb.x + 16}" y="${mb.y + mb.h - 12}" font-size="13" fill="#555" stroke="#fff" stroke-width="3" paint-order="stroke">${e(crLines[0])}</text>`;
+  return `<g data-credit="app">${s}</g>`; }
+// the map credit of the base an illustrated version was drawn on: the AI always gets the schematic base (picArrangement), so its data's credit
+function picBaseCredit(id, L) { return L && L.fit ? schemCredit(picSchemNow(id, L.fit)) : ''; }
 function picLayout(m) {
   const B = picBoxes(m), mb = B.map, city = m.kind === 'city', inP = m.pts.filter(x => x.lv !== 'out');
   const elevBand = !city && m.frame.elev && m.D.records.some(r => r[0] === '⛰️') ? 150 : 0;
   // legal-credits (Q8): the photos' credits take lines of their own at the map box's bottom (the credits strip) - kept clear of markers and the profile
-  const phCr = picPhotoCredit(inP, m.lang === 'en'), crExtra = phCr ? 16 * picWrap(phCr, picCrCap(mb.w)).length + 6 : 0;
+  const phCr = picPhotoCredit(inP, m.lang === 'en', m.look === 'drawn'), crExtra = phCr ? 16 * picWrap(phCr, picCrCap(mb.w)).length + 6 : 0;
   // 11.24.0 (small-ui-set D, pic-frame-fit; decisions 2026-11-18 · The trip picture's map area): the area covers the union of the places
   // marked "היינו" (shown or not), the points shown and, in the route kind, the skeleton - which points are drawn is unchanged (picDefaultLv);
   // with no visited place, the shown points as before. A city is framed by the main cluster of that union (far shown points get edge arrows).
@@ -238,7 +268,7 @@ function picSVG(m, style, opts) {
   opts = opts || {}; const L = picLayout(m), B = L.B, D = m.D, f = m.frame, W = B.W, H = B.H, land = B.land, mb = B.map, en = m.lang === 'en';
   PIC_LAST[m.id] = L;
   const prim = /^#[0-9a-f]{6}$/i.test(D.th.primary || '') ? D.th.primary : '#1C2B33', acc = /^#[0-9a-f]{6}$/i.test(D.th.accent || '') ? D.th.accent : '#C08A2E';
-  const font = "Rubik, 'Segoe UI', Arial, sans-serif", hfont = HEADING_FONTS.includes(D.th.headingFont) ? `'${D.th.headingFont}', ${font}` : font, e = _qe, R = W - 40;
+  const font = "Rubik, 'Segoe UI', Arial, sans-serif", hfont = HEADING_FONTS.includes(D.th.headingFont) ? `'${D.th.headingFont}', ${font}` : font, e = escH, R = W - 40;
   const title = f.title || String(D.t.name).split(' · ')[0], sub = f.sub || D.dests.map(d => String(d.name).replace(/\s*\(.*$/, '')).join(en ? ' → ' : ' ← ');
   const dates = f.dates && D.t.start ? `${tmFmt('range', [D.t.start, D.t.end], { year: true })}` : '', flags = f.flags ? D.flags.join(' ') : '';
   let s = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" font-family="${font}" style="direction:ltr">
@@ -247,7 +277,7 @@ function picSVG(m, style, opts) {
   <pattern id="mgrid" width="44" height="44" patternUnits="userSpaceOnUse"><path d="M44 0H0V44" fill="none" stroke="${prim}" stroke-opacity=".06" stroke-width="2"/></pattern>
   <filter id="msh"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-opacity=".22"/></filter>${m.look === 'drawn' ? PIC_DRAW_FILTER : ''}</defs>
   <rect width="${W}" height="${H}" fill="url(#mbg)"/>`;
-  const cover = opts.base ? null : D.cover;
+  const cover = photoOff(opts) ? null : D.cover;
   if (!f.none && f.band) { const bandH = B.bandH, cr = land ? 78 : 96; let tx = R - 10;
     s += `<rect width="${W}" height="${bandH}" fill="url(#mhd)"/>`;
     if (cover) { const cx = R - cr, cy = bandH / 2; tx = R - 2 * cr - 30;
@@ -257,12 +287,12 @@ function picSVG(m, style, opts) {
   <text x="${tx}" y="${bandH * .33 + big + 6}" text-anchor="end" fill="#fff" font-size="${big}" font-weight="700" font-family="${hfont}">${e(title)}</text>
   <text x="${tx}" y="${bandH - 28}" text-anchor="end" fill="#fff" font-size="24" opacity=".92">${e(sub.slice(0, 80))}</text>`; }
   const M2 = { cityCount: m.pts.filter(x => x.type === 'city' && !x.extra).length };
-  if (!f.none && f.nums.length) { const nums = f.nums.map(k => [picNumVal(k, D, M2), PIC_NUMS[k][en ? 1 : 0]]).filter(x => x[0]);
+  if (!f.none && f.nums.length) { const nums = f.nums.map(k => [picNumVal(k, D, M2), picNumLabel(k, D, en)]).filter(x => x[0]);
     const ny = B.bandH + 22, nh = B.nums, nw = (W - 80) / Math.max(nums.length, 1);
     nums.forEach(([n, l], i) => { const x = R - nw * i - nw / 2;
       s += `<rect x="${x - nw / 2 + 8}" y="${ny}" width="${nw - 16}" height="${nh}" rx="18" fill="#fff" filter="url(#msh)"/><text x="${x}" y="${ny + nh * .52}" text-anchor="middle" font-size="${land ? 34 : 40}" font-weight="700" fill="${prim}">${typeof n === 'number' ? n.toLocaleString(en ? 'en-US' : 'he-IL') : e(n)}</text><text x="${x}" y="${ny + nh * .84}" text-anchor="middle" font-size="18" fill="#5A5D63">${e(l)}</text>`; }); }
   // highlights: a side column (landscape) or a row under the map (portrait)
-  const hiItem = (h, x, y, r, ti) => (h.img && !opts.base) ? `<clipPath id="hc${ti}"><circle cx="${x}" cy="${y}" r="${r}"/></clipPath>${photoImageSVG(h.photo, h.img, x - r, y - r, 2 * r, 2 * r, ` clip-path="url(#hc${ti})"`)}<circle cx="${x}" cy="${y}" r="${r}" fill="none" stroke="${acc}" stroke-width="4"/>`
+  const hiItem = (h, x, y, r, ti) => (h.img && !photoOff(opts)) ? `<clipPath id="hc${ti}"><circle cx="${x}" cy="${y}" r="${r}"/></clipPath>${photoImageSVG(h.photo, h.img, x - r, y - r, 2 * r, 2 * r, ` clip-path="url(#hc${ti})"`)}<circle cx="${x}" cy="${y}" r="${r}" fill="none" stroke="${acc}" stroke-width="4"/>`
     : `<circle cx="${x}" cy="${y}" r="${r}" fill="${acc}" fill-opacity=".16"/><text x="${x}" y="${y + r * .36}" text-anchor="middle" font-size="${r}">${h.p ? (ICON_EMOJI[h.p.icon] || '✨') : '✨'}</text>`;
   if (!f.none && B.hs && B.hs.length) { const hs = B.hs;
     if (land) { const cx = B.cx; let y = B.top + 10; s += `<text x="${cx - 10}" y="${y + 20}" text-anchor="end" font-size="20" font-weight="700" fill="${acc}">${en ? '✨ Highlights' : '✨ רגעי השיא'}</text>`; y += 34;
@@ -273,18 +303,14 @@ function picSVG(m, style, opts) {
   s += `<rect x="${mb.x}" y="${mb.y}" width="${mb.w}" height="${mb.h}" rx="${B.rx}" fill="#fff"${B.rx ? ' filter="url(#msh)"' : ''}/><rect x="${mb.x}" y="${mb.y}" width="${mb.w}" height="${mb.h}" rx="${B.rx}" fill="url(#mgrid)"/>`;
   let bg = '', credit = '';
   if (L.fit && style === 'map') { const r = picBgFind(m.id, L.fit); if (r) { const f = L.fit, g = r.geo, X = wx => mb.x + f.ox + (wx - f.cx) * f.A + f.w / 2, Y = wy => mb.y + f.oy + (wy - f.cy) * f.A + f.h / 2, cid = 'mbc' + Math.random().toString(36).slice(2, 7);
-      bg = `<clipPath id="${cid}"><rect x="${mb.x}" y="${mb.y}" width="${mb.w}" height="${mb.h}" rx="${B.rx}"/></clipPath><image clip-path="url(#${cid})" href="${r.url}" xlink:href="${r.url}" x="${X(g.x0).toFixed(1)}" y="${Y(g.y0).toFixed(1)}" width="${((g.x1 - g.x0) * f.A).toFixed(1)}" height="${((g.y1 - g.y0) * f.A).toFixed(1)}" preserveAspectRatio="none"/>`; credit = r.credit; } }
+      bg = `<clipPath id="${cid}"><rect x="${mb.x}" y="${mb.y}" width="${mb.w}" height="${mb.h}" rx="${B.rx}"/></clipPath><image clip-path="url(#${cid})" ${svgHref(r.url)} x="${X(g.x0).toFixed(1)}" y="${Y(g.y0).toFixed(1)}" width="${((g.x1 - g.x0) * f.A).toFixed(1)}" height="${((g.y1 - g.y0) * f.A).toFixed(1)}" preserveAspectRatio="none"/>`; credit = r.credit; } }
   if (L.fit && style !== 'map') { const data = picSchemNow(m.id, L.fit); if (data) { bg = schemSVG(data, shiftFit(L.fit, 20, B.topPad), mb, D.th, land ? 19 : 20); credit = schemCredit(data); } } // legal-credits (C2): from what the background was drawn of, never a fixed string
   s += `<clipPath id="mbox"><rect x="${mb.x}" y="${mb.y}" width="${mb.w}" height="${mb.h}" rx="${B.rx}"/></clipPath><svg x="${mb.x}" y="${mb.y}" width="${mb.w}" height="${mb.h}" overflow="hidden" viewBox="${mb.x} ${mb.y} ${mb.w} ${mb.h}"><g clip-path="url(#mbox)">${bg}`;
   if (L.fit) s += picPointsSVG(m, L, prim, acc, opts);
   if (L.fit && L.far.length) s += edgeArrowsSVG(shiftFit(L.fit, 20, B.topPad), mb, L.far.map(q => ({ c: q.c, name: q.name })), L.center, prim, land ? 19 : 21);
   // legal-credits (Q8, C3, S6): the map's credit (with OpenStreetMap's address to print, and Open-Meteo when the profile shows heights) on one line;
   // the photos' credits - each Commons picture's author and licence - on lines of their own under it, on a light strip when there are any
-  const mapCr = [credit, L.elevBand ? svcCreditText('openmeteo', { as: 'elev' }) : ''].filter(Boolean).join(SEP), ph = picPhotoCredit(L.marks, en);
-  const crLines = [mapCr].concat(ph ? picWrap(ph, picCrCap(mb.w)) : []).filter(Boolean);
-  if (crLines.length > 1) { const sh = crLines.length * 16 + 8; s += `<rect class="pic-credits" x="${mb.x}" y="${mb.y + mb.h - sh}" width="${mb.w}" height="${sh}" fill="#fff" fill-opacity=".82"/>`;
-    crLines.forEach((t, i) => { s += `<text x="${mb.x + 16}" y="${mb.y + mb.h - 12 - (crLines.length - 1 - i) * 16}" font-size="13" fill="#555">${e(t)}</text>`; }); }
-  else if (crLines.length) s += `<text x="${mb.x + 16}" y="${mb.y + mb.h - 12}" font-size="13" fill="#555" stroke="#fff" stroke-width="3" paint-order="stroke">${e(crLines[0])}</text>`;
+  s += picCreditsSVG(mb, picCreditLines(m, L, credit, m.look === 'drawn', mb.w), false);
   if (f.none && f.small === 'small') { const fs = land ? 34 : 38; s += `<rect x="${W - 40 - Math.min(W - 80, title.length * fs * .6 + 60)}" y="18" width="${Math.min(W - 80, title.length * fs * .6 + 60)}" height="${fs + 26}" rx="${(fs + 26) / 2}" fill="#fff" fill-opacity=".9" filter="url(#msh)"/><text x="${W - 70}" y="${18 + fs + 4}" text-anchor="end" font-size="${fs}" font-weight="700" fill="${prim}" font-family="${hfont}">${e(title)}${dates ? ` <tspan font-size="${Math.round(fs * .5)}" font-weight="400" fill="#5A5D63">${dates}</tspan>` : ''}</text>`; }
   s += '</g></svg>';
   if (!f.none && B.col) { const col = B.col, cy = mb.y + mb.h + 14, cx0 = mb.x, cwid = R - cx0, found = (col.found || []).length, n = Math.min(col.total, 60), ic = ICON_EMOJI[col.icon] || '🗿', sz = Math.min(30, (cwid - 330) / n);
@@ -295,9 +321,13 @@ function picSVG(m, style, opts) {
 }
 // the route line, the leader lines, the markers and the labels (inside the map box)
 function picPointsSVG(m, L, prim, acc, opts) {
-  const e = _qe, en = m.lang === 'en', marks = L.marks, X = L.X, Y = L.Y, B = L.B, mb = B.map; let s = '';
+  const e = escH, en = m.lang === 'en', marks = L.marks, X = L.X, Y = L.Y, B = L.B, mb = B.map; let s = '';
   // 11.9.0 (timeline-import, Q1): each day's real path from Google Timeline, under the route and the points (a travel's own path stays)
-  tlPaths(m.id).forEach(p => { s += `<polyline class="gl-path" points="${p.map(q => { const c = { lat: q[0], lng: q[1] }; return X(c).toFixed(1) + ',' + Y(c).toFixed(1); }).join(' ')}" fill="none" stroke="${acc}" stroke-opacity=".55" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`; });
+  // tl-paths (Q2, Q4): walking a solid line, a ride a dashed lighter one, in the --visited token's light value (the picture is drawn light);
+  // only with the frame's switch "המסלול שהלכנו" (on by default in a city picture, off in a route picture)
+  if (m.frame.path) { const col = tokenLight('--visited', '#2C7830'); tlPaths(m.id).forEach(g => { const r = g.m === 'r';
+    const pts = g.p.map(q => { const c = { lat: q[0], lng: q[1] }; return X(c).toFixed(1) + ',' + Y(c).toFixed(1); }).join(' '); // numbers only - escaped all the same (no sink)
+    s += `<polyline class="gl-path ${r ? 'gl-ride' : 'gl-walk'}" points="${escH(pts)}" fill="none" stroke="${escH(col)}" stroke-opacity="${r ? '.5' : '.8'}" stroke-width="${r ? 2.5 : 3}"${r ? ' stroke-dasharray="6 7"' : ''} stroke-linejoin="round" stroke-linecap="round"/>`; }); }
   // 🗺️ route: the skeleton (cities in the picture, or else the stays in it) in arrival order, with the real way between them
   if (m.kind === 'route') { const sk = picSkeleton(m); for (let i = 1; i < sk.length; i++) { const a = sk[i - 1], c = sk[i], x1 = X(a.c), y1 = Y(a.c), x2 = X(c.c), y2 = Y(c.c);
     if (c.mode === 'flight') { const mx = (x1 + x2) / 2, my = (y1 + y2) / 2 - Math.hypot(x2 - x1, y2 - y1) * .22; s += `<path d="M${x1.toFixed(0)} ${y1.toFixed(0)} Q ${mx.toFixed(0)} ${my.toFixed(0)} ${x2.toFixed(0)} ${y2.toFixed(0)}" fill="none" stroke="${acc}" stroke-width="5" stroke-dasharray="14 10" stroke-linecap="round"/>${Math.hypot(x2 - x1, y2 - y1) > 140 ? `<text x="${mx.toFixed(0)}" y="${(my + 24).toFixed(0)}" text-anchor="middle" font-size="24">✈️</text>` : ''}`; }
@@ -314,8 +344,8 @@ function picPointsSVG(m, L, prim, acc, opts) {
   const sel = typeof opts.edit === 'string' ? opts.edit : null;
   order.forEach((q, i) => { const x = q.x.toFixed(1), y = q.y.toFixed(1), r = q.r;
     let g = '';
-    const imgUrl = q.img ? (opts.base ? `pimg:${q.img.key || q.key}` : q.img.url) : null;
-    if (imgUrl) { g += `<clipPath id="pc${i}"><circle cx="${x}" cy="${y}" r="${r}"/></clipPath><image href="${imgUrl}" xlink:href="${imgUrl}" x="${(q.x - r).toFixed(1)}" y="${(q.y - r).toFixed(1)}" width="${2 * r}" height="${2 * r}" preserveAspectRatio="xMidYMid slice" clip-path="url(#pc${i})"${m.look === 'drawn' ? ' filter="url(#pdraw)"' : ''}/>`;
+    const qi = photoOwn(q.img), imgUrl = qi ? (opts.base ? `pimg:${qi.key || q.key}` : qi.url) : null;
+    if (imgUrl) { g += `<clipPath id="pc${i}"><circle cx="${x}" cy="${y}" r="${r}"/></clipPath><image ${svgHref(imgUrl)} x="${(q.x - r).toFixed(1)}" y="${(q.y - r).toFixed(1)}" width="${2 * r}" height="${2 * r}" preserveAspectRatio="xMidYMid slice" clip-path="url(#pc${i})"${m.look === 'drawn' ? ' filter="url(#pdraw)"' : ''}/>`;
       g += `<circle cx="${x}" cy="${y}" r="${r}" fill="none" stroke="${q.type === 'place' ? picRing(q, acc) : prim}" stroke-width="${q.lv === 'L' ? 5 : 4}"/>`; }
     else if (q.type === 'city') { const nums = picCityNums(m, q); g += nums.length > 1 ? `<rect x="${(q.x - Math.max(r, nums.join('·').length * 6 + 8)).toFixed(1)}" y="${(q.y - r).toFixed(1)}" width="${(2 * Math.max(r, nums.join('·').length * 6 + 8)).toFixed(1)}" height="${2 * r}" rx="${r}" fill="${prim}" stroke="#fff" stroke-width="4"/>` : `<circle cx="${x}" cy="${y}" r="${r}" fill="${prim}" stroke="#fff" stroke-width="4"/>`;
       g += `<text x="${x}" y="${(q.y + r * .34).toFixed(1)}" text-anchor="middle" font-size="${Math.round(r * (nums.join('·').length > 3 ? .7 : .9))}" font-weight="700" fill="#fff">${nums.length ? nums.join('·') : '•'}</text>`; }
@@ -416,10 +446,25 @@ function picBgReady(id) { const style = mementoStyleOf(id); if (style !== 'map' 
 // the picture as it is now (the illustrated version gets my point images in place of its "pimg:" placeholders)
 // 11.8.1 (timeline-import step 0b, miss a): the placeholders are found by parsing the (already cleaned) picture and set as attributes - a
 // stored value is never written into the markup's text, and nothing is read with regular expressions
-function picResolveArt(id, svg) {
+function picResolveArt(id, svg, art) {
   let doc; try { doc = new DOMParser().parseFromString(String(svg), 'image/svg+xml'); } catch (e) { return ''; }
-  const root = doc && doc.documentElement; if (!root || doc.getElementsByTagName('parsererror').length) return '';
+  const root = doc && doc.documentElement; if (!root || doc.getElementsByTagName('parsererror').length) return ''; photoPageArt(id, root);
   root.querySelectorAll('*').forEach(el => [...el.attributes].forEach(a => { if (!/(^|:)href$/.test(a.name) || !a.value.startsWith('pimg:')) return;
     const v = MEMO.get(`pimg:${id}:${a.value.slice(5)}`); a.value = v && /^data:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(v) ? v : ''; }));
+  picArtCredits(id, root, art || {});
   return new XMLSerializer().serializeToString(root);
 }
+// trip-picture-credits (C15; decisions 2026-11-24 · Review of the legal-review-2 report, Q7): an illustrated picture's credits come from the app,
+// never from what the AI returned - every credit text it left (the base's own group, its strip, any text naming a source or a licence) is
+// removed, and the app stamps its own block from the same data as its own picture (the photos as they are now, the base's map credit - live,
+// or the one kept when the picture came in - and Open-Meteo's with the heights), on a light strip at the map box's bottom (the picture's bottom
+// when its size is no longer the arrangement's). Every way out goes through here: the memory screen, PNG, PDF, print, the summary page
+const PIC_CREDIT_RE = /©|\(c\)\s|wikimedia|creativecommons|openstreetmap|openfreemap|openmaptiles|open-meteo|copernicus|mapterhorn|natural earth|world-atlas|esri|overpass|(^|\s)(photos?|תמונות|צילומים)\s*:|(licen[cs]es?|רישיונות|רישיון)\s*:/i;
+function picArtCredits(id, root, art) {
+  root.querySelectorAll('[data-credit], .pic-credits').forEach(el => el.remove());
+  root.querySelectorAll('text').forEach(el => { if (!el.closest('[data-pt]') && PIC_CREDIT_RE.test(el.textContent || '')) el.remove(); }); // a point's own name is locked
+  const m = picModel(id); if (!m) return; const L = picLayout(m), vb = String(root.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(Number);
+  const same = vb.length === 4 && vb[2] === L.B.W && vb[3] === L.B.H, box = same ? L.B.map : vb.length === 4 && vb[2] > 0 && vb[3] > 0 ? { x: vb[0], y: vb[1], w: vb[2], h: vb[3] } : { x: 0, y: 0, w: L.B.W, h: L.B.H };
+  const g = picCreditsSVG(box, picCreditLines(m, L, picBaseCredit(id, L) || String(art.cr || '').slice(0, 400), (art.look || m.look) === 'drawn', box.w), true); if (!g) return;
+  const d = new DOMParser().parseFromString(g.replace('<g ', '<g xmlns="http://www.w3.org/2000/svg" '), 'image/svg+xml'), el = d.getElementsByTagName('parsererror').length ? null : d.documentElement;
+  if (el) root.appendChild(root.ownerDocument.importNode(el, true)); }

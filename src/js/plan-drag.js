@@ -132,7 +132,7 @@ function setEntryTime(day, tok, start, end) { // a new time for one of my items 
   else { const id = pid(tok); if (start) { STATE.times[timeKey(day, id)] = { start, end: end || '' }; placeTimed(day, id); } else delete STATE.times[timeKey(day, id)]; } // 5.1.0: no end unless one was set
 }
 function askDropTime(info) { layerNote(askDropTime, arguments);
-  const sheet = document.getElementById('sheet'), sugg = suggestDropTime(info), esc = _escH;
+  const sheet = document.getElementById('sheet'), sugg = suggestDropTime(info), esc = escH;
   const shift = t => info.end ? tmAddMin(t, ((tmMin(info.end) - tmMin(info.start)) + 1440) % 1440) : '';
   const where = info.pT && info.nT ? `בין ${info.pT.start} ל-${info.nT.start}` : info.pT ? `אחרי ${info.pT.start}` : info.nT ? `לפני ${info.nT.start}` : 'לחלק אחר ביום';
   const tm = v => `<bdi dir="ltr">${esc(v)}</bdi>`, pick = sugg ? 'sugg' : 'keep';

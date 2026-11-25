@@ -7,4 +7,4 @@ function claudePartHTML(goal, kind, offN) { const g0 = TX.claude[goal]; if (!g0)
       <li>את הקובץ שחוזר: שיתוף ל"${APP.appShort}" או "ייבוא קובץ" - ${g.lands}.</li></ol></details></div>`; } // 9.6.0 (12ו, batch 13.2): open until the first file comes back from Claude
 // 📋 copies the instructions of the window's goal: its part and the core (the memento - its part only)
 act('kit.copyGoal', c => copyKit(c.v, 'ההוראות הועתקו. מדביקים בשיחה חדשה עם ה-' + AI + ', ואז מצרפים את הקובץ'));
-act('kit.install', () => { openScreen('claude', true); return 'quiet'; }); // ה14: the one place to install, over the window
+act('kit.install', () => { openSkillInstall(); return 'quiet'; }); // ה14: the one place to install, over the window (skill-install: opened, from the card and the draft too)
