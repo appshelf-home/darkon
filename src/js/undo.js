@@ -216,7 +216,7 @@ var H_AFTER; function undoAfter(fn) { (H_AFTER = H_AFTER || []).push(fn); }
 let H_BUSY = false;
 // undo everything from row id up to now, newest first; one undo row (x = id) - its toast offers "החזרה" (redo)
 async function hUndoTo(id, mode) {
-  if (H_BUSY) return null; if (OLD_COPY) { showToast(('יש גרסה חדשה' + SEP + 'רעננו כדי לשמור שינויים')); return null; }
+  if (H_BUSY) return null; if (OLD_COPY) { showToast((staleWords() + SEP + 'רעננו כדי לשמור שינויים')); return null; }
   (H_BEFORE || []).forEach(f => { try { f(); } catch (e) { errNote('undo', e); } });
   const L = hChain(), i = L.findIndex(e => e.u === id); if (i < 0) { showToast('אי אפשר לבטל: המידע לביטול כבר נמחק'); return null; }
   const range = L.slice(0, i + 1), target = range[range.length - 1]; H_BUSY = true;

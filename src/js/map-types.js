@@ -53,14 +53,16 @@ function vecGridLayer(o, get, paint) { if (!L.GridLayer) return emptyLayer(o);
   const Lyr = L.GridLayer.extend({ createTile(co, done) { const c = document.createElement('canvas'), r = Math.min(2, window.devicePixelRatio || 1), size = 256 * r; c.width = c.height = size; c.style.width = c.style.height = '256px';
     get(co.z, co.x, co.y).then(T => { if (T && T.stale) mapTilesBad(this); if (T && T.L) { const sc = 2 ** (co.z - T.z); paint(c.getContext('2d'), T, -(co.x - T.x * sc) * size, -(co.y - T.y * sc) * size, size * sc, co.z, r); } done(null, c); }, e => done(e || new Error('tile'), c)); return c; } });
   return new Lyr({ attribution: o.attribution, maxZoom: o.maxZoom || 19, className: o.className || '' }); }
+const HE_VEC = 'ofm:hebrew', HE_LBL = 'ofm:hebrew-labels'; // hebrew-map: the type's two layers, drawn by the special-maps group (diet-groups)
 function baseMapId() { const v = DEV.baseMap; return BASE_MAPS[v] ? v : 'osm'; }
 // hebrew-map: addBaseTiles puts the map's type on its box (data-base: the dark filter of "מפה" in dark mode, css/maps.css) and the phone's choice to keep it light
 // (mapLightSync); the type menu leaves "מפה בעברית" out of a page sent to friends (FMAP_PAGE)
 function addBaseTiles(map) {
   (map._baseLayers || []).forEach(l => { try { map.removeLayer(l); } catch (e) {} });
-  const k = esriKey(), id = baseMapId(); // 4.16.1: a key that failed its check is not used (legal-server: then the app's own key)
-  map._baseLayers = BASE_MAPS[id].layers(k).map(([u, o]) => (u === OFM_VEC ? fmapVecLayer(o) : u === HE_VEC ? heMapLayer(o) : u === HE_LBL ? heLabelLayer() : u === RELIEF_LYR ? (L.GridLayer ? reliefLayer(o) : emptyLayer(o)) : L.tileLayer(u, o)).addTo(map)); map._baseId = id;
+  const k = esriKey(), id0 = baseMapId(), id = id0 === 'he' && !groupHas('special-maps') ? 'osm' : id0; // 4.16.1: a key that failed its check is not used (legal-server: then the app's own key)
+  map._baseLayers = BASE_MAPS[id].layers(k).map(([u, o]) => (u === OFM_VEC ? fmapVecLayer(o) : u === HE_VEC ? groupFn('special-maps', 'heMapLayer')(o) : u === HE_LBL ? groupFn('special-maps', 'heLabelLayer')() : u === RELIEF_LYR ? (L.GridLayer ? reliefLayer(o) : emptyLayer(o)) : L.tileLayer(u, o)).addTo(map)); map._baseId = id;
   try { map.getContainer().dataset.base = id; } catch (e) {} mapLightSync();
+  if (id !== id0) needGroup('special-maps').then(ok => { if (ok) refreshBaseMaps(); }); // diet-groups: "מפה בעברית" is drawn by its group - until it is in, the map (startup waits for it when it is the stored type)
   LIVE_MAPS.add(map); try { reliefLine(map); } catch (e) {} // relief-phone: the line "התבליט לא זמין כרגע" follows the map type
   try { offLayerFor(map); } catch (e) {} // 4.39.0: the downloaded map, under the tiles, when there is no network
   // 4.38.1: tiles that failed (a network that is still waking up after the app was away) are tried again, up to 3 times;
@@ -91,6 +93,7 @@ function checkEsriKey() {
 }
 function setBaseMap(id, silent) {
   if (baseMapId() === id) return; // undo-history: the map shown already is not a change (no empty row)
+  if (id === 'he' && !groupHas('special-maps')) { groupWait('special-maps', () => setBaseMap(id, silent)); return; } // diet-groups: its group first
   devSet({ baseMap: id }); refreshBaseMaps();
   if (!silent) showUndoToast(BASE_MAPS[id].label);
 }
@@ -124,7 +127,7 @@ act('map.typeMenu', c => { const b = c.el, host = b.parentElement;
   host.appendChild(m); mapCtl(m);
   setTimeout(() => touchAny('down', function off(ev) { if (!m.contains(ev.target) && ev.target !== b) { m.remove(); touchAny('down', off, false); } }), 0); // a tap elsewhere closes it
   return 'quiet'; });
-act('map.type', c => { c.el.closest('.ly-menu').remove(); m3Close(); setBaseMap(c.v); return 'quiet'; }); // the maps redraw their tiles themselves; 3d-find: a type chosen in 3D returns to the 2D map
+act('map.type', c => { c.el.closest('.ly-menu').remove(); if (M3.id) groupFn('special-maps', 'm3Close')(); setBaseMap(c.v); return 'quiet'; }); // the maps redraw their tiles themselves; 3d-find: a type chosen in 3D returns to the 2D map
 // 4.16.0: height above sea level (Open-Meteo, Copernicus DEM ~90 m). Asked once per point and kept on the device.
 function elevCache() { return regRead('elev'); }
 function elevKey(c) { return (+c.lat).toFixed(4) + ',' + (+c.lng).toFixed(4); }

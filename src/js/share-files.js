@@ -40,5 +40,3 @@ act('destFile.send', async c => { const F = fmOf(c.el); if (!F) return; const di
 function tripMementosOut(id) { const sc = scopeOfTrip(id), t = STATE.trips[id], items = {};
   PART_BY.mementos.rows.forEach(r => { if (REG_BY[r].where.idb === 'memo') Object.assign(items, rowOut(r, sc)); });
   return Object.keys(items).length ? { items: JSON.parse(mapPicTokens(JSON.stringify(items), x => portableRef(x, t))) } : null; }
-// 'p:<id>' - a point of the trip picture keyed by a place (its settings and its small image)
-function mapPicTokens(json, f) { return json.replace(/([":])p:(@[^":]+:\d+|\d+)(?=")/g, (m, a, n) => { const r = f(/^\d+$/.test(n) ? Number(n) : n); return r == null ? m : a + 'p:' + r; }); }

@@ -55,7 +55,7 @@ function fillTodayWx() { // the card's weather row, once the trip weather is in
 function todayCardCtl() { const ctl = ctlNS('today');
   welcomeBackCtl(); // 4.29.0
   ctl.tcMust = () => { resetFilter(); FP.book = true; goTab('all'); };
-  { ctl.tcOff = () => openOffMaps(STATE.activeTrip); } // 4.39.0
+  { ctl.tcOff = () => viaGroup('special-maps', 'openOffMaps', STATE.activeTrip); } // 4.39.0
 
   fillTodayWx();
 }

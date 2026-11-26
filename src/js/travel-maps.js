@@ -167,3 +167,5 @@ function memTvCtx(M) { return tvCtx(M.t, pid => { const p = (M.pmap && M.pmap.ge
 function memOutings(M, stops) { const C = memTvCtx(M), to = s => s.to || isoAdd(s.from, s.nights || 1);
   return tripOutings(M.t, C).map(o => { const n = isoAdd(o.date, -1), s = stops.find(x => x.from <= n && n < to(x)) || stops.find(x => x.from <= o.date && o.date < to(x));
     return s && s.c && o.goal.c ? { c: s.c, g: o.goal.c, name: o.goal.name, mode: o.f.mode || 'flight', f: o.f } : null; }).filter(Boolean); }
+// one projection for every picture of a trip (memory map, memento, recommendations page): equirectangular with cos(lat)
+function snapCoord(p) { return p.coord || p.manualCoord || (p.address && GEOCODE_CACHE[p.address]) || null; }

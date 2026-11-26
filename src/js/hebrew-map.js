@@ -4,7 +4,7 @@
 // drawn once for the whole view by a layer of their own (heLabelLayer) - Hebrew first (vtName), no two overlapping, the trip's places' names
 // first, growing with the text size. With no network a downloaded area draws the same way from the phone (offFindTile / offLayersOf).
 // The map type stays a choice per phone (DEV.baseMap), never the default.
-const HE_VEC = 'ofm:hebrew', HE_LBL = 'ofm:hebrew-labels';
+// diet-groups (11.62.0): HE_VEC and HE_LBL, the type's two layer marks, are in map-types.js (the main script names them in addBaseTiles)
 const HE_LAYERS = OFF_LAYERS.concat(['transportation_name', 'water_name', 'poi']); // the drawing's layers and the names'
 const HE_DEC = new Map(), HE_GOT = new Map(), HE_DEC_MAX = 48; // a tile's address -> its decoding (promise) / its layers once in; the last 48 kept
 const HE_ST = { s: null }; // the style object read from the tokens, per mode (heStyleReset when the theme changes)

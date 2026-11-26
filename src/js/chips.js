@@ -120,7 +120,6 @@ function hideChipBubble() { const b = document.getElementById('chipBubble'); if 
   b.classList.remove('show'); b._anchor = null; b._ctx = null; b._key = null; b._again = null; b._find = null; b._keep = null; b._fade = 0; b._left = 0; }
 act('tip', c => { if (c.ev && c.el.closest('summary')) c.ev.preventDefault(); /* 10.7.1: an ⓘ in a folded row's name explains, it does not fold */ if (c.v === 'here') { const w = document.querySelector('#sheet > .sh-why'); if (w) showChipBubble(c.el, { html: w.innerHTML }, {}); /* .sh-why is built HTML - the bubble's markup form */ return 'quiet'; } showTip(c.v, c.el); return 'quiet'; }); // 10.4.0: 'here' = the window's own explanation (.sh-why)
 act('tip.ok', () => { hideChipBubble(); hintGone(); return 'quiet'; }); // "הבנתי": read
-act('tip.more', c => { hideChipBubble(); hintGone(); GUIDE_Q = ''; GUIDE_AT = c.v; openMenuScreen('guide'); const ch = document.querySelector(`#main [data-gch="${c.v}"]`); reveal(ch, false, { align: 'start', instant: true }); GUIDE_AT = null; return 'quiet'; });
 act('tip.svc', c => { hideChipBubble(); openSvcExplain(c.v); return 'quiet'; });
 
 // 4.3.0: layer chips - icon and count, colored like the layer's pins when on, grey when off. They are also the map legend.

@@ -1,64 +1,7 @@
-// ================= 4.29.0: CLOSING A TRIP =================
+// ================= 4.29.0: CLOSING A TRIP - the guided flow (memories group, diet-groups 11.62.0; the ratings, tdOf and the welcome-back card are in js/ratings.js) =================
 // After the trip a "ברוכים השבים" card replaces the "today" card; "🗄️ סגירת הטיול" opens a guided flow where every step is
 // optional and "לסגור עכשיו" is always there: 📥 a companion's marks, ✓ where I was, 👍 how it was (❤️/👍/👎 + a word),
 // ✨ highlights, 🔧 fixes to the destination, 🗄️ summary and close. Ratings can be given on a place's card during the trip too.
-var CLOSING;       // { id, step }
-var TRIP_HIDDEN;   // places hidden only in the active trip (👎 imported from a past trip)
-var _pastRateCache = null;
-const RATE = { love: '❤️', like: '👍', dislike: '👎' }, RATE_LABEL = { love: 'אהבתי', like: 'היה טוב', dislike: 'לא שווה' };
-function tdOf(id) { if (id === STATE.activeTrip) stashActive(); return STATE.tripData[id] = STATE.tripData[id] || { favorites: [], visited: [], itinerary: {}, times: {}, planItems: {} }; }
-function tdSave(id, quiet) { if (id === STATE.activeTrip) loadPersonal(id); persist(quiet); } // quiet: saved, nothing redrawn (a draft kept as typed - artReqSet)
-function ratingOf(pid, id) { const td = id ? tdOf(id) : (STATE.tripData[STATE.activeTrip] || {}); return (td.rating || {})[pid] || null; }
-function setRating(id, pid, r, word) {
-  const td = tdOf(id);
-  td.rating = { ...(td.rating || {}) }; const cur = td.rating[pid] || {};
-  if (r === undefined) r = cur.r; if (r === cur.r && word === undefined) delete td.rating[pid]; else td.rating[pid] = { r, ...(word !== undefined ? (word ? { w: word } : {}) : (cur.w ? { w: cur.w } : {})) };
-  if (td.rating[pid] && !td.rating[pid].r) delete td.rating[pid];
-  tdSave(id); _pastRateCache = null;
-}
-// ⭐ on a place's card, during the trip and after it: ❤️ / 👍 / 👎 for a place I visited
-function rateRowHTML(p) {
-  const t = activeTripObj(), st = tripState(t); if (!t.id || ARCHIVE_VIEW || !(st === 'during' || st === 'ended') || !STATE.visited.has(p.id)) return '';
-  const cur = ratingOf(p.id) || {};
-  return `<div class="rate-row" data-ref="place:${p.id}"><span>איך היה?</span>${Object.keys(RATE).map(k => `<button type="button" class="rate-btn" data-act="place.rate" data-v="${k}" aria-pressed="${cur.r === k}" title="${RATE_LABEL[k]}">${RATE[k]}</button>`).join('')}${cur.w ? `<small>"${escH(cur.w)}"</small>` : ''}</div>`;
-}
-// what I said about a place in a past trip (archived), shown small on its card in a new trip
-function pastRatingFor(pid) {
-  if (!_pastRateCache) { _pastRateCache = new Map();
-    Object.values(STATE.trips).filter(t => t.archived && t.archived.reason !== 'cancelled').sort((a, b) => String(a.end).localeCompare(String(b.end))).forEach(t => {
-      Object.entries((STATE.tripData[t.id] || {}).rating || {}).forEach(([k, v]) => _pastRateCache.set(Number(k), { ...v, year: String(t.end || '').slice(0, 4), trip: t.name, tid: t.id })); }); }
-  const v = _pastRateCache.get(pid); return v && v.tid !== STATE.activeTrip ? v : null;
-}
-function pastRateTagHTML(p) { const v = pastRatingFor(p.id); return v ? `<button type="button" class="badge past-rate" data-act="place.pastRate" data-v="${p.id}">${v.year} ${RATE[v.r] || ''}</button> ` : ''; }
-// 4.37.0: the same tag, small, in the plan's cards and the map's floating card (it was only in the full card)
-function pastRateBase(p) { return !p ? null : p.dup ? copyRef(p.id) : p.planOnly ? null : p.id; } // 4.37.2: a duplicate shows its original's rating
-function pastRateMiniHTML(p) { const id = pastRateBase(p); if (id == null) return ''; const v = pastRatingFor(id); return v ? `<span class="past-rate past-mini" data-act="place.pastRate" data-v="${id}">${v.year} ${RATE[v.r] || ''}</span>` : ''; }
-act('place.rate', c => { const pid = Number(c.ref.id), r = c.v, cur = ratingOf(pid) || {};
-  setRating(STATE.activeTrip, pid, cur.r === r ? null : r);
-  showUndoToast(cur.r === r ? 'הדירוג הוסר' : `${RATE[r]} ${RATE_LABEL[r]}: ${placeName(pid)}`); });
-act('place.pastRate', c => { const v = pastRatingFor(Number(c.v)); if (v) showToast(`בטיול "${String(v.trip).split(' · ')[0]}" (${v.year}): ${RATE[v.r]} ${RATE_LABEL[v.r]}${v.w ? `${SEP}"${v.w}"` : ''}`); });
-
-// ---- the welcome-back card (after the trip, instead of "today" and the weather) ----
-function welcomeBackHTML(t) {
-  if (t.archived || ARCHIVE_VIEW) return ''; // 11.37.0 (phone-round-4-fixes P2, G84): a memory is closed - its full view offers no closing
-  const td = tdOf(t.id), co = td.closeOffer || {}; if (co.never) return '';
-  const now = Date.now(), thin = (co.snoozeUntil && now < co.snoozeUntil) || (co.dismissedAt && !co.snoozeUntil && now - co.dismissedAt < 7 * 864e5);
-  if (thin) return `<button type="button" class="today-card wb-thin" id="wbOpen" data-act="welcome.wbOpen">${msi('cottage', { size: 20 })}<span>${escH(String(t.name).split(' · ')[0])} הסתיים${SEP}סגירת הטיול</span>${msi('chevron_right', { size: 20 })}</button>`;
-  const days = dayList(t.start, t.end).length, vis = (td.visited || []).length, nd = tripDests(t).length, back = co.dismissedAt || co.snoozeUntil;
-  return `<div class="today-card wb-card tcd-after" id="todayCard"><div class="tc-title">${msi('cottage', { size: 20 })}ברוכים השבים מ${escH(String(t.name).split(' · ')[0])}</div>
-    ${tlLateLineHTML(t)}<p class="wb-sum">${days} ימים${nd > 1 ? `${SEP}${nd} יעדים` : ''}${vis ? `${SEP}${vis} מקומות ש${TX.visited}` : ''}. סגירה קצרה (כ-3-5 דקות, כל שלב רשות) שומרת את הטיול כזיכרון: איפה ${TX.visited}, מה אהבתם ורגעי השיא - ומכינה את המזכרות.</p>
-    ${cardActionsHTML({ id: 'wbClose', act: 'welcome.wbClose', label: `${msi('inventory_2', { size: 18 })} סגירת הטיול` }, back ? [{ id: 'wbSnooze', act: 'welcome.wbSnooze', label: 'דחייה בשבוע' }, { id: 'wbNever', act: 'welcome.wbNever', label: 'לא להזכיר יותר' }] : [{ id: 'wbLater', act: 'welcome.wbLater', label: 'לא עכשיו' }])}</div>`; // card-actions (Q1): the primary at full width, the rest as text under it
-}
-function welcomeBackCtl() { const ctl = ctlNS('welcome');
-  const t = activeTripObj(), g = id => document.getElementById(id); if (!t.id) return;
-  const set = (patch, msg) => { const td = tdOf(t.id); td.closeOffer = { ...(td.closeOffer || {}), ...patch }; tdSave(t.id); showUndoToast(msg); };
-  if (g('wbOpen')) ctl.wbOpen = () => openClosingFlow(t.id);
-  if (g('wbClose')) ctl.wbClose = () => openClosingFlow(t.id);
-  if (g('wbLater')) ctl.wbLater = () => set({ dismissedAt: Date.now() }, 'בסדר. הכרטיס יחזור בעוד שבוע');
-  if (g('wbSnooze')) ctl.wbSnooze = () => set({ snoozeUntil: Date.now() + 7 * 864e5 }, 'נזכיר בעוד שבוע');
-  if (g('wbNever')) ctl.wbNever = () => set({ never: true }, 'לא נזכיר. הטיול מחכה לסגירה במסך הטיולים');
-}
-ctlActs('welcome', ['wbClose', 'wbLater', 'wbNever', 'wbOpen', 'wbSnooze']);
 
 // ---- the guided flow ----
 const CL_LINE = { merge: 'הסימונים של מי שטייל איתך, מקובץ', tl: 'ממלא את איפה ' + TX.visited + ' מהטלפון', where: 'מה שתכננתם ועוד לא סומן', rate: 'דירוג ומילה לכל מקום', high: 'עד 5 רגעים שהכי זכורים', fixes: 'השינויים שלכם ביעדים', done: 'הטיול עובר לזיכרונות, לקריאה בלבד' };
@@ -214,7 +157,7 @@ function closingCtl(C, steps, i) { const ctl = ctlNS('closing');
       showUndoToast('רגע השיא הוסר'); }; }
   if (g('clHighAdd')) ctl.clHighAdd = () => { if (hl) saveHigh(); const td = tdOf(id); td.highlights = (td.highlights || []).concat({ id: 'h' + Date.now().toString(36), placeId: null, text: '' }); tdSave(id); showUndoToast('✨ נוסף רגע שיא'); }; // undo-history: a row (with what was typed before it)
   if (typeof hlExtrasCtl === 'function') hlExtrasCtl(C, id);
-  if (g('clSendFix')) ctl.clSendFix = () => openTripFile(id, 'improve'); // 8.0.0 (ק12, ה15): the trip file window, "✳ לשיפור" chosen
+  if (g('clSendFix')) ctl.clSendFix = () => viaGroup('management', 'openTripFile', id, 'improve'); // 8.0.0 (ק12, ה15): the trip file window, "✳ לשיפור" chosen
   if (g('clArchive')) ctl.clArchive = async () => { const free = g('clFree') && g('clFree').checked; g('clArchive').disabled = true; CLOSING = null;
     if (free) { await regCacheDrop('darkon-tiles'); await regCacheDrop(DISC_IMG_CACHE); DISC.imgs = []; discSave(); }
     if (g('clOffDel') && g('clOffDel').checked) { try { await offDeletePack(id, true); } catch (e) {} } // 4.39.0
@@ -272,13 +215,6 @@ function openWhereMore(id, back) { const ctl = {}, sheet = document.getElementBy
 }
 ctlActs('wmore', ['wmGo', 'pick']);
 ctlActs('closing', ['clvis', 'word', 'saveHigh', 'clAllVis', 'clArchive', 'clHighAdd', 'clNext', 'clNow', 'clSendFix', 'clView', 'clrate', 'clstep', 'hdel']);
-// 4.41.1: which destination an edit belongs to - a place or layer of a destination by its id range, an added one by its own dest
-function destOfEditId(id, e) {
-  if (e && e.data && e.data.dest) return e.data.dest; const n = Number(id); if (!isFinite(n)) return null;
-  const d = Object.values(DESTS).find(x => n >= (x.idBase || 0) && n < (x.idBase || 0) + 1e6 && ((x.places || []).some(p => (x.idBase || 0) + p.id === n) || ((x.meta || {}).layers || []).some(l => (x.idBase || 0) + l.id === n)));
-  return d ? d.id : null;
-}
-function baseNameOf(id) { const n = Number(id), d = Object.values(DESTS).find(x => (x.places || []).some(p => (x.idBase || 0) + p.id === n)); if (!d) return ''; const p = d.places.find(q => (d.idBase || 0) + q.id === n); return p ? p.name : ''; }
 // the rows of the "🔧 תיקונים ליעד" step: one per place, with what changed and when; places removed in a draft are one line
 function destFixRows(destIds, pm) {
   const ds = new Set(destIds), rows = new Map(), skip = { n: 0, at: 0 }, E = STATE.edits;
@@ -312,17 +248,6 @@ function mergeCompanion(id, data, picks) {
   if (typeof renderClosingScreen === 'function' && activeTab === 'closing') renderClosingScreen();
   return true;
 }
-// importing ❤️ as favorites and 👎 as hidden into a new trip to a place I've been
-function pastRatingsForDests(ids) {
-  const out = { love: [], dislike: [] }; const seen = new Set();
-  Object.values(STATE.trips).filter(t => t.archived && t.archived.reason !== 'cancelled' && tripDests({ segments: Object.keys((t.archived.snap || {}).dests || {}).map(d => ({ dest: d })) }).some(d => ids.includes(d)))
-    .forEach(t => Object.entries((STATE.tripData[t.id] || {}).rating || {}).forEach(([k, v]) => { const pid = Number(k); if (seen.has(pid)) return; seen.add(pid); if (v.r === 'love') out.love.push(pid); if (v.r === 'dislike') out.dislike.push(pid); }));
-  return out;
-}
-function importRatingsOffer(td, segs) { // 7.2.0: called only when the toggle in the trip editor is on
-  const r = pastRatingsForDests([...new Set(segs.map(s => s.dest))]);
-  td.favorites = [...new Set([...(td.favorites || []), ...r.love])]; td.hidden = [...new Set([...(td.hidden || []), ...r.dislike])];
-}
 // memory screen, part 2: what you loved and the highlights
 function memoryHighlightsHTML(M) {
   const td = M.td, hs = (td.highlights || []).filter(h => h.text || h.placeId != null || h.photo), rate = td.rating || {};
@@ -339,3 +264,11 @@ function memoryHighlightsHTML(M) {
 }
 function memorySection(M, where) { if (where === 'middle') return memoryHighlightsHTML(M); if (typeof memorySection3 === 'function') return memorySection3(M, where); return ''; }
 
+// diet-groups (11.62.0; moved from place-search.js psFormBack): a Google Maps link back into a form of this group - the trip picture's editor
+// ("＋ נקודה") or "＋ עוד מקום שהיינו בו" (the closing, or the memory's review window); place-search.js waits for the group first
+async function psMemBack(o, text) {
+  if (o.k === 'pic') { if (!mementoData(o.id)) return false; const r = await psReadLink(text); if (!PIC_ED || PIC_ED.id !== o.id) { if (PIC_ED) closePicEditor(); openPicEditor(o.id); }
+    openPicAdd(o.id, { ...o.keep, r: r && r.coord ? { name: r.name || 'מקום מגוגל מפות', coord: r.coord } : null }); if (!r || !r.coord) showToast(PS_NO_POINT); return true; }
+  const r = await psReadLink(text);
+  if (o.door === 'closing') { if (!CLOSING || CLOSING.id !== o.id || activeTab !== 'closing') openClosingFlow(o.id); } else { memoryTrip = o.id; goTab('memory'); if (!(TL_WIN === o.id && layerTop())) openTlReview(o.id); }
+  openWhereMore(o.id, { ...o.keep, r: r && r.coord ? { name: r.name || 'מקום מגוגל מפות', coord: r.coord, rec: r.rec } : null }); if (!r || !r.coord) showToast(PS_NO_POINT); return true; }

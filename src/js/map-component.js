@@ -12,7 +12,7 @@ function mapTool(box, o) { o = o || {}; mapSweep(typeof box === 'string' ? docum
 // window closes and before any new map). A window's content kept aside for a moment (layerStash) is not "left".
 function mapDispose(map) {
   if (!map || map._removed) return; map._removed = true; LIVE_MAPS.delete(map);
-  if (M3.l2 === map) m3Lost(); // map-3d: the 3D view over it goes with it
+  if (M3.l2 === map) groupFn('special-maps', 'm3Lost')(); // diet-groups: M3 is set only by its group // map-3d: the 3D view over it goes with it
   Object.keys(MAPS).forEach(id => { const r = MAPS[id]; if (r.map !== map) return; if (r.clu) clearTimeout(r.clu.t); delete MAPS[id];
     const host = document.getElementById(id); if (!host || !host.isConnected) { const lg = document.getElementById(id + '-legend'); if (lg) lg.remove(); } });
   Object.keys(DISC_MAPS).forEach(id => { const d = DISC_MAPS[id]; if (d.map === map) { DISC_LAST[id] = d.last; delete DISC_MAPS[id]; } });
@@ -195,8 +195,9 @@ const FMAP_ACTS = ['map.full', 'map.typeMenu', 'map.type', 'map.locate', 'float.
 // (reliefLayer, reliefLine - the drawing would pass the packed map's size cap; Esri's relief never drew there, its key is the site's only)
 // merge 11.50.0 (decisions 2026-11-23 · Review of the parallel day's summaries, Q6): introShow too - a page shows no screen intro (only introMaybe
 // starts one), and through tipDismiss (TOUCH_ANY) it carried the whole guide (GUIDE, ~12 KB) past the packed map's cap (t830: 121,769 on the merged build; no function of the pack changed since 11.49.0)
+// diet-groups: no group in a page (groupHas, groupFn, needGroup - a page's map type is never one a group draws)
 // map-3d: no 3D in a page (m3Row - 3d-find: the menu's row -, m3Close, m3Again, m3ThemeChanged - its engine is a file of the site, and its code would pass the cap)
-const FMAP_STUB = ['introShow', 'mapSweep', 'm3Row', 'm3Close', 'm3Again', 'm3ThemeChanged', 'mapDispose', 'measBtn', 'measDraw', 'measOnMapClick', 'measActiveOn', 'measAddMe', 'measAddPoint', 'measFrom', 'discAttach', 'offLayerFor', 'planItem', 'draftItems', 'openPlaceEditor', 'openPlaceSheet',
+const FMAP_STUB = ['groupHas', 'groupFn', 'needGroup', 'introShow', 'mapSweep', 'm3Row', 'm3Close', 'm3Again', 'm3ThemeChanged', 'mapDispose', 'measBtn', 'measDraw', 'measOnMapClick', 'measActiveOn', 'measAddMe', 'measAddPoint', 'measFrom', 'discAttach', 'offLayerFor', 'planItem', 'draftItems', 'openPlaceEditor', 'openPlaceSheet',
   'layerPush', 'layerPushHistory', 'render', 'persist', 'devSet', 'refreshBaseMaps', 'showUndoToast', 'dataChanged', 'redrawSoon', 'winRedraw', 'refOf', 'svcLine', 'svcGaveUpCount', 'curDest', 'regRead', 'regWrite', 'regChanged', 'filterAct',
   'showMapCard', 'miniCardHTML', 'itemOf', 'fsFilterHTML', 'filterHiddenCount', 'filterCountText', 'isHiddenPoint', 'routeHiddenCount', 'searchShown', 'tdOf', 'stashActive', 'rerenderKeepingMap', 'layerAppBack', 'hintMark', 'hintSeen', 'applyMapRestore', 'takeMapRestore', 'mapStatusLine', 'pastRatingFor', 'activeTripObj', 'hasTrip', 'heMapLayer', 'heLabelLayer', 'mapLightSync', 'reliefLayer', 'reliefLine']; // hebrew-map: a page has no "מפה בעברית" (its "מפה" is already the vector drawing); relief-phone: no relief in a page
 // what a page starts with (the host): the device's choices are the defaults, nothing is saved

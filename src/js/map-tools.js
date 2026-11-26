@@ -374,7 +374,7 @@ function pinTap(id, key) {
 // again when the service is back; what the height cache holds keeps drawing.
 function isDarkUI() { const t = document.documentElement.dataset.theme; return t === 'dark' || (t !== 'light' && !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches)); }
 // hebrew-map: one reaction to a theme change (the phone's, or the app's own - applyTheme): the relief redraws its shading (relief-phone: dark shadows in dark mode), the Hebrew map its dark style
-function mapThemeChanged() { heStyleReset(); m3ThemeChanged(); if (baseMapId() === 'relief' || baseMapId() === 'he') refreshBaseMaps(); }
+function mapThemeChanged() { if (groupHas('special-maps')) groupFn('special-maps', 'heStyleReset')(); /* diet-groups: no style kept while its group is out */ if (M3.map) groupFn('special-maps', 'm3ThemeChanged')(); if (baseMapId() === 'relief' || baseMapId() === 'he') refreshBaseMaps(); }
 try { const mq = matchMedia('(prefers-color-scheme: dark)'); sysOn(mq, 'change', () => mapThemeChanged()); } catch (e) {}
 // the core: runs in the worker (W = the worker's global) or, when a worker cannot start, on the page (W = null, ask = the page's own asker)
 function reliefCore(W, ask0) {

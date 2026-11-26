@@ -133,7 +133,7 @@ function peOpenLayers(F) { const C = F.opts.C, opts = C.layerOpts();
 act('pe.maybe', c => { const F = fmOf(c.el); if (!F) return; fmSet(F, 'layer', c.v); peNeedLayer(F); return 'quiet'; });
 // ＋ שכבה חדשה: the layer editor opens on top (from the list of layers); its new layer comes back chosen in the form under it
 act('pe.newLayer', () => { const t = WIN_STACK[WIN_STACK.length - 2], F = t && t.form; if (!F || !F.opts.C) return; const C = F.opts.C; closeSheet();
-  setTimeout(() => openLayerEditor(null, { ...(C.newLayer ? C.newLayer(F.vals.layer) : {}), onNew: v => setTimeout(() => { const F2 = fmOf(); if (F2 && F2.kinds.layer) { fmSet(F2, 'layer', String(v)); peNeedLayer(F2); } }, 20) }), 10); return 'quiet'; });
+  setTimeout(() => viaGroup('management', 'openLayerEditor', null, { ...(C.newLayer ? C.newLayer(F.vals.layer) : {}), onNew: v => setTimeout(() => { const F2 = fmOf(); if (F2 && F2.kinds.layer) { fmSet(F2, 'layer', String(v)); peNeedLayer(F2); } }, 20) }), 10); return 'quiet'; });
 act('pe.dupOpen', c => { const q = planItem(pid(c.v)); if (q) { closeSheet(); setTimeout(() => openPlaceSheet(q), 80); } return 'quiet'; });
 act('pe.del', () => { const F = fmOf(); if (!F) return; const id = F.opts.C.id; layerCloseOwn(); deleteAddedPlace(id); });
 // 8.1.0 (ב2, ב5): hiding asks a reason: three buttons (a tap hides) and "＋ הערה". The reason stays in the data (status / statusNote).

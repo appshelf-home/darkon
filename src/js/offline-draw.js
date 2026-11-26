@@ -63,6 +63,6 @@ function offBadgeUpdate(map) { const b = map && map._offBadge && map._offBadge.g
   let st = 'none'; try { const z = Math.round(map.getZoom()), c = map.getCenter(), [x, y] = offTileXY(c.lat, c.lng, Math.min(z, 14)); if (offFindTile(Math.min(z, 14), x, y, Math.min(z, 8))) st = 'saved'; } catch (e) {}
   b.hidden = false; b.dataset.st = st; b.innerHTML = msi('cloud_off', { size: 18 }) + (st === 'saved' ? ' מפה שמורה' : ' האזור הזה לא הורד'); // 10.15.0 (F19)
   if (st === 'saved' && !DEV.offTipSeen) { devSet({ offTipSeen: true }); setTimeout(() => b.click(), 600); } }
-svcOnBack(() => { offRefreshMaps(); const p = OFF_PACKS[STATE.activeTrip]; if (p && p.status === 'paused' && !OFF_RUN) setTimeout(() => offDownload(p.trip, { quiet: true }), 3000); });
+svcOnBack(() => { offRefreshMaps(); const p = OFF_PACKS[STATE.activeTrip]; if (p && p.status === 'paused' && !OFF_RUN) setTimeout(() => offResume(p.trip), 3000); });
 sysOn(window, 'offline', () => offRefreshMaps());
 

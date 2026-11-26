@@ -47,8 +47,11 @@ const cdMeta = bits => { bits = bits.filter(Boolean); return bits.length ? `<spa
 const grpTag = () => `<span class="tl-tag grp">${tagIc('groups')}קבוצתי</span>`;
 const keyTag = () => `<span class="tl-tag key sym-tip" data-act="tip" data-v="sym.key">${msi('workspace_premium', { size: 16, fill: 1 })}מפתח</span>`;
 // cdCard - the card's frame: o.cls, o.attrs (the card's), o.body (the body's), o.lead, o.name (html), o.tags (html list), o.desc, o.vis, o.acts
+// diet-mechanism: a card's change while a screen of a group draws the plan's own cards (the proposal's preview sets propCard, then null) -
+// kept on cdCard itself, set only through cardViewSet
+function cardViewSet(f) { cdCard.view = f; }
 function cdCard(o) {
-  if (typeof PROP_VIEW !== 'undefined' && PROP_VIEW) o = propCard(o); // 11.5.0 (schedule-proposal): the proposal's preview draws the plan's own cards read-only, with its tags
+  if (cdCard.view) o = cdCard.view(o); // 11.5.0 (schedule-proposal): the proposal's preview draws the plan's own cards read-only, with its tags (diet-mechanism: the preview, in the AI group, sets cdCard.view while it draws)
   const tags = (o.tags || []).filter(Boolean).join('');
   return `<div class="card tl-card cd${o.cls ? ' ' + o.cls : ''}"${o.attrs || ''}><div class="tl-body"${o.body || ''}><div class="cd-name">${o.lead}<b dir="auto">${o.name}</b></div>${tags ? `<small class="cd-tags">${tags}</small>` : ''}${o.desc || ''}</div>${o.vis || ''}${o.acts || ''}</div>`;
 }

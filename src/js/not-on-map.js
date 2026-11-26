@@ -44,12 +44,14 @@ function placesOffMapIn(t) { if (STATE.activeTrip === t.id) return [].concat(...
 function draftOffMap(D) { return draftItems(D).filter(x => !D.off[x.key] && (x.scope === 'dest' || x.scope === 'trip')).map(x => { const w = offMapWhy(x.p); return w && { p: x.p, ref: x.scope === 'dest' ? '@' + x.key : x.p.id, dest: x.scope === 'dest' ? x.src : x.p.dest, ...w }; }).filter(Boolean); }
 // the file's field: only the two reasons that need fixing (not found, no address) and package-relative references
 function unlocatedOut(list) { return list.filter(x => x.fix).map(x => ({ ref: x.ref, name: x.p.name || '', address: x.p.address || '', dest: x.p.dest || x.dest || '', reason: x.p.address ? 'not-found' : 'no-address' })); }
-function diagPlaces() { return [].concat(...Object.values(placesOffMap(DIAG_DEST))); } // [{p, ref, why, fix}]
+// 🩺 opened from a destination's "N בלי מיקום" line: only that destination (diet-groups: one object here - the settings' part, management, sets its fields)
+const DIAG = { dest: '', once: false };
+function diagPlaces() { return [].concat(...Object.values(placesOffMap(DIAG.dest))); } // [{p, ref, why, fix}]
 act('diag.run', () => {
   const all = diagPlaces(), fix = all.filter(x => x.fix), wait = all.filter(x => !x.fix), dn = p => (DESTS[p.dest] && DESTS[p.dest].meta.name) || (p.trip ? 'הטיול' : '');
   const row = x => [x.p.name, x.p.address || '', dn(x.p), x.why].join(' | ');
   document.getElementById('diagBox').value = fix.length ? 'שם | כתובת | יעד | סיבה\n' + fix.map(row).join('\n') : '';
-  document.getElementById('diagSum').innerHTML = `${DIAG_DEST ? `רק ${escH(dn({ dest: DIAG_DEST }))}${SEP}` : ''}צריך תיקון: <bdi>${fix.length}</bdi>${wait.length ? `${SEP}ממתינים לשירות: <bdi>${wait.length}</bdi> (${escH([...new Set(wait.map(x => x.why))].join(', '))})` : ''}${!all.length ? (SEP + 'כל המקומות על המפה ✓') : ''}`;
+  document.getElementById('diagSum').innerHTML = `${DIAG.dest ? `רק ${escH(dn({ dest: DIAG.dest }))}${SEP}` : ''}צריך תיקון: <bdi>${fix.length}</bdi>${wait.length ? `${SEP}ממתינים לשירות: <bdi>${wait.length}</bdi> (${escH([...new Set(wait.map(x => x.why))].join(', '))})` : ''}${!all.length ? (SEP + 'כל המקומות על המפה ✓') : ''}`;
   document.getElementById('diagResultBox').style.display = 'block'; return 'quiet'; });
 act('diag.copy', () => { const v = document.getElementById('diagBox').value; if (!v) { showToast('אין מה לתקן'); return; } copyWithFallback(v, 'הועתק'); });
 

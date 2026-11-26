@@ -21,7 +21,7 @@ const PIC_PRESETS = {
 };
 const PIC_NUMS = { days: ['ימים', 'days'], dests: ['מדינות', 'countries'], cities: ['ערים', 'cities'], km: ['ק״מ', 'km'], flights: ['טיסות', 'flights'], places: ['מקומות ש' + TX.visited, 'places visited'], loved: ['❤️ אהבנו', '❤️ loved'], walk: ['ק״מ ברגל (משוער)', 'km on foot (est.)'], ride: RIDE_LABEL }; // ride-km (Q2): "(משוער)" / "(est.)" added when estimated (picNumLabel)
 const PIC_NUM_MAX = 4;
-const PIC_FS = { open: false }; // the full-screen view (PHOTOS: openPhotoView)
+// diet-groups (11.62.0): PIC_FS, the full-screen view's state, is in photos.js (main)
 var PIC_ED = null;                // the editor: { id, tab, q, outOpen, all (candidates incl. every destination place) }
 var PIC_CROP = null;              // the crop dialog
 const PIC_SRC_SESSION = new Map(); // `${trip}|${key}` -> dataURL of my own photo, kept for re-cropping while the app is open
@@ -49,7 +49,6 @@ function picOv(p) { p.ov = p.ov || {}; p.ov.pts = p.ov.pts || {}; p.ov.frame = p
 function picPtOv(p, key) { const o = picOv(p).pts; return (o[key] = o[key] || {}); }
 function picCleanPt(p, key) { const o = picOv(p).pts; if (o[key] && !Object.keys(o[key]).filter(k => k !== 'snap').length) delete o[key]; }
 const picClean = s => String(s || '').replace(/\s*\(.*$/, '').trim();
-const HEB_CH = /[\u0590-\u05FF]/;
 // the foreign (Latin) name: the name itself when it has no Hebrew, else the first part of the address when that is Latin
 function picForeign(p) { const f = String((p && p.foreign) || '').trim(); if (f && !HEB_CH.test(f)) return f; // kit-fixes (item 4): the place's own local name first
   const n = picClean(p && p.name); if (n && !HEB_CH.test(n)) return n;
@@ -72,16 +71,6 @@ function picCities(D) {
   return { cities: out, seq };
 }
 // every candidate of the picture. full=true adds every place of the trip's destinations (for the editor's list)
-// A8 (decisions 2026-11-13 review of 11.10.0): the places of destinations as the device has them now - the destination's file with my
-// edits, additions and states, each with its layer - read without making any trip the active one (the trip picture's "all the
-// destination's places"); a destination no longer on the phone gives none
-function destPlacesRead(dids) { const E = STATE.edits, out = [];
-  (dids || []).forEach(did => { const d = DESTS[did]; if (!d || d.ghost) return; const L = new Map(destLayersEff(d).map(l => [l.id, l]));
-    const deco = q => { const l = L.get(q.layer); if (!l) return null; const st = E.status[q.id]; if (st) { if (st.s === 'moved') return null; if (st.s === 'active') { delete q.status; delete q.statusNote; } else { q.status = st.s; q.statusNote = st.note || ''; } }
-      q.layer_name = l.name; q.color = l.color; if (!q.icon) q.icon = l.icon; return q; };
-    destPlaces(d).forEach(b => { const e = E.places[b.id]; const q = deco(e && e.op === 'edit' ? { ...b, ...e.data, edited: true } : { ...b }); if (q) out.push(q); });
-    Object.entries(E.places).forEach(([k, e]) => { if (e.op === 'add' && e.data && e.data.dest === did) { const q = deco({ reservation: '', price: '', transit: '', description: '', ...e.data, id: Number(k), userAdded: true }); if (q) out.push(q); } }); });
-  return out; }
 function picCands(id, D, full) {
   const M = D.M, rate = M.td.rating || {}, vis = new Set(M.td.visited || []), hi = new Set((M.td.highlights || []).map(h => h.placeId).filter(x => x != null));
   const planned = new Set(); Object.values(M.td.itinerary || {}).forEach(d => DAY_SLOTS.forEach(s => ((d || {})[s] || []).forEach(x => { if (typeof x === 'number') planned.add(x); })));

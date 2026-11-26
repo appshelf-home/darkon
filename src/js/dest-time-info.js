@@ -44,8 +44,7 @@ function renderInfoTab() {
     else if (diffDays === 0) cd.innerHTML = ic(`הטיסה היום!`);
     else cd.innerHTML = ic(`הטיסה כבר הייתה`);
   }
-  wireCurrencyConverter();
-  renderChangelog();
+  wireCurrencyConverter(); // diet-groups (11.62.0): renderChangelog (the screen "מה חדש" only) moved to tour.js, with its screen
 }
 
 const INFO_ACC = {};
@@ -56,18 +55,5 @@ function openInfoDestPicker() { const ids = tripDests(activeTripObj()), auto = d
 act('info.destPick', () => openInfoDestPicker()); // 5.15.0 (ד4): the destination's title is its picker
 act('today.plan', () => { activeTab = 'itinerary'; return 'redraw'; });
 function infoAccKey(item) { const hd = item.querySelector(':scope > .accordion-header'); return (STATE.activeTrip || '') + '|' + (item.id || (hd ? hd.textContent : '').replace(/[▾\d·.,:\uE000-\uF8FF]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40)); }
-function renderChangelog() {
-  const el = document.getElementById('changelogWidget');
-  if (!el) return;
-  const vnum = v => v.split('.').reduce((a, x) => a * 1000 + Number(x), 0); // 4.26.0: by version number, not by place in the list
-  const sorted = [...CHANGELOG].sort((a, b) => vnum(b.version) - vnum(a.version)); // newest first
-  if (!sorted.length) { el.innerHTML = emptyHTML(msi('new_releases'), 'כאן יופיע מה שתרגישו בכל עדכון.', 'empty-note', 'עוד אין כאן עדכונים'); return; } // 10.14.0 (guide diet Q5)
-  el.innerHTML = sorted.map((v, i) => `
-    <div class="sub-accordion-item${i === 0 ? ' wn-new' : ''}" data-open="${i===0}">
-      <button class="sub-accordion-header t-wrap" data-act="acc.toggle"><span class="wn-v">${i === 0 ? msi('new_releases', { size: 18, fill: true }) : ''}<b>גרסה ${v.version}</b>${i === 0 ? '<span class="wn-badge">חדש</span>' : ''}</span><small>${v.date}</small> <span class="accordion-arrow">${msi('expand_more')}</span></button>
-      <div class="sub-accordion-body"><ul style="margin:0;padding-inline-start:18px;">${v.items.map(it => `<li style="margin-bottom:4px;font-size:var(--fs-body);">${it}</li>`).join('')}</ul></div>
-    </div>`).join('');
-;
-}
 
 

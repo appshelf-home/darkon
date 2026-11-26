@@ -1,4 +1,5 @@
 // ---- "הדרכון שלי" - the passport book (task passport-book; decisions 2026-11-23 · A passport book, Q1-Q6; spec/passport-book.md) ----
+// diet-groups (11.62.0): the passport's model and line, cvTrips / cvMine / cvHasAny moved to js/memory-lines.js (main)
 // One rule (Q6): the book reflects the closed trips. ppModel is the book's one model, drawn again from the trips whenever it is shown:
 // one stamp per destination of a trip closed in this app (archived as 'ended' and not received closed in a file - archived.recv,
 // importTripNow), its name (the destination's current one; a deleted destination's from the closing's snapshot), its flag, the days
@@ -7,27 +8,6 @@
 // destination's name - and whether its landing was shown: DEV.stamps { "<trip id>|<destination id>": { s, c, r, n, l } }, the registry
 // row "passport" (device ring; a trip gone for good takes its keys - regPurgeTripRows). Code here (the memory screen's part) so the
 // parts' cycle does not grow (t1160).
-const PP = { page: 0, land: null, dir: 0, skip: false };
-const PP_PER = 4, PP_SHAPES = 4, PP_INK_CLS = ['pp-ink0', 'pp-ink1', 'pp-ink2', 'pp-ink3'], PP_INKS = PP_INK_CLS.length; // the four inks' classes, named in full (t770 reads every class)
-const ppClosedHere = t => !!(t && t.archived && t.archived.reason === 'ended' && !t.archived.recv);
-function ppHash(s) { let h = 2166136261; for (const ch of String(s)) { h ^= ch.codePointAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
-// a destination's character (Q2): derived from its name - the same name, the same stamp; two names almost never alike
-function ppChar(name) { const h = ppHash(String(name || '').trim().toLowerCase()); return { s: h % PP_SHAPES, c: (h >>> 3) % PP_INKS, r: ((h >>> 6) % 15) - 7, n: (h >>> 11) % 97 }; }
-function ppStamp(t, did, sm) { const d = DESTS[did], m = (d && !d.ghost ? d.meta : null) || sm || {}, rs = t.start ? segRanges(t).filter(r => r.dest === did) : [];
-  const a = rs.length ? Math.min(...rs.map(r => r.a)) : 0, b = rs.length ? Math.max(...rs.map(r => r.b)) : 0;
-  return { key: t.id + '|' + did, trip: t.id, tname: String(t.name).split(' · ')[0], did, name: m.name || String(did), flag: destFlagMeta(m),
-    from: a ? isoAdd(t.start, a - 1) : '', to: b ? isoAdd(t.start, b - 1) : '', days: rs.reduce((n, r) => n + r.b - r.a + 1, 0) }; }
-function ppModel() { const trips = Object.values(STATE.trips).filter(ppClosedHere)
-    .sort((x, y) => String(x.start || x.end || '').localeCompare(String(y.start || y.end || '')) || (x.archived.at || 0) - (y.archived.at || 0));
-  const stamps = [], pages = [];
-  trips.forEach(t => { const snap = (t.archived.snap || {}).dests || {}, ds = [];
-    (t.segments || []).forEach(g => { if (g && g.dest && !ds.includes(g.dest) && (DESTS[g.dest] || snap[g.dest])) ds.push(g.dest); });
-    const mine = ds.map(did => ppStamp(t, did, snap[did]));
-    for (let i = 0; i < mine.length; i += PP_PER) pages.push({ trip: t.id, tname: String(t.name).split(' · ')[0], stamps: mine.slice(i, i + PP_PER), more: i > 0 });
-    stamps.push(...mine); });
-  return { trips, stamps, pages, n: stamps.length }; }
-const ppStore = () => DEV.stamps || {};
-const ppCharOf = s => ppStore()[s.key] || ppChar(s.name);
 // a stamp's character is fixed the first time the app meets it (Q6: a renamed destination keeps its shape and colour); landed: its landing counts as shown
 function ppFix(list, landed) { const o = { ...ppStore() }; let ch = false;
   list.forEach(s => { if (!o[s.key]) { o[s.key] = { ...ppChar(s.name), ...(landed ? { l: 1 } : {}) }; ch = true; } });
@@ -40,10 +20,6 @@ function ppStampTrip(id) { if (!ppClosedHere(STATE.trips[id])) return; const min
 // open the book (Q3): at the cover, or at a trip's first page; back returns exactly where it was opened (a full screen of the layers' stack)
 function ppGo(tripId, land) { const M = ppModel(); ppFix(M.stamps, true); const i = tripId ? M.pages.findIndex(p => p.trip === tripId) : -1;
   PP.page = i >= 0 ? i + 2 : 0; PP.land = land || null; PP.skip = false; PP.dir = 0; goTab('passport'); }
-const ppCount = n => n === 1 ? 'חותמת אחת' : `<bdi>${n}</bdi> חותמות`;
-// the line (Q3): the trips screen's "זיכרונות" header and the top of "כל הזיכרונות"; "עוד ריק" before the first stamp
-function ppLineHTML(go, top) { const n = ppModel().n; // go: the row's trailing arrow, drawn by the trips screen's part (.ent-go)
-  return `<button type="button" class="pp-line t-wrap${top ? ' pp-top' : ''}" data-act="pp.open">${msi('menu_book', { size: 20 })}<span>הדרכון שלי${SEP}${n ? ppCount(n) : 'עוד ריק'}</span>${go}</button>`; }
 // the memory screen's row: the trip's stamps, the book open at its page
 function ppMemRowHTML(t, go) { if (!ppClosedHere(t) || !ppModel().stamps.some(s => s.trip === t.id)) return '';
   return `<button type="button" class="pp-line pp-top t-wrap" data-act="pp.trip" data-v="${escH(t.id)}">${msi('menu_book', { size: 20 })}<span>החותמות של הטיול בדרכון</span>${go}</button>`; }
@@ -225,8 +201,6 @@ const CV_MAX = 40; // the deepest zoom: about one small country across the map
 const CV_HL = 900; // ms: a country a list row points at stays highlighted this long; its card opens after it (Q3)
 const cvView = () => DEV.cvView === 'globe' ? 'globe' : 'map';
 const cvMotion = () => !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
-const cvTrips = () => Object.values(STATE.trips).filter(t => t.archived && t.archived.reason !== 'cancelled');
-const cvMine = () => STATE.countries || {};
 function cvLoad() { if (CV.W) return Promise.resolve(CV.W); if (!CV.p) CV.p = svcSiteFile(WORLD_FILE).then(j => { CV.p = null;
     if (j && j.objects) { CV.W = worldShapes(j); CV.by = new Map(CV.W.map(s => [s.id, s])); CV.st = 'ok'; } else CV.st = 'fail'; return CV.W; }); return CV.p; }
 // a destination's country (review Q1): its `country`; else its currency when that is one country's (ILS IL, CHF CH - never the euro); only then its centre's lookup
@@ -248,7 +222,6 @@ function cvLineHTML(all) { const C = CV.W || CV.st === 'fail' ? cvCalc() : null;
   if (!all && C && !C.n && !cvTrips().length) return '';
   const t = C && C.n ? (C.n === 1 ? 'ביקרנו במדינה אחת' : `ביקרנו ב־<bdi>${C.n}</bdi> מדינות`) : 'מדינות שביקרנו';
   return `<button type="button" class="cv-line t-wrap${all ? ' cv-top' : ''}" data-act="cv.open">${msi('language', { size: 20 })}<span>${t}</span>${entGo()}</button>`; }
-const cvHasAny = () => cvTrips().length > 0 || Object.keys(cvMine()).length > 0;
 act('cv.open', () => { goTab('countries'); return 'quiet'; });
 const cvYear = e => e.first ? tmFmt('year', e.first) : e.mine && e.mine.y ? String(e.mine.y) : '';
 const cvTripName = id => escH(String((STATE.trips[id] || {}).name || '').split(' · ')[0]);

@@ -28,7 +28,7 @@ function showTip(k, el) {
 // if that context is still the one shown, no tour or other explanation is open, and its target is on screen. ONE CLOSE RULE for every
 // bubble: a change of screen, of the top layer or of the trip closes it (explainSync, from every push, pop and draw).
 function explainCtx() { try { return [STATE.activeTrip || '', activeTab, WIN_STACK.map(e => e.key).join('>')].join('|'); } catch (e) { return ''; } }
-function explainOk(el, ctx) { if (!el || !el.isConnected || _tour || tipOpen() || explainCtx() !== ctx) return false;
+function explainOk(el, ctx) { if (!el || !el.isConnected || TOUR.cur || tipOpen() || explainCtx() !== ctx) return false;
   const r = el.getBoundingClientRect(); return !!r.height && r.bottom > 0 && r.top < window.innerHeight; }
 // final-review-fixes (family F; decision Q5, finding 19): THE GATE ALSO HOLDS. Two things pass by themselves - the ⋮ menu and a
 // snackbar with an action (an undo) - so an explanation due while one of them is up is not dropped and does not open over it: it

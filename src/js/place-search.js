@@ -341,13 +341,13 @@ const PS_FORMS = {
     open: o => { if (o.id != null) { openPlaceEditor({ id: o.id }); return; } const op = psPlaceOpen(o); psPlaceScreen(op); openPlaceEditor(op); }, after: F => { peNeedLayer(F); peDup(F); } },
   dplace: { ok: o => !!(DRAFT && DRAFT.at === o.dat) && (o.key == null ? !!o.add : String(o.key).startsWith('add:') ? (DRAFT.add || []).some(a => a.key === o.key) : draftItems(DRAFT).some(x => x.key === o.key)),
     open: o => { goTab('draft'); openPlaceEditor(o.key != null ? { draftKey: o.key } : { draftAdd: o.add }); }, after: F => { peNeedLayer(F); peDup(F); } },
-  dest: { ok: o => o.id == null || !!DESTS[o.id], open: o => { goTab('trips'); openDestEditor(o.id || null); }, after: F => { deCountryText(F); deClock(F); deOffer(F); } },
+  dest: { group: 'management', ok: o => o.id == null || !!DESTS[o.id], open: o => { goTab('trips'); groupFn('management', 'openDestEditor')(o.id || null); }, after: F => groupFn('management', 'deBack')(F) },
   travel: { ok: o => o.dat != null ? !!(DRAFT && DRAFT.at === o.dat && o.id != null && draftTravelTrip() && travelById(o.id, draftTravelTrip()))
       : hasTrip() && STATE.activeTrip === o.tid && (o.id == null || !!travelById(o.id, activeTripObj())),
     open: o => { if (o.dat != null) { goTab('draft'); openTravelEditor(o.id, { draft: true }); } else openTravelEditor(o.id || null, o.conv ? { conv: o.conv } : undefined); } },
-  pic: { ok: o => !!(STATE.trips[o.id] && mementoData(o.id)), open: () => {} },
+  pic: { group: 'memories', ok: o => !!STATE.trips[o.id], open: () => {} }, // diet-groups: the memento's own check in psMemBack (memories)
   // closing-where (11.26.0, Q6): "＋ עוד מקום שהיינו בו" - back in the closing (it resumes at its step) or in the memory's review window
-  where: { ok: o => !!STATE.trips[o.id] && (o.door === 'closing' ? !STATE.trips[o.id].archived : !!STATE.trips[o.id].archived), open: () => {} } };
+  where: { group: 'memories', ok: o => !!STATE.trips[o.id] && (o.door === 'closing' ? !STATE.trips[o.id].archived : !!STATE.trips[o.id].archived), open: () => {} } };
 // form-keep-context: a new place reopens with its whole opening (peOpenKeep) - a day's "＋ מקום" in the same trip on that day's plan, its
 // day and slot kept for the save (a day gone by then: no day, as afterSave always did); else on the places tab. A form stored by 11.21.x
 // (no opening): as then.
@@ -357,11 +357,8 @@ function psPlaceScreen(op) { const a = op.afterSave; if (!a) { goTab('all'); ret
   planFirstOpen(); // the days the plan opens by itself, plus the day of "＋ מקום"
   openDays.add(a.day); goTab('itinerary'); revealLater(`#main [data-day-item="${CSS.escape(a.day)}"]`, false); }
 async function psFormBack(o, text) { const P = PS_FORMS[o.k]; if (!P || !o.keep || !P.ok(o)) return false;
-  if (o.k === 'pic') { const r = await psReadLink(text); if (!PIC_ED || PIC_ED.id !== o.id) { if (PIC_ED) closePicEditor(); openPicEditor(o.id); }
-    openPicAdd(o.id, { ...o.keep, r: r && r.coord ? { name: r.name || 'מקום מגוגל מפות', coord: r.coord } : null }); if (!r || !r.coord) showToast(PS_NO_POINT); return true; }
-  if (o.k === 'where') { const r = await psReadLink(text);
-    if (o.door === 'closing') { if (!CLOSING || CLOSING.id !== o.id || activeTab !== 'closing') openClosingFlow(o.id); } else { memoryTrip = o.id; goTab('memory'); if (!(TL_WIN === o.id && layerTop())) openTlReview(o.id); }
-    openWhereMore(o.id, { ...o.keep, r: r && r.coord ? { name: r.name || 'מקום מגוגל מפות', coord: r.coord, rec: r.rec } : null }); if (!r || !r.coord) showToast(PS_NO_POINT); return true; }
+  if (P.group && !(await needGroup(P.group))) { showToast(GROUP_FAIL); return true; } // diet-groups: the form's group first (the trip picture, a memory, the destination editor)
+  if (o.k === 'pic' || o.k === 'where') return groupFn('memories', 'psMemBack')(o, text); // the trip picture's editor, the closing's or the memory's "＋ עוד מקום" (memories)
   P.open(o); const F = layerTop() && layerTop().form; if (!F || !F.kinds[o.field]) return true;
   psRestore(F, o.keep); if (P.after) P.after(F);
   if (F.kinds[o.field] === 'loc') { const q = fmQ(F, `[data-fmq="${o.field}"]`); if (q) q.value = o.q || '';
@@ -389,3 +386,4 @@ async function psShareIn(text) { try { await REG_READY; } catch (e) {} const o =
   const d = r && r.coord ? psDestNear([r.coord.lat, r.coord.lng], ids && ids.length ? ids : null) : null;
   goTab('all'); openPlaceEditor({ noGuess: true, dest: d ? d.id : undefined, name: r ? r.name : '', coord: r && r.coord ? r.coord : undefined, mapsUrl: r ? r.url : '', gid: r && r.rec ? gidNew(r.rec, 'user') : undefined, sharedText: r && r.coord ? undefined : text, sharedRead: r });
   if (r && r.byText) { const F = layerTop() && layerTop().form; if (F && F.kinds.loc) { fmLocPickNote(F, 'loc', true); if (r.found) fmLocFound(F, 'loc', r.found); } } } // 11.21.6 (P2): a point found by the link's name and address is a search pick; place-find (Q1): what was found
+const HEB_CH = /[\u0590-\u05FF]/;

@@ -20,6 +20,5 @@ function svcReportText() { const d = svcDiag();
     'תקלות:', ...d.errs.slice(-50).map(e => `${tmFmt('date', e.at)} ${tmFmt('stamp', e.at)}${SEP}${e.p}${SEP}${e.s}${SEP}${e.why}`)].join('\n'); }
 act('svc.copyReport', () => { copyWithFallback(svcReportText(), 'הדוח הועתק'); return 'quiet'; });
 act('set.diagOpen', () => { ACC_OPEN['set-diag'] = true; setTimeout(() => reveal(document.querySelector('#main [data-acc="set-diag"]'), false, { align: 'start' }), 80); return 'redraw'; }); // 9.6.0 (12ו, batch 14.5)
-act('svc.diagPlaces', c => { DIAG_DEST = c.v || ''; DIAG_ONCE = true; closeSheet(); ACC_OPEN['set-diag'] = true; goTab('settings'); });
-var DIAG_DEST = '', DIAG_ONCE = false; // 🩺 opened from a destination's "N בלי מיקום" line: only that destination
+act('svc.diagPlaces', c => { DIAG.dest = c.v || ''; DIAG.once = true; closeSheet(); ACC_OPEN['set-diag'] = true; goTab('settings'); });
 // ================= END SERVICE HEALTH =================

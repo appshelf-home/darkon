@@ -9,7 +9,7 @@
 // map itself, system events, and - until cl-forms-impl-plan - the four big editors (openPlaceEditor, openTripEditor,
 // openLayerEditor, openDestEditor).
 const ACTIONS = {}; // name -> fn(ctx); filled area by area below, next to the code of each area (act(...))
-function act(name, fn) { if (ACTIONS[name]) throw new Error('action registered twice: ' + name); ACTIONS[name] = fn; }
+function act(name, fn) { if (ACTIONS[name] && !ACTIONS[name].groupStub) throw new Error('action registered twice: ' + name); ACTIONS[name] = fn; } // diet-mechanism: a moved group's action replaces its stand-in (groups.js)
 const REF_KINDS = { // kind -> the record (obj) for an id
   tok: id => id, note: id => id,
   parked: id => id, pkitem: id => id, // 7.2.0 (פ3): a place of a day outside the trip - "parkedDay|item"
@@ -57,21 +57,24 @@ var ERR_RING = [], ERR_OFFERED = new Set(), ERR_N = 0;
 // frame). The part comes from PART_AT, the table of where each part starts in the page, written in front of the main script: by
 // tests/build.py from esbuild's source map in the built page, by tests/join.py from the join's line map in the tests' source copy.
 // Without the table (a page that has none) the part is '' and the line and column still go.
-function errPos(err, line, col, caller) {
-  if (!line) { const st = String((err && err.stack) || (caller ? new Error().stack : '') || ''), here = String(location.href).split(/[?#]/)[0];
-    for (const f of st.split('\n').slice(caller && !(err && err.stack) ? 3 : 0)) { const m = f.match(/([^\s()]+):(\d+):(\d+)\)?\s*$/); if (m && m[1].split(/[?#]/)[0] === here) { line = +m[2]; col = +m[3]; break; } } }
-  let part = ''; const T = self.PART_AT;
+function errPos(err, line, col, caller, file) {
+  const here = String(location.href).split(/[?#]/)[0], grp = u => { const g = String(u || '').split(/[?#]/)[0].match(/\/g-([\w-]+)\.[0-9a-f]+\.js$/); return g ? g[1] : null; };
+  let T = file && grp(file) ? (self.PART_AT_G || {})[grp(file)] : self.PART_AT; // diet-mechanism: a group's file has its own table (build.py, PART_AT_G)
+  if (!line) { const st = String((err && err.stack) || (caller ? new Error().stack : '') || '');
+    for (const f of st.split('\n').slice(caller && !(err && err.stack) ? 3 : 0)) { const m = f.match(/([^\s()]+):(\d+):(\d+)\)?\s*$/); if (!m) continue; const u = m[1].split(/[?#]/)[0], g = grp(u);
+      if (u === here || g) { line = +m[2]; col = +m[3]; T = g ? (self.PART_AT_G || {})[g] : self.PART_AT; break; } } }
+  let part = '';
   if (line && T && T.at) { let lo = 0, hi = T.at.length - 1, k = -1; // the last start at or before (line, col)
     while (lo <= hi) { const mid = (lo + hi) >> 1, a = T.at[mid]; if (a[0] < line || (a[0] === line && a[1] <= (col || 0))) { k = mid; lo = mid + 1; } else hi = mid - 1; }
     if (k >= 0) part = T.parts[T.at[k][2]] || ''; }
   return { line: line || 0, col: col || 0, part }; }
-function errNote(where, err, line, col) { const msg = String((err && (err.message || (typeof err === 'string' ? err : err.name))) || err || '?').replace(/\s+/g, ' ').slice(0, 160);
-  let p = { line: 0, col: 0, part: '' }; try { p = errPos(err, line, col, typeof err === 'string'); } catch (x) {}
+function errNote(where, err, line, col, file) { const msg = String((err && (err.message || (typeof err === 'string' ? err : err.name))) || err || '?').replace(/\s+/g, ' ').slice(0, 160);
+  let p = { line: 0, col: 0, part: '' }; try { p = errPos(err, line, col, typeof err === 'string', file); } catch (x) {}
   const e = { id: ++ERR_N, at: Date.now(), where: String(where || '').slice(0, 60), msg, ...p }; ERR_RING.push(e); if (ERR_RING.length > 10) ERR_RING.shift(); return e; }
 function errOffer(e) { const k = e.where + '|' + e.msg;
   if (!reportCan() || ERR_OFFERED.has(k)) { showToast(TX.actFailed); return; }
   ERR_OFFERED.add(k); showToast('משהו השתבש', { act: 'report.err', v: String(e.id), label: 'לדווח', ic: 'error', ms: 7000 }); }
-sysOn(window, 'error', e => { if (!e || !e.message || /^Script error\.?$/.test(e.message)) return; errOffer(errNote(e.lineno ? 'שורה ' + e.lineno + (e.colno ? ':' + e.colno : '') : 'דף', e.error || e.message, e.lineno, e.colno)); }); // a system event: an uncaught error
+sysOn(window, 'error', e => { if (!e || !e.message || /^Script error\.?$/.test(e.message)) return; errOffer(errNote(e.lineno ? 'שורה ' + e.lineno + (e.colno ? ':' + e.colno : '') : 'דף', e.error || e.message, e.lineno, e.colno, e.filename)); }); // a system event: an uncaught error
 // 10.11.0 (task memory-leak, decisions 2026-11-08 Q4): a quiet self-check. On a screen change (2 s after it settles) the app counts
 // the long-lived things (LIFE, at the top of this script) against what it expects: no map of the map library left outside the page,
 // and no more intervals, observers or global listeners than at the first check - plus what each live map brings (the map library's
@@ -100,7 +103,7 @@ sysOn(window, 'unhandledrejection', e => { errNote('פעולה ברקע', e && e
 function runAct(el, ev, name) {
   name = name || el.dataset.act; const f = ACTIONS[name];
   if (!f) { ACT_ERRORS.push('unknown action ' + name); return; }
-  if (OLD_COPY && name !== 'sw.refresh') { showToast('יש גרסה חדשה - מרעננים (בפס למעלה) כדי להמשיך'); return; } // 10.1.1: the old-copy guard
+  if (OLD_COPY && name !== 'sw.refresh') { showToast(staleWords() + ' - מרעננים (בפס למעלה) כדי להמשיך'); return; } // 10.1.1: the old-copy guard (two-windows: its words say why)
   const g = _dataGen; let r;
   _inAct++; try { r = f({ el, ref: refOf(el), v: el.dataset.v, ev }); }
   catch (err) { ACT_ERRORS.push(name + ': ' + (err && err.message)); console.error(name, err); errOffer(errNote(name, err)); r = 'failed'; }

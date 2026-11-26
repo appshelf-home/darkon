@@ -83,3 +83,5 @@ act('de.save', c => { const F = fmOf(c.el); if (!F) return; const { id, cur } = 
   DESTS[nid] = { id: nid, version: 1, idBase, meta, places: [], info: '' }; saveDests(); closeSheet(); // undo-history Q6: one row
   showUndoToast('נוצר יעד: ' + name + '. אפשר ליצור לו טיול');
 });
+// diet-groups (11.62.0): a Google Maps link back into the destination editor (place-search.js PS_FORMS.dest, after the group is in)
+function deBack(F) { deCountryText(F); deClock(F); deOffer(F); }

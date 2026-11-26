@@ -52,12 +52,5 @@ function fmapData(items, pic, opt) { return { items: items.map(x => ({ a: +x.lat
   ph: ((opt && opt.photos) || []).map(x => ({ a: +x.c.lat.toFixed(5), o: +x.c.lng.toFixed(5), t: escH(x.name), u: x.u.filter(u => /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(u)) })).filter(x => x.u.length) }; }
 // 11.38.2 (privacy-server): the same addresses and integrity hashes as the app's own (LEAF_SRC, map-library.js)
 function leafletTags() { return `<link rel="stylesheet" href="${escH(LEAF_SRC.css)}" integrity="${escH(LEAF_SRC.cssSri)}" crossorigin="anonymous"><script src="${escH(LEAF_SRC.js)}" integrity="${escH(LEAF_SRC.jsSri)}" crossorigin="anonymous"><\/script>`; }
-// legal-credits (C4; decisions 2026-11-21 · Review of the legal-review report, Q13 item 5): a place's description that came from Wikipedia carries,
-// wherever a page or a file passes it on, "מתוך ויקיפדיה · CC BY-SA 4.0" linked to the article and the licence - or "על פי ויקיפדיה" once the person
-// edited it (the text no longer matches the hash kept with its source, src.dh). The words and the licence come from the provider's row.
-function wikiTextOf(p) { const s = p && p.src; if (!s || s.type !== 'wikipedia' || !p.description) return null; return { same: !!s.dh && textHash(p.description) === s.dh, url: /^https:\/\/[a-z-]+\.(m\.)?wikipedia\.org\//.test(s.url || '') ? s.url : '' }; }
-function wikiTextCreditHTML(p) { const w = wikiTextOf(p); if (!w) return ''; const A = PROVIDERS.wikimedia.attr, e = escH, said = w.same ? A.from : A.after;
-  return `<small class="wk-cr">${w.url ? `<a href="${e(w.url)}" target="_blank" rel="noopener">${e(said)}</a>` : e(said)}${SEP}<a href="${e(A.textU)}" target="_blank" rel="noopener">${e(A.text)}</a></small>`; }
-function wikiTextCreditText(p) { const w = wikiTextOf(p); if (!w) return ''; const A = PROVIDERS.wikimedia.attr; return `${w.same ? A.from : A.after}${SEP}${A.text}`; }
 function shiftFit(fit, dx, dy) { return { ...fit, x: l => fit.x(l) + dx, y: l => fit.y(l) + dy }; }
 

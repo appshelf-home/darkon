@@ -63,8 +63,8 @@ const REG = [
   { id: 'views', name: 'תצוגות המסכים', ring: 'device', of: 'app', where: { ls: [PACK.filePrefix + '_dev_views'] }, part: 'exempt', del: 'none', draft: false, merge: 'none', fmt: 1, clean: 'none', fields: ['viewModes', 'baseMap', 'mapLight', 'disc', 'showLimited', 'clSteps', 'memPhotosOff', 'cvView'] }, // countries-globe (Q1): cvView - "מדינות שביקרנו" on the flat map or the globe, the last choice on this phone; 11.26.0 (closing-where, Q7): clSteps - each trip's closing step to reopen at, on this phone only; memory-photos (Q5-Q6): memPhotosOff - the memory map's photos turned off, for every trip on this phone
   { id: 'destBases', name: 'המספור של היעדים במכשיר', ring: 'device', of: 'app', where: S_('destBases'), part: 'exempt', del: 'none', draft: false, merge: 'none', fmt: 1, clean: 'none' },
   { id: 'bundleSeen', name: 'התוכן המובנה שנכנס', ring: 'device', of: 'app', where: S_('bundleSeen'), part: 'exempt', del: 'none', draft: false, merge: 'none', fmt: 1, clean: 'none' },
-  { id: 'svcDiag', name: 'אבחון שירותים', ring: 'device', of: 'app', where: { ls: ['darkon_svc_diag'] }, part: 'exempt', del: 'none', draft: false, merge: 'none', fmt: 1, clean: 'age:7,cap:50' }, // 7.1.0 (ש11): daily counts and recent troubles of the services
-  { id: 'upkeep', name: 'ניקוי ושימוש בזיכרונות', ring: 'device', of: 'app', where: { ls: [PACK.filePrefix + '_dev_upkeep'] }, part: 'exempt', del: 'none', draft: false, merge: 'none', fmt: 1, clean: 'none' },
+  { id: 'svcDiag', name: 'אבחון שירותים', ring: 'device', of: 'app', where: { ls: ['darkon_svc_diag'] }, part: 'exempt', del: 'none', draft: false, merge: 'none', fmt: 1, clean: 'age:7,cap:50', quiet: true }, // 7.1.0 (ש11): daily counts and recent troubles of the services; quiet (two-windows): written by the services on their own at every opening - another window's count makes no window stale (two open windows would refresh each other forever)
+  { id: 'upkeep', name: 'ניקוי ושימוש בזיכרונות', ring: 'device', of: 'app', where: { ls: [PACK.filePrefix + '_dev_upkeep'] }, part: 'exempt', del: 'none', draft: false, merge: 'none', fmt: 1, clean: 'none', quiet: true }, // quiet (two-windows): written on its own when a memory is read (the memories' last use), and every write reads the stored record first and changes only its own field - nothing of another window's is written over
   { id: 'skill', name: 'גרסת הסקיל במכשיר', ring: 'device', of: 'app', where: { ls: [PACK.filePrefix + '_dev_skill'] }, part: 'exempt', del: 'none', draft: false, merge: 'none', fmt: 1, clean: 'none', fields: ['kitDl', 'kitSeen', 'kitDismiss'] }, // skill-install (Q4): the kit last downloaded here, the newest kitVersion an AI wrote, the kit the card was put off at
   { id: 'passport', name: 'החותמות בדרכון', ring: 'device', of: 'app', where: { ls: [PACK.filePrefix + '_dev_passport'] }, part: 'exempt', del: 'none', draft: false, merge: 'none', fmt: 1, clean: 'with-trip', fields: ['stamps'] }, // passport-book (Q2, Q6): each stamp's character and whether its landing was shown ("<trip>|<destination>"); the rest is drawn from the closed trips - never in a backup or a trip file
   { id: 'reporter', name: 'פרטים לדיווח תקלה או רעיון', ring: 'device', of: 'app', where: { ls: [PACK.filePrefix + '_dev_report'] }, part: 'exempt', del: 'none', draft: false, merge: 'none', fmt: 1, clean: 'none', fields: ['repId', 'repContact', 'repSent'] }, // 10.7.0 (task feedback): a random device id, the contact remembered on this phone, the last hour's reports (the guards - trimmed on every report)
@@ -101,10 +101,27 @@ function regChanged(row) { if (REG_BY[row] && REG_BY[row].ring === 'mine') dataC
 // any action but "רענון" only says so. A standalone app's data is per device, so this is the case of two windows of the app.
 // arch-guard (1): the saving format is read here too - a record of a newer format than this copy knows (format above REG_FORMAT) is
 // treated exactly as a newer version's save: an old copy, nothing written over it, the same banner.
+// two-windows (decisions 2026-11-25 · Deleted trips came back: two windows of the app, Q3): the same guard for any other window of the
+// app that saves - of any version. A window that sees another window's save of saved data (a row of the user's or of the device's -
+// never a memory rebuilt from the network, nor a row marked quiet) is stale: it writes nothing more (OLD_COPY), then refreshes by itself
+// when nothing is open, or shows the bar until it can (staleTry, startup.js). The signal: the small storage's own event, and for
+// IndexedDB - which fires none - a message on one BroadcastChannel posted by each store's write path once it is written (regSaved).
+// A window never hears its own saves (neither the event nor the channel reaches its sender).
 let OLD_COPY = false;
+const STALE = { why: '' }; // why this copy is old: 'version' (a newer version or format saved) · 'window' (another window of the app saved)
 function oldCopyCheck(raw) { let v = null, f = 0; try { const o = JSON.parse(raw); v = o.app; f = o.format; } catch (e) {}
-  if (!OLD_COPY && ((v && versionLess(APP_VERSION, v)) || (typeof f === 'number' && f > REG_FORMAT))) { OLD_COPY = true; setTimeout(() => showUpdateBar(true), 0); } }
-sysOn(window, 'storage', e => { if (e.key === STORE_KEY && e.newValue) oldCopyCheck(e.newValue); }); // a system event (another window saved)
+  if (!OLD_COPY && ((v && versionLess(APP_VERSION, v)) || (typeof f === 'number' && f > REG_FORMAT))) { OLD_COPY = true; STALE.why = 'version'; setTimeout(() => showUpdateBar(true), 0); } }
+function staleWords() { return STALE.why === 'window' ? 'האפליקציה עודכנה בחלון אחר' : 'יש גרסה חדשה'; } // the bar's, a blocked action's and the undo's words
+function regSignals(row) { return !!row && row.ring !== 'cache' && !row.quiet; } // saved data: mine, the device's, the trash and the draft
+function regKeySaved(key) { if (key == null || key === STORE_KEY) return true; // null: the whole storage cleared
+  const r = [...REG, ...REG_STATES].find(x => (x.where.ls || []).includes(key)); return regSignals(r); }
+function staleBy() { if (OLD_COPY) return; OLD_COPY = true; STALE.why = 'window'; setTimeout(() => staleTry(), 0); }
+sysOn(window, 'storage', e => { if (e.key === STORE_KEY && e.newValue) oldCopyCheck(e.newValue); if (regKeySaved(e.key)) staleBy(); }); // a system event (another window saved)
+const REG_BC = (() => { try { return new BroadcastChannel(PACK.filePrefix + '_saved'); } catch (e) { return null; } })();
+if (REG_BC) REG_BC.onmessage = () => staleBy(); // another window wrote to IndexedDB
+function regSaved(id) { if (!OLD_COPY && REG_BC && regSignals(REG_BY[id] || REG_STATES.find(x => x.id === id))) try { REG_BC.postMessage(id); } catch (e) {} }
+// the refresh after another window's save: this tab's own mark (the session's storage), read once by the next opening
+function regReloadMark(set) { const k = PACK.filePrefix + '_from_win'; try { if (set) { sessionStorage.setItem(k, '1'); return true; } const v = sessionStorage.getItem(k); sessionStorage.removeItem(k); return !!v; } catch (e) { return false; } }
 function regRawGet(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
 const REG_SPACE = { err: null, at: 0 }; // storage (Q6): the last refusal of the small storage (so a failed write can say it was for space) and when the one message was last shown
 function regRawSet(key, str) { if (OLD_COPY) return true; try { localStorage.setItem(key, str); return true; } catch (e) { REG_SPACE.err = e; return false; } } // an old copy writes nothing - not an error

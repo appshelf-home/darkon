@@ -8,15 +8,16 @@ A Hebrew trip app for the phone: plan a trip's places and days on a map, keep it
 ## What is here
 This repository holds only the app's source and what builds it. It is updated at each release of the app.
 - `src/` - the source as parts: `src/order.json` lists every part in build order, with a line on what it holds; `page.html` is the page's skeleton, `css/` the styles, `js/` the script (one shared scope, no modules), `content/` the guide and the version, `generated/` files written by the project's own tools (never edited by hand). `sw.js`, `manifest.json`, `_headers`, `terms.html`, `licenses.txt`, `fonts/` and the icons (`*.png.b64`) are served as they are; `netlify/` holds the site's server functions and `netlify.toml`.
-- `tools/build.py` - the build: joins the parts (`tools/split.py`), minifies the script and the style, and writes the site as a ZIP (`tools/testmarks.py` adds the test address's marked icons).
+- `tools/build.py` - the build: joins the parts (`tools/split.py`), minifies the script and the style, and writes the site as a ZIP (`tools/testmarks.py` adds the test address's marked icons). Every gzip and ZIP entry goes through `tools/compress.py` (one pinned deflate, [pako](https://github.com/nodeca/pako) 2.1.0), so a build gives the same bytes on every machine.
 
 ## Build
-Needs Python 3, Node.js, [esbuild](https://esbuild.github.io) 0.25 and, for the test address's icons, Pillow with the DejaVu Sans Bold font.
+Needs Python 3, Node.js, [esbuild](https://esbuild.github.io) 0.25, pako 2.1.0 exactly (any other version is refused) and, for the test address's icons, Pillow with the DejaVu Sans Bold font.
 
 ```
-npm i --prefix /tmp/esb esbuild@0.25.0
-ESBUILD=/tmp/esb/node_modules/esbuild/bin/esbuild python3 tools/build.py src site.zip
+npm i --prefix /tmp/esb esbuild@0.25.0 pako@2.1.0
+ESBUILD=/tmp/esb/node_modules/esbuild/bin/esbuild PAKO_TOOLS=/tmp/esb python3 tools/build.py src site.zip
 ```
+Without `PAKO_TOOLS` the build looks for pako in `/opt/npm-tools` (install it there: `npm i --prefix /opt/npm-tools pako@2.1.0`).
 The ZIP is the site: unpack it on any static host (the server functions run on Netlify). `python3 tools/build.py src/index.html page.html` is not used here - the source is parts.
 
 ## Licence
@@ -34,7 +35,7 @@ Contact: appshelf.home@gmail.com
 - האפליקציה: https://darkon-eran.netlify.app
 - תנאי שימוש ופרטיות: https://darkon-eran.netlify.app/terms
 
-כאן נמצא רק קוד המקור של האפליקציה ומה שבונה אותו, ומתעדכן בכל גרסה שמשתחררת. בנייה: `tools/build.py src site.zip` (צריך Python 3,‏ Node.js ו-esbuild).
+כאן נמצא רק קוד המקור של האפליקציה ומה שבונה אותו, ומתעדכן בכל גרסה שמשתחררת. בנייה: `tools/build.py src site.zip` (צריך Python 3,‏ Node.js,‏ esbuild ו-pako).
 
 הקוד פתוח ברישיון MIT (הקובץ `LICENSE`). הספריות, הגופנים והאייקונים שבאפליקציה - כל אחד ברישיון שלו (`THIRD-PARTY.md`). המפות, נתוני המקומות, מזג האוויר, התמונות והטקסטים שהאפליקציה מציגה מגיעים משירותים חיצוניים, כל אחד בתנאים שלו, ואינם חלק מהרישיון.
 

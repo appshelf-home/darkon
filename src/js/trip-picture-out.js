@@ -74,12 +74,6 @@ const ART_REQ_PAUSE = 700, ART_REQ_WAIT = { t: 0, id: null }; // the typed reque
 function artReqSoon(id, v) { if (!artReqSet(id, v, true)) return; clearTimeout(ART_REQ_WAIT.t); Object.assign(ART_REQ_WAIT, { id, t: setTimeout(() => artReqFlush(), ART_REQ_PAUSE) }); }
 function artReqFlush(drop) { const W = ART_REQ_WAIT; if (!W.t) return; clearTimeout(W.t); W.t = 0; if (!drop) tdSave(W.id, true); }
 sysOn(document, 'visibilitychange', () => { if (document.hidden) artReqFlush(); }); undoBefore(() => artReqFlush()); // the app may close in the background; an undo sees the request as typed
-let ART_REQ = null;
-undoBefore(() => { ART_REQ = {}; Object.entries(STATE.tripData).forEach(([t, d]) => { const r = ((d || {}).pic || {}).request; if (r) ART_REQ[t] = r; }); });
-undoAfter(keys => { const R = ART_REQ || {}; ART_REQ = null;
-  Object.keys(STATE.tripData).concat(Object.keys(R)).forEach(t => { if (!keys.includes(hKey(['d', t, 'pic'])) && !keys.includes(hKey(['d', t]))) return;
-    const d = STATE.tripData[t]; if (!d || (((d.pic || {}).request) || '') === (R[t] || '')) return;
-    const p = { ...(d.pic || {}) }; if (R[t]) p.request = R[t]; else delete p.request; d.pic = p; tdSave(t); }); });
 act('art.del', c => { const F = fmOf(c.el); if (!F) return; closeSheet(); photoToTrash('art:' + F.opts.id); }); // 9.8.0 (Q16): to the trash, as every photo
 act('art.send', async c => { const F = fmOf(c.el); if (!F) return; const id = F.opts.id, req = String(fmGet(F, 'req') || '').trim();
   artReqSet(id, req); await readySchemFor(id); const f = buildMementoFile(id, req);

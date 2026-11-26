@@ -36,7 +36,7 @@ function infoRowHTML(d) { const miss = infoMissingOf(d); if (!miss.length) retur
   return `<div class="info-miss" data-ref="dest:${escH(d.id)}"><button type="button" class="prop-row info-miss-go t-wrap" id="infoMissRow" data-act="infoMiss.go">${claudeMark({ size: 24 })}<span class="prop-row-t"><b>${title}</b><small>להשלים עם ${AI}</small></span></button></div>`; }
 // the tap opens the existing "לשיפור" window of that destination, with the request written
 act('infoMiss.go', c => { const d = DESTS[c.ref.id]; if (!d) return; const ts = infoMissingOf(d).map(x => x.title);
-  openDestFile(d.id, 'improve', { request: `${INFO_ASK}${ts.length ? ': ' + ts.join(', ') : ''}` }); return 'quiet'; });
+  viaGroup('management', 'openDestFile', d.id, 'improve', { request: `${INFO_ASK}${ts.length ? ': ' + ts.join(', ') : ''}` }); return 'quiet'; });
 // ================= survival-words: THE SURVIVAL DICTIONARY (decisions 2026-11-23 · A survival dictionary in the language section) =================
 // Claude writes the language section's body as <div data-words="<lang code>"> - an <h3> with the language's Hebrew name, then one
 // <p data-word="1".."10" | "more"> per row holding <b> the meaning, <span> how it is said, <bdi> how it is written (vocabulary.md "Survival

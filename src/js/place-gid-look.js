@@ -117,3 +117,13 @@ function gidDropMovedDest(ex, dp) { const E = STATE.edits.places, base = ex.idBa
     const before = { ...o, ...e.data }, after = draftCoord({ ...np, ...e.data, gid: undefined });
     if (!gidAfterMove(before, after)) return;
     const d = { ...e.data }; delete d.gid; if (Object.keys(d).length) E[id] = { ...e, data: d }; else delete E[id]; }); }
+// A8 (decisions 2026-11-13 review of 11.10.0): the places of destinations as the device has them now - the destination's file with my
+// edits, additions and states, each with its layer - read without making any trip the active one (the trip picture's "all the
+// destination's places"); a destination no longer on the phone gives none
+function destPlacesRead(dids) { const E = STATE.edits, out = [];
+  (dids || []).forEach(did => { const d = DESTS[did]; if (!d || d.ghost) return; const L = new Map(destLayersEff(d).map(l => [l.id, l]));
+    const deco = q => { const l = L.get(q.layer); if (!l) return null; const st = E.status[q.id]; if (st) { if (st.s === 'moved') return null; if (st.s === 'active') { delete q.status; delete q.statusNote; } else { q.status = st.s; q.statusNote = st.note || ''; } }
+      q.layer_name = l.name; q.color = l.color; if (!q.icon) q.icon = l.icon; return q; };
+    destPlaces(d).forEach(b => { const e = E.places[b.id]; const q = deco(e && e.op === 'edit' ? { ...b, ...e.data, edited: true } : { ...b }); if (q) out.push(q); });
+    Object.entries(E.places).forEach(([k, e]) => { if (e.op === 'add' && e.data && e.data.dest === did) { const q = deco({ reservation: '', price: '', transit: '', description: '', ...e.data, id: Number(k), userAdded: true }); if (q) out.push(q); } }); });
+  return out; }

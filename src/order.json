@@ -8,519 +8,778 @@
   "style": [
    {
     "path": "css/tokens.css",
-    "about": "Tokens and colors: the design tokens (look/color-tokens.md) - every color, size, radius, height, shadow and motion; dark mode redefines the same names"
+    "about": "Tokens and colors: the design tokens (look/color-tokens.md) - every color, size, radius, height, shadow and motion; dark mode redefines the same names",
+    "side": "main"
    },
    {
     "path": "css/base.css",
-    "about": "Base: the box model, the page and its column, headings and type, loading and offline marks, print, utilities (text that wraps, one line that ends with \"…\")"
+    "about": "Base: the box model, the page and its column, headings and type, loading and offline marks, print, utilities (text that wraps, one line that ends with \"…\")",
+    "side": "main"
    },
    {
     "path": "generated/text-fonts.css",
-    "about": "The text fonts' @font-face rules (Rubik, Frank Ruhl Libre and the heading fonts), served from the site's fonts/ - written by tests/textfonts.py"
+    "about": "The text fonts' @font-face rules (Rubik, Frank Ruhl Libre and the heading fonts), served from the site's fonts/ - written by tests/textfonts.py",
+    "side": "main"
    },
    {
     "path": "generated/ms-font.css",
-    "about": "The Material Symbols subset as a woff2 data URL - written by tests/msfont.py"
+    "about": "The Material Symbols subset as a woff2 data URL - written by tests/msfont.py",
+    "side": "main"
    },
    {
     "path": "css/icons.css",
-    "about": "Icons: Material Symbols by code point (msi) and its modifiers (size steps, fill, inside a text), the drawn symbols (CSS masks), Claude's mark, the logo (look/icons.md)"
+    "about": "Icons: Material Symbols by code point (msi) and its modifiers (size steps, fill, inside a text), the drawn symbols (CSS masks), Claude's mark, the logo (look/icons.md)",
+    "side": "main"
    },
    {
     "path": "css/buttons-chips.css",
-    "about": "Buttons and chips: every button kind and the round icon button, the one button row (brow), chips, the chip row and source chips, the segmented list/map control"
+    "about": "Buttons and chips: every button kind and the round icon button, the one button row (brow), chips, the chip row and source chips, the segmented list/map control",
+    "side": "main"
    },
    {
     "path": "css/cards.css",
-    "about": "Cards: the one card language (look/cards.md) - places, the plan with its leg rows and estimates, travels, hotels, the draft's rows; tags, press feedback, card buttons"
+    "about": "Cards: the one card language (look/cards.md) - places, the plan with its leg rows and estimates, travels, hotels, the draft's rows; tags, press feedback, card buttons",
+    "side": "main"
    },
    {
     "path": "css/windows-forms.css",
-    "about": "Windows and forms (look/windows-forms.md): the layer stack, sheets, dialogs, the ⋮ menu, menu and choice list rows (ta-item), the expanded window, the scheduling and date fields, the files' frame, the report window, the editors' rows, the choice field (fmSelect)"
+    "about": "Windows and forms (look/windows-forms.md): the layer stack, sheets, dialogs, the ⋮ menu, menu and choice list rows (ta-item), the expanded window, the scheduling and date fields, the files' frame, the report window, the editors' rows, the choice field (fmSelect)",
+    "side": "main"
    },
    {
     "path": "css/window-parts.css",
-    "about": "Window parts - the shared window components (look/windows-forms.md): titles, the footer, outlined fields, switches, segmented buttons, folded groups, the end of a window, the scheduling window, menu screens and the settings head, pickers"
+    "about": "Window parts - the shared window components (look/windows-forms.md): titles, the footer, outlined fields, switches, segmented buttons, folded groups, the end of a window, the scheduling window, menu screens and the settings head, pickers",
+    "side": "main"
    },
    {
     "path": "css/bars.css",
-    "about": "Bars (look/bars.md): the top bar and its title chip, search, banners, the screens' head, the ＋ button"
+    "about": "Bars (look/bars.md): the top bar and its title chip, search, banners, the screens' head, the ＋ button",
+    "side": "main"
    },
    {
     "path": "css/screens.css",
-    "about": "Screens (look/full-screens.md): trips (with the compact trip card), places and layers, general (today, weather, info), the filter header and the full-screen map's filter pill, the draft and Claude, the guide, backup"
+    "about": "Screens (look/full-screens.md): trips (with the compact trip card), places and layers, general (today, weather, info), the filter header and the full-screen map's filter pill, the draft and Claude, the guide, backup",
+    "side": "main"
    },
    {
     "path": "css/screens-plan.css",
-    "about": "Screens: the plan - one timeline a day, ＋ to a day, the plan's end and summary, arranging days and days outside the trip"
+    "about": "Screens: the plan - one timeline a day, ＋ to a day, the plan's end and summary, arranging days and days outside the trip",
+    "side": "main"
    },
    {
     "path": "css/screens-proposal.css",
-    "about": "Screens: the schedule proposal from Claude (look/targets.md) - the arrival row, the plan's empty state and door, the preview (top bar, legend, tags, day lines, pinned bar), the draft's row, the request window"
+    "about": "Screens: the schedule proposal from Claude (look/targets.md) - the arrival row, the plan's empty state and door, the preview (top bar, legend, tags, day lines, pinned bar), the draft's row, the request window",
+    "side": "main"
    },
    {
     "path": "css/screens-memory.css",
-    "about": "Screens: closing a trip, the memory screen, the memento and the trip picture editor"
+    "about": "Screens: closing a trip, the memory screen, the memento and the trip picture editor",
+    "side": "main"
    },
    {
     "path": "css/screens-tiers.css",
-    "about": "Screens: the screen tiers - tablet (600-1023) and desktop (1024+): a wider column, the side rail, centered windows; print"
+    "about": "Screens: the screen tiers - tablet (600-1023) and desktop (1024+): a wider column, the side rail, centered windows; print",
+    "side": "main"
    },
    {
     "path": "css/maps.css",
-    "about": "Maps (look/maps-photos.md): the map component and its controls, the floating card, full screen, map types, measuring, the route map, discoveries, the point picker, offline maps"
+    "about": "Maps (look/maps-photos.md): the map component and its controls, the floating card, full screen, map types, measuring, the route map, discoveries, the point picker, offline maps",
+    "side": "main"
    },
    {
     "path": "css/touch-keyboard.css",
-    "about": "Touch and keyboard: what the browser may still do under the finger (touch-action), and every layer above the phone's keyboard"
+    "about": "Touch and keyboard: what the browser may still do under the finger (touch-action), and every layer above the phone's keyboard",
+    "side": "main"
    }
   ],
   "script": [
    {
     "path": "js/life-count.js",
-    "about": "Counting the long-lived things (listeners, intervals, timeouts, observers, maps) - wrapped before any other code runs (lifeCount)"
+    "about": "Counting the long-lived things (listeners, intervals, timeouts, observers, maps) - wrapped before any other code runs (lifeCount)",
+    "side": "main"
    },
    {
     "path": "js/app-basics.js",
-    "about": "The app's names and storage keys (APP), the \"none chosen\" marker, the one filter state (FILTER)"
+    "about": "The app's names and storage keys (APP), the \"none chosen\" marker, the one filter state (FILTER)",
+    "side": "main"
+   },
+   {
+    "path": "js/gzip.js",
+    "about": "Gzip unpacked, bytes in and bytes out (gunzipBytes, the one DecompressionStream) - the packed kit and the packed map data",
+    "side": "main"
    },
    {
     "path": "generated/ms-map.js",
-    "about": "The icon map MS_CP (icon name -> code point) - written by tests/msfont.py"
+    "about": "The icon map MS_CP (icon name -> code point) - written by tests/msfont.py",
+    "side": "main"
    },
    {
     "path": "generated/ms-font-page.js",
-    "about": "FMAP_FONT: the small Material Symbols subset of the live map inside pages and files sent to people, with its licence notice - written by tests/msfont.py"
+    "about": "FMAP_FONT: the small Material Symbols subset of the live map inside pages and files sent to people, with its licence notice - written by tests/msfont.py",
+    "side": "main"
    },
    {
     "path": "generated/closed-lists.js",
-    "about": "The closed lists a file may carry (countries, currencies, time zones, place and info icons) as CLOSED_LISTS - written by tests/kit.py from claude/scripts/closed_lists.json, the one source validate.py reads too"
+    "about": "The closed lists a file may carry (countries, currencies, time zones, place and info icons) as CLOSED_LISTS - written by tests/kit.py from claude/scripts/closed_lists.json, the one source validate.py reads too",
+    "side": "main"
+   },
+   {
+    "path": "generated/kit-facts.js",
+    "about": "KIT_FACTS: the kit's version and each goal's header line, what the main script knows of the instructions - written by tests/kit.py",
+    "side": "main"
    },
    {
     "path": "js/symbols-words.js",
-    "about": "The line icon helper (msi), empty states, Claude's mark; the dictionaries of symbols (SY) and words (TX); the markup's symbols and words"
+    "about": "The line icon helper (msi), empty states, Claude's mark; the dictionaries of symbols (SY) and words (TX); the markup's symbols and words",
+    "side": "main"
    },
    {
     "path": "js/flags-place-types.js",
-    "about": "Flags and country names; the place types' icons and names; the bundle, base layer types, heading fonts, the empty destination"
+    "about": "Flags and country names; the place types' icons and names; the bundle, base layer types, heading fonts, the empty destination",
+    "side": "main"
    },
    {
     "path": "js/time.js",
-    "about": "TIME - the one mechanism for every date and time"
+    "about": "TIME - the one mechanism for every date and time",
+    "side": "main"
    },
    {
     "path": "js/booking-price.js",
-    "about": "BOOKING AND PRICE - a place's booking choice and note, one price structure for places and hotels, the conversion of old text, the closed values at the door, the editors' fields"
+    "about": "BOOKING AND PRICE - a place's booking choice and note, one price structure for places and hotels, the conversion of old text, the closed values at the door, the editors' fields",
+    "side": "main"
    },
    {
     "path": "js/data-registry.js",
-    "about": "DATA REGISTRY - every row of what is stored, the small storage, device choices (continues in data-stores.js)"
+    "about": "DATA REGISTRY - every row of what is stored, the small storage, device choices (continues in data-stores.js)",
+    "side": "main"
    },
    {
     "path": "content/tips.js",
-    "about": "The explanations' texts (TIPS): every ⓘ, one-time hint, screen intro and symbol name; the mechanism's summary"
+    "about": "The explanations' texts (TIPS): every ⓘ, one-time hint, screen intro and symbol name; the mechanism's summary",
+    "side": "main"
    },
    {
     "path": "js/explanations.js",
-    "about": "Explanations: the line icons inside texts, the one gate and close rule for every bubble"
+    "about": "Explanations: the line icons inside texts, the one gate and close rule for every bubble",
+    "side": "main"
    },
    {
     "path": "js/data-stores.js",
-    "about": "DATA REGISTRY, continued: memories by last use, IndexedDB stores, the Cache API, the trash, the daily cleanup, the parts of files"
+    "about": "DATA REGISTRY, continued: memories by last use, IndexedDB stores, the Cache API, the trash, the daily cleanup, the parts of files",
+    "side": "main"
    },
    {
     "path": "js/action-wiring.js",
-    "about": "ACTION WIRING - the one mechanism for every user action (act, data-act, data-ref)"
+    "about": "ACTION WIRING - the one mechanism for every user action (act, data-act, data-ref)",
+    "side": "main"
    },
    {
     "path": "js/touch.js",
-    "about": "TOUCH - one mechanism for every gesture"
+    "about": "TOUCH - one mechanism for every gesture",
+    "side": "main"
    },
    {
     "path": "js/forms.js",
-    "about": "FORM BUILDING BLOCKS - one builder for every kind of field, the choice window, a travel's end"
+    "about": "FORM BUILDING BLOCKS - one builder for every kind of field, the choice window, a travel's end",
+    "side": "main"
    },
    {
     "path": "js/forms-loc.js",
-    "about": "The location block (split from forms.js in 11.32.0): search, my location, a Google Maps paste, the small map with the pin, full screen; the details' \"פתיחה בגוגל מפות\" row (fmGidField)"
+    "about": "The location block (split from forms.js in 11.32.0): search, my location, a Google Maps paste, the small map with the pin, full screen; the details' \"פתיחה בגוגל מפות\" row (fmGidField)",
+    "side": "main"
    },
    {
     "path": "js/destinations.js",
-    "about": "Imported destinations (IndexedDB), their id shift, the chip groups of info, the plan and the points"
+    "about": "Imported destinations (IndexedDB), their id shift, the chip groups of info, the plan and the points",
+    "side": "main"
    },
    {
     "path": "content/version.js",
-    "about": "The version, its date, and \"מה חדש\" (CHANGELOG) - the hot spot of every update"
+    "about": "The version, its date, and \"מה חדש\" (CHANGELOG) - the hot spot of every update",
+    "side": "main"
+   },
+   {
+    "path": "content/whatsnew.js",
+    "about": "\"מה חדש\" (CHANGELOG): every version's lines for the user, newest last - the text of the screen \"מה חדש\" (split from content/version.js in diet-groups: the version and its date stay there, in the main script)",
+    "side": "management"
    },
    {
     "path": "js/copyright-visibility.js",
-    "about": "The copyright line; which points are shown (VIS); regions; the hidden reasons' words and icons"
+    "about": "The copyright line; which points are shown (VIS); regions; the hidden reasons' words and icons",
+    "side": "main"
    },
    {
     "path": "js/terms-sources.js",
-    "about": "The terms and privacy page's address (terms.html on the site) and its links; \"מקורות ורישיונות\": the providers' credits and the libraries, fonts and icons with their licences"
+    "about": "The terms and privacy page's address (terms.html on the site) and its links; \"מקורות ורישיונות\": the providers' credits and the libraries, fonts and icons with their licences",
+    "side": "management"
    },
    {
     "path": "js/services.js",
-    "about": "EXTERNAL SERVICES - the one client for every request to the outside, the registry of services"
+    "about": "EXTERNAL SERVICES - the one client for every request to the outside, the registry of services",
+    "side": "main"
    },
    {
     "path": "js/services-queue.js",
-    "about": "EXTERNAL SERVICES, continued: the shared queue's client - a request through the site's /api/queue, its fallbacks, the background's share of the edge's minute"
+    "about": "EXTERNAL SERVICES, continued: the shared queue's client - a request through the site's /api/queue, its fallbacks, the background's share of the edge's minute",
+    "side": "main"
    },
    {
     "path": "js/wait-on.js",
-    "about": "Waiting on an outside service: waitOn, the one \"in progress\" indicator of a screen or window (a moving bar, the stage line, the dimmed map) - split from services.js"
+    "about": "Waiting on an outside service: waitOn, the one \"in progress\" indicator of a screen or window (a moving bar, the stage line, the dimmed map) - split from services.js",
+    "side": "main"
+   },
+   {
+    "path": "js/groups.js",
+    "about": "PARTS LOADED ON DEMAND: needGroup, the one loader of a group's file (through svcLibrary), the wait and the failure, viaGroup and groupScreen, the stand-ins of a group's actions",
+    "side": "main"
    },
    {
     "path": "js/service-health.js",
-    "about": "The 🩺 service health window: each provider's state, today's requests, what is kept and the recent troubles, its copied report and its actions - split from services.js"
+    "about": "The 🩺 service health window: each provider's state, today's requests, what is kept and the recent troubles, its copied report and its actions - split from services.js",
+    "side": "management"
    },
    {
     "path": "js/content-edits.js",
-    "about": "CONTENT EDITS - edits to a destination's places and info, kept apart from its file"
+    "about": "CONTENT EDITS - edits to a destination's places and info, kept apart from its file",
+    "side": "main"
    },
    {
     "path": "js/place-gid.js",
-    "about": "THE GOOGLE ID (11.22.0) - a place's Google id record (gid): its form, the offline conversions (ChIJ / cid / ftid), writing it, the exact Google Maps link, a place that comes again"
+    "about": "THE GOOGLE ID (11.22.0) - a place's Google id record (gid): its form, the offline conversions (ChIJ / cid / ftid), writing it, the exact Google Maps link, a place that comes again",
+    "side": "main"
+   },
+   {
+    "path": "js/state.js",
+    "about": "THE STATE - the stored state (STATE) and its shape, the active trip, its destinations, their effective layers and the layer data (split from layer-edits.js in diet-groups: what every screen reads)",
+    "side": "main"
    },
    {
     "path": "js/layer-edits.js",
-    "about": "LAYER EDITS - the layers screen and the layer editor"
+    "about": "LAYER EDITS - the layers screen and the layer editor",
+    "side": "management"
    },
    {
     "path": "js/item-model.js",
-    "about": "ONE ITEM MODEL - every place, plan item and travel as one item; hotels into the trip; the names of the parts; plan items"
+    "about": "ONE ITEM MODEL - every place, plan item and travel as one item; hotels into the trip; the names of the parts; plan items",
+    "side": "main"
    },
    {
     "path": "js/undo.js",
-    "about": "✕ in a plan card; a day's parts as one list; snackbars and the one undo toast; ⋮ undo, undo up to here"
+    "about": "✕ in a plan card; a day's parts as one list; snackbars and the one undo toast; ⋮ undo, undo up to here",
+    "side": "main"
    },
    {
     "path": "js/map-library.js",
-    "about": "The map library off the startup path (11.29.0): Leaflet loads after the first screen; every map entry waits for it (leafGate / leafThen) with the loading mark, or the offline mark"
+    "about": "The map library off the startup path (11.29.0): Leaflet loads after the first screen; every map entry waits for it (leafGate / leafThen) with the loading mark, or the offline mark",
+    "side": "main"
    },
    {
     "path": "js/geocoding.js",
-    "about": "Finding places by address: the geocoding memory, the two providers, distance checks"
+    "about": "Finding places by address: the geocoding memory, the two providers, distance checks",
+    "side": "main"
    },
    {
     "path": "js/chips.js",
-    "about": "List or map per screen; the segmented control; chip name bubbles; layer chips, source chips, chip order; the maps registry"
+    "about": "List or map per screen; the segmented control; chip name bubbles; layer chips, source chips, chip order; the maps registry",
+    "side": "main"
    },
    {
     "path": "js/map-types.js",
-    "about": "MAP TYPES - map, satellite, topographic, map with relief"
+    "about": "MAP TYPES - map, satellite, topographic, map with relief",
+    "side": "main"
    },
    {
     "path": "js/map-tools.js",
-    "about": "MAP TOOLS - 📏 measuring, pin clustering and the fan; the relief drawn on the phone (relief-phone: reliefCore in a worker, reliefLayer, reliefInto)"
+    "about": "MAP TOOLS - 📏 measuring, pin clustering and the fan; the relief drawn on the phone (relief-phone: reliefCore in a worker, reliefLayer, reliefInto)",
+    "side": "main"
    },
    {
     "path": "js/legs.js",
-    "about": "Real time and distance between the plan's stops (routing), estimates, the leg window"
+    "about": "Real time and distance between the plan's stops (routing), estimates, the leg window",
+    "side": "main"
    },
    {
     "path": "js/map-full-screen.js",
-    "about": "The full-screen map and the point picker; the tilted 3D map of a full-screen map (map-3d; 3d-find: the map types menu's row m3Row, MapLibre GL JS from the site on the first open, the trip read from the 2D map, the one-time note, its lifecycle)"
+    "about": "The full-screen map and the point picker; the tilted 3D map of a full-screen map (map-3d; 3d-find: the map types menu's row m3Row, MapLibre GL JS from the site on the first open, the trip read from the 2D map, the one-time note, its lifecycle)",
+    "side": "main"
+   },
+   {
+    "path": "js/map-3d.js",
+    "about": "THE TILTED 3D MAP (map-3d): the engine loaded from the site, OpenFreeMap's style coloured by the tokens in \"מפה בעברית\"'s style, the requests through the one client, the trip read from the 2D map, opening and closing, the one-time note - split from map-full-screen.js in diet-groups (the menu's row, M3 and the offer stay there)",
+    "side": "special-maps"
    },
    {
     "path": "js/item-window.js",
-    "about": "THE EXPANDED WINDOW - one details window for every item"
+    "about": "THE EXPANDED WINDOW - one details window for every item",
+    "side": "main"
    },
    {
     "path": "js/card.js",
-    "about": "THE CARD - one card language for every card"
+    "about": "THE CARD - one card language for every card",
+    "side": "main"
    },
    {
     "path": "js/map-component.js",
-    "about": "ONE MAP COMPONENT - every map, its pins, the floating card, its lifecycle"
+    "about": "ONE MAP COMPONENT - every map, its pins, the floating card, its lifecycle",
+    "side": "main"
    },
    {
     "path": "js/layer-manager.js",
-    "about": "ONE LAYER MANAGER - the stack of windows, sheets, menu screens and the back button"
+    "about": "ONE LAYER MANAGER - the stack of windows, sheets, menu screens and the back button",
+    "side": "main"
    },
    {
     "path": "js/keyboard-reveal.js",
-    "about": "KEYBOARD AND REVEAL - every layer above the keyboard; what a tap opens comes into view"
+    "about": "KEYBOARD AND REVEAL - every layer above the keyboard; what a tap opens comes into view",
+    "side": "main"
    },
    {
     "path": "js/schedule-button.js",
-    "about": "A place's card in lists; the 🗓️ scheduling button and the scheduling window of a place"
+    "about": "A place's card in lists; the 🗓️ scheduling button and the scheduling window of a place",
+    "side": "main"
    },
    {
     "path": "js/navigation.js",
-    "about": "The bottom navigation, the screens and their chip rows, goTab"
+    "about": "The bottom navigation, the screens and their chip rows, goTab",
+    "side": "main"
    },
    {
     "path": "js/dest-time-info.js",
-    "about": "The time at a destination; which destination the general screen shows"
+    "about": "The time at a destination; which destination the general screen shows",
+    "side": "main"
    },
    {
     "path": "js/currency.js",
-    "about": "The currency rate (kept 24 hours) and the converter"
+    "about": "The currency rate (kept 24 hours) and the converter",
+    "side": "main"
    },
    {
     "path": "js/trip-details.js",
-    "about": "TRIP DETAILS - travels and lodging"
+    "about": "TRIP DETAILS - travels and lodging",
+    "side": "main"
    },
    {
     "path": "js/travels.js",
-    "about": "TRAVELS - one kind of travel with two ends: mine and the group's (a program line of a travel's kind) in one list, the merge on open, ends and their proposals, the time before and after"
+    "about": "TRAVELS - one kind of travel with two ends: mine and the group's (a program line of a travel's kind) in one list, the merge on open, ends and their proposals, the time before and after",
+    "side": "main"
    },
    {
     "path": "js/place-editor.js",
-    "about": "PLACE EDITOR"
+    "about": "PLACE EDITOR",
+    "side": "main"
    },
    {
     "path": "js/place-search.js",
-    "about": "PLACE SEARCH: the one search by name (Photon while typing, Nominatim too on an explicit search, merged, inside the destination's box), its results window, the Google Maps link and the share back"
+    "about": "PLACE SEARCH: the one search by name (Photon while typing, Nominatim too on an explicit search, merged, inside the destination's box), its results window, the Google Maps link and the share back",
+    "side": "main"
    },
    {
     "path": "js/trip-switch.js",
-    "about": "The open trip: a destination's name, switching trips (switchTrip), the region filter chosen again after an undo that changes the open trip (split from the trips screen in 11.38.1)"
+    "about": "The open trip: a destination's name, switching trips (switchTrip), the region filter chosen again after an undo that changes the open trip (split from the trips screen in 11.38.1)",
+    "side": "main"
    },
    {
     "path": "js/trip-editor.js",
-    "about": "THE TRIP EDITOR - name, the three date modes, the destinations' rows and their days, the balance of dates and plan, where each old day goes (split from the trips screen in 11.38.1)"
+    "about": "THE TRIP EDITOR - name, the three date modes, the destinations' rows and their days, the balance of dates and plan, where each old day goes (split from the trips screen in 11.38.1)",
+    "side": "main"
+   },
+   {
+    "path": "js/file-deliver.js",
+    "about": "A file's place references (portableRef / deviceRef, personal data in and merged) and the one way out (deliverFile, deliverText, shareJson, fileStamp) - split from trip-files.js in diet-groups: every screen that sends uses them; partsWin and partItems, the frame of every window that sends, receives or restores a file (from files.js: four groups open such windows)",
+    "side": "main"
    },
    {
     "path": "js/trip-files.js",
-    "about": "Files of a destination and a trip: building them with relative references, personal data in and out, the share sheet or the download, installing a destination, a trip file's install (new / update / copy) (split from the trips screen in 11.38.1)"
+    "about": "Files of a destination and a trip: building them with relative references, personal data in and out, the share sheet or the download, installing a destination, a trip file's install (new / update / copy) (split from the trips screen in 11.38.1)",
+    "side": "management"
    },
    {
     "path": "js/top-bar-title.js",
-    "about": "The top bar's title: the trip's name and its day or date, a long name that keeps its words (fitTitle), the logo (split from the trips screen in 11.38.1)"
+    "about": "The top bar's title: the trip's name and its day or date, a long name that keeps its words (fitTitle), the logo (split from the trips screen in 11.38.1)",
+    "side": "main"
    },
    {
     "path": "js/trash-screen.js",
-    "about": "The trash screen: what was deleted, restore, delete for good, empty the trash (split from the trips screen in 11.38.1)"
+    "about": "The trash screen: what was deleted, restore, delete for good, empty the trash (split from the trips screen in 11.38.1)",
+    "side": "main"
    },
    {
     "path": "js/dest-editor.js",
-    "about": "The destination editor: a destination made in the app - name, description, the map's centre, country, currency and clock (split from the trips screen in 11.37.0 by size)"
+    "about": "The destination editor: a destination made in the app - name, description, the map's centre, country, currency and clock (split from the trips screen in 11.37.0 by size)",
+    "side": "management"
    },
    {
     "path": "js/hidden.js",
-    "about": "HIDDEN - places hidden with a reason, and their screen"
+    "about": "HIDDEN - places hidden with a reason, and their screen",
+    "side": "main"
    },
    {
     "path": "js/filter-search.js",
-    "about": "FILTER AND SEARCH - the one filter model, the filter window, search"
+    "about": "FILTER AND SEARCH - the one filter model, the filter window, search",
+    "side": "main"
    },
    {
     "path": "js/hotel-cards.js",
-    "about": "Hotel cards and 🔖 booked"
+    "about": "Hotel cards and 🔖 booked",
+    "side": "main"
    },
    {
     "path": "js/weather.js",
-    "about": "TRIP WEATHER - the forecast by the day's stop, the monthly climate"
+    "about": "TRIP WEATHER - the forecast by the day's stop, the monthly climate",
+    "side": "main"
    },
    {
     "path": "js/info-complete.js",
-    "about": "GENERAL INFO THROUGH CLAUDE - the missing fixed sections of a destination, \"not relevant\" (meta.infoNA and the user's in the edits), the General screen's row and its ⋮, infoMissing for every update"
+    "about": "GENERAL INFO THROUGH CLAUDE - the missing fixed sections of a destination, \"not relevant\" (meta.infoNA and the user's in the edits), the General screen's row and its ⋮, infoMissing for every update",
+    "side": "main"
+   },
+   {
+    "path": "js/disc-door.js",
+    "about": "\"מה יש כאן\" as every map knows it: what was found and kept (DISC, loaded from the phone), the maps that carry the 📚 button (DISC_MAPS), the switch, a discovery that is one of my places, its Wikipedia link in the details window, the drive card's \"לאורך הדרך\" button, the draft's layer choice - split from discoveries.js in diet-groups (the search, the pins, the list and \"לאורך הדרך\" stay there, special-maps); Wikipedia's API and a Commons picture's credit (wikiPages, picWikiApi, wikiFileCredit - from trip-picture-editor.js: the discoveries and the trip picture use them)",
+    "side": "main"
    },
    {
     "path": "js/discoveries.js",
-    "about": "📚 Discoveries - what is around here (Wikipedia, OSM)"
+    "about": "📚 Discoveries - what is around here (Wikipedia, OSM)",
+    "side": "special-maps"
    },
    {
     "path": "js/route-map.js",
-    "about": "THE ROUTE MAP - stops, legs, key points; a route's side view (map-side-view): \"גובה\" and its window - the route's map and the height chart"
+    "about": "THE ROUTE MAP - stops, legs, key points; a route's side view (map-side-view): \"גובה\" and its window - the route's map and the height chart",
+    "side": "main"
+   },
+   {
+    "path": "js/side-view.js",
+    "about": "map-side-view: A ROUTE'S SIDE VIEW's window - the route's map, the chart of heights (the app's own SVG), the scrub along it, the reading - split from route-map.js in diet-groups (the routes, their heights' summary and the \"גובה\" button stay there, in the main script)",
+    "side": "special-maps"
    },
    {
     "path": "js/travel-maps.js",
-    "about": "Travels on the maps (11.2.0): a travel's line between its confirmed ends (arc, road or the kept public-transport path), its role (a move, an outing, the way from home), the outings, the day map's travel pins, frame and edge arrows, the travel's floating card"
+    "about": "Travels on the maps (11.2.0): a travel's line between its confirmed ends (arc, road or the kept public-transport path), its role (a move, an outing, the way from home), the outings, the day map's travel pins, frame and edge arrows, the travel's floating card",
+    "side": "main"
+   },
+   {
+    "path": "js/intros.js",
+    "about": "Each main screen's intro bubble (INTROS, introMaybe, introShow) and when the opening tour is owed (maybeStartTour, tourOwed; the tour's state TOUR.cur) - split from tour.js in diet-groups; the tour's steps and card stay there (management)",
+    "side": "main"
    },
    {
     "path": "js/tour.js",
-    "about": "THE GUIDED TOUR - the opening tour in two parts, the screens' intros, the one-time hints' timing"
+    "about": "THE GUIDED TOUR - the opening tour in two parts, the screens' intros, the one-time hints' timing",
+    "side": "management"
+   },
+   {
+    "path": "content/guide-screens.js",
+    "about": "The guide's chapter per screen (GUIDE_SCREENS, guideChapterOf) - a screen's intro links its chapter; the guide's text (content/guide.js) joins it in (diet-groups)",
+    "side": "main"
    },
    {
     "path": "content/guide.js",
-    "about": "The guide's chapters (GUIDE)"
+    "about": "The guide's chapters (GUIDE)",
+    "side": "management"
    },
    {
     "path": "js/guide-screen.js",
-    "about": "The guide's screen: search, chapter rows"
+    "about": "The guide's screen: search, chapter rows",
+    "side": "management"
+   },
+   {
+    "path": "js/prefs.js",
+    "about": "What every screen reads of the ⋮ screens: the accordion rows (ACC_OPEN, accHTML, accLead, the info sections' heads), the landing screen's choice, the text size applied and kept in sync, the personal preferences (prefs, applyPrefs) - split from menu-screens.js in diet-groups",
+    "side": "main"
    },
    {
     "path": "js/menu-screens.js",
-    "about": "The ⋮ menu screens: accordions, file rows, personal preferences, settings rows"
+    "about": "The ⋮ menu screens: accordions, file rows, personal preferences, settings rows",
+    "side": "management"
    },
    {
     "path": "js/not-on-map.js",
-    "about": "Places that are not on the map, and why (🩺)"
+    "about": "Places that are not on the map, and why (🩺)",
+    "side": "main"
    },
    {
     "path": "js/plan-drag.js",
-    "about": "THE PLAN: lifting and dragging a card, the swipe, a drop by time, anchors"
+    "about": "THE PLAN: lifting and dragging a card, the swipe, a drop by time, anchors",
+    "side": "main"
    },
    {
     "path": "js/plan-schedule.js",
-    "about": "THE PLAN: my changes to the organized schedule, the scheduling window, removed items and ↩️"
+    "about": "THE PLAN: my changes to the organized schedule, the scheduling window, removed items and ↩️",
+    "side": "main"
    },
    {
     "path": "js/plan-add.js",
-    "about": "THE PLAN: ＋ מקום - adding places to a day or a part of it"
+    "about": "THE PLAN: ＋ מקום - adding places to a day or a part of it",
+    "side": "main"
    },
    {
     "path": "js/plan-notes.js",
-    "about": "THE PLAN: notes - ＋ הערה, editing a note, and a note with an address that becomes a place of the trip in a map layer (moved from the layer manager in 11.38.1)"
+    "about": "THE PLAN: notes - ＋ הערה, editing a note, and a note with an address that becomes a place of the trip in a map layer (moved from the layer manager in 11.38.1)",
+    "side": "main"
    },
    {
     "path": "js/plan-card.js",
-    "about": "THE PLAN: a plan card - travels, my changes in words, the time chip, the visited toggle, the booking tag, the travel card"
+    "about": "THE PLAN: a plan card - travels, my changes in words, the time chip, the visited toggle, the booking tag, the travel card",
+    "side": "main"
    },
    {
     "path": "js/plan-day.js",
-    "about": "THE PLAN: a day - legs, the order of a part of the day, the organized schedule, the summary line, the screen's actions"
+    "about": "THE PLAN: a day - legs, the order of a part of the day, the organized schedule, the summary line, the screen's actions",
+    "side": "main"
+   },
+   {
+    "path": "js/proposal-door.js",
+    "about": "The schedule proposal's door in the plan: the proposal's row, the request button, the empty plan's state; a trip that ends drops it, the days follow the plan's",
+    "side": "main"
    },
    {
     "path": "js/proposal.js",
-    "about": "SCHEDULE PROPOSAL FROM CLAUDE (11.5.0): the request file and its window, the proposal kept per trip, the arrival row, the preview screen, applying whole or a day, the draft's row"
+    "about": "SCHEDULE PROPOSAL FROM CLAUDE (the AI group): the request file and its window, a proposal received, the preview and applying it",
+    "side": "ai"
    },
    {
     "path": "js/today-card.js",
-    "about": "The general screen's top card: today, before the trip, after it"
+    "about": "The general screen's top card: today, before the trip, after it",
+    "side": "main"
    },
    {
     "path": "js/regions.js",
-    "about": "The regions screen"
+    "about": "The regions screen",
+    "side": "main"
+   },
+   {
+    "path": "js/file-rules.js",
+    "about": "FILES, what every screen and the startup use: the door's rules (fileClean, closed sets, references, ids), the info sections' allowlist (cleanInfo / infoHtml), the once passes over stored data (migRun), the two cards, the glue of words, the import door's button - split from files.js in diet-groups",
+    "side": "main"
    },
    {
     "path": "js/files.js",
-    "about": "FILES - one route in, one shape for every window of a file: cleaning what a file brings (closed sets, references, markup), the doors, receiving a file already on the phone, the edits of someone else one by one"
+    "about": "FILES - one route in, one shape for every window of a file: cleaning what a file brings (closed sets, references, markup), the doors, receiving a file already on the phone, the edits of someone else one by one",
+    "side": "management"
    },
    {
     "path": "js/backup-restore.js",
-    "about": "Restore and the backup screen: which parts of a backup come back, status, \"backup now\", what goes in, the reminder (split from files.js in 11.38.1)"
+    "about": "Restore and the backup screen: which parts of a backup come back, status, \"backup now\", what goes in, the reminder (split from files.js in 11.38.1)",
+    "side": "management"
    },
    {
     "path": "js/share-files.js",
-    "about": "Sharing a trip and a destination: the choice, the receivers and what is checked for each, the mementos that go out, the trip picture's point keys (split from files.js in 11.38.1)"
+    "about": "Sharing a trip and a destination: the choice, the receivers and what is checked for each, the mementos that go out, the trip picture's point keys (split from files.js in 11.38.1)",
+    "side": "management"
    },
    {
     "path": "js/claude-part.js",
-    "about": "The one skeleton of every Claude window: what Claude will do, the window's options, how, send and 📋 (claudePartHTML; split from files.js in 11.38.1)"
+    "about": "The one skeleton of every Claude window: what Claude will do, the window's options, how, send and 📋 (claudePartHTML; split from files.js in 11.38.1) (diet-groups: the main script - partsWin, the frame of every file window, draws it)",
+    "side": "main"
    },
    {
     "path": "js/file-ids.js",
-    "about": "FILE IDS - one conversion of an id or a key to the file form: the door, the once pass over stored data, ids made from names (11.21.4)"
+    "about": "FILE IDS - one conversion of an id or a key to the file form: the door, the once pass over stored data, ids made from names (11.21.4)",
+    "side": "main"
+   },
+   {
+    "path": "js/draft-model.js",
+    "about": "INCOMING CONTENT: the draft model every screen reads - its store, items, layers, coordinates, the filter's chips and counts, notes and round marks, the banner on top of every screen",
+    "side": "main"
    },
    {
     "path": "js/incoming-draft.js",
-    "about": "INCOMING CONTENT - share to the app, the draft"
+    "about": "INCOMING CONTENT (the AI group): the draft's screen, its map, its windows and its approval",
+    "side": "ai"
    },
    {
     "path": "js/trip-states.js",
-    "about": "TRIP MANAGEMENT - states, archive, the memory screen"
+    "about": "TRIP MANAGEMENT - states, archive, the memory screen",
+    "side": "main"
+   },
+   {
+    "path": "js/trip-memory.js",
+    "about": "A trip's memory screen (its data, the static map, the plan as it was, the ride tile), the memories' screen (all of them), closing's start by the trip's state - split from trip-states.js in diet-groups",
+    "side": "memories"
    },
    {
     "path": "js/day-operations.js",
-    "about": "Days without dates, dates later, day operations"
+    "about": "Days without dates, dates later, day operations",
+    "side": "main"
+   },
+   {
+    "path": "js/ratings.js",
+    "about": "What a trip day shows of closing: a trip's personal data by id (tdOf / tdSave), the ratings ❤️ 👍 👎 on a place and a past trip's rating on its card, the welcome-back card on the general screen, the past ratings a new trip imports, which destination an edit belongs to - split from closing.js in diet-groups; the Timeline lines a trip day shows (tlOf, tlCancelled, the before-trip row, the late line)",
+    "side": "main"
    },
    {
     "path": "js/closing.js",
-    "about": "CLOSING A TRIP - the guided closing"
+    "about": "CLOSING A TRIP - the guided closing",
+    "side": "memories"
    },
    {
     "path": "js/timeline.js",
-    "about": "GOOGLE TIMELINE - read the export on the phone, match the trip's places, the days' paths and walking km; the review (in the closing step and a window), names for the offered places, the doors (and the trip's dates when it has none), the reminder and the late line (11.9.0, 11.10.0)"
+    "about": "GOOGLE TIMELINE - read the export on the phone, match the trip's places, the days' paths and walking km; the review (in the closing step and a window), names for the offered places, the doors (and the trip's dates when it has none), the reminder and the late line (11.9.0, 11.10.0)",
+    "side": "memories"
    },
    {
     "path": "js/timeline-paths.js",
-    "about": "The Google Timeline's day paths (tl-paths): a day's visits and moves cleaned into walk / ride segments at the import (TL_CLEAN, tlDaySegs, tlSimplifyDays), a day stored before cleaned on read, and the one reader every drawer uses (tlPaths)"
+    "about": "The Google Timeline's day paths (tl-paths): a day's visits and moves cleaned into walk / ride segments at the import (TL_CLEAN, tlDaySegs, tlSimplifyDays), a day stored before cleaned on read, and the one reader every drawer uses (tlPaths)",
+    "side": "memories"
    },
    {
     "path": "js/photos.js",
-    "about": "PHOTOS - one mechanism for a photo's whole life (under the MEMENTO heading, which continues in memento.js)"
+    "about": "PHOTOS - one mechanism for a photo's whole life (under the MEMENTO heading, which continues in memento.js) (diet-groups: the main script - the hotel's photo and the view are ordinary taps; a memory's photos are in photos-memory.js)",
+    "side": "main"
+   },
+   {
+    "path": "js/photos-memory.js",
+    "about": "PHOTOS of a memory: a photo in a drawing (photoImageSVG), the page cutter (photoCut, photoPageSVG), the trip's photos box and their order, a highlight's photo, the crop and framing tool (openPicCrop), photos sent to Claude, a page's photos on its map - split from photos.js in diet-groups",
+    "side": "memories"
    },
    {
     "path": "js/memento.js",
-    "about": "MEMENTO, continued: photos in the closing, the data behind every memento, exports (PNG, PDF, print)"
+    "about": "MEMENTO, continued: photos in the closing, the data behind every memento, exports (PNG, PDF, print)",
+    "side": "memories"
+   },
+   {
+    "path": "js/vector-tiles.js",
+    "about": "OpenFreeMap's vector tiles read on the phone (vtTemplate, vtTile, the protobuf / MVT reader, vtUnzip, vtName), the line simplifier, Overpass's addresses and answer, the backgrounds not asked again (SCHEM_FAILED) - split from memory-maps.js in diet-groups: the offline maps, the 3D map and the services' registry use them",
+    "side": "main"
    },
    {
     "path": "js/memory-maps.js",
-    "about": "MEMORY MAPS - the schematic background of a trip's picture"
+    "about": "MEMORY MAPS - the schematic background of a trip's picture",
+    "side": "memories"
    },
    {
     "path": "js/offline-maps.js",
-    "about": "MAPS WITHOUT NETWORK - what to download, downloading, the review screen, stored maps (the drawing: offline-draw.js)"
+    "about": "MAPS WITHOUT NETWORK - what to download, downloading, the review screen, stored maps (the drawing: offline-draw.js)",
+    "side": "main"
+   },
+   {
+    "path": "js/offline-download.js",
+    "about": "MAPS WITHOUT NETWORK, the download screen: downloading (4 at once, the trip's budget a hard stop, the update's freeing), the review window - the areas on their map with ✕ / ＋, framing an area, download / update / delete - split from offline-maps.js in diet-groups (what to download, the stored tiles and their use stay there)",
+    "side": "special-maps"
+   },
+   {
+    "path": "js/storage-rows.js",
+    "about": "⚙️ › 💾 אחסון במכשיר: the storage rows of the settings (what can be loaded again gets \"ניקוי\", the user's own its size), the download's estimate against the space left, \"storage.open\" - split from offline-maps.js in diet-groups",
+    "side": "management"
    },
    {
     "path": "js/offline-draw.js",
-    "about": "Offline maps' drawing: the downloaded vector tiles drawn as a canvas layer under the tile layers when there is no network (offDrawTile, offDrawLayers - shared with the trip picture and \"מפה בעברית\" - OFF_STYLE, OFF_ROAD), the offline badge"
+    "about": "Offline maps' drawing: the downloaded vector tiles drawn as a canvas layer under the tile layers when there is no network (offDrawTile, offDrawLayers - shared with the trip picture and \"מפה בעברית\" - OFF_STYLE, OFF_ROAD), the offline badge",
+    "side": "main"
    },
    {
     "path": "js/offline-area-editor.js",
-    "about": "Offline maps' area editor: an area framed, resized and moved on the map (the point picker's frame), its size line by the plan's own cost (offFrameInfo), a computed area changed becoming the user's (openOffFrame)"
+    "about": "Offline maps' area editor: an area framed, resized and moved on the map (the point picker's frame), its size line by the plan's own cost (offFrameInfo), a computed area changed becoming the user's (openOffFrame)",
+    "side": "special-maps"
    },
    {
     "path": "js/hebrew-map.js",
-    "about": "\"מפה בעברית\" - the app's vector drawing of OpenFreeMap's tiles as a live map type: the tiles through the one client, light and dark styles from the --vmap-* tokens, the names placed once per view"
+    "about": "\"מפה בעברית\" - the app's vector drawing of OpenFreeMap's tiles as a live map type: the tiles through the one client, light and dark styles from the --vmap-* tokens, the names placed once per view",
+    "side": "special-maps"
    },
    {
     "path": "js/world-borders.js",
-    "about": "The world's borders inside the app (countries-visited): the site file countries-110m.json read (topoRings - also the schematic maps' world), the point-in-country lookup, the world map's projection and paths; pure - it calls no other part"
+    "about": "The world's borders inside the app (countries-visited): the site file countries-110m.json read (topoRings - also the schematic maps' world), the point-in-country lookup, the world map's projection and paths; pure - it calls no other part",
+    "side": "memories"
    },
    {
     "path": "js/schematic-maps.js",
-    "about": "Drawing schematic maps: city and route styles, countries, the background in a box"
+    "about": "Drawing schematic maps: city and route styles, countries, the background in a box",
+    "side": "memories"
    },
    {
     "path": "js/memory-live-map.js",
-    "about": "The live map in the memory screen; a past trip's point; the highlights' photos at their places (memPhotoSpots, memPhotoMarks) and \"תמונות\" in its filter (memory-photos); ▶ play the trip on it day after day (trip-replay: RP, the bar, the speeds, the jump to a day)"
+    "about": "The live map in the memory screen; a past trip's point; the highlights' photos at their places (memPhotoSpots, memPhotoMarks) and \"תמונות\" in its filter (memory-photos); ▶ play the trip on it day after day (trip-replay: RP, the bar, the speeds, the jump to a day)",
+    "side": "memories"
    },
    {
     "path": "js/page-maps.js",
-    "about": "Maps inside HTML files: a live map over a picture of it"
+    "about": "Maps inside HTML files: a live map over a picture of it",
+    "side": "memories"
+   },
+   {
+    "path": "js/memory-lines.js",
+    "about": "The trips screen's two lines under \"זיכרונות\": \"הדרכון שלי\" with its count (the book's model, ppModel) and \"מדינות שביקרנו\" (drawn whole by the memories group; until it is in, the line's name, and the group comes quietly after the first screen) - split from memory-screen.js in diet-groups",
+    "side": "main"
    },
    {
     "path": "js/memory-screen.js",
-    "about": "The memory screen, part 3; a page for people leaves one way; \"מדינות שביקרנו\" - the countries of closed trips and of countries marked by hand, the world map and its card (countries-visited)"
+    "about": "The memory screen, part 3; a page for people leaves one way; \"מדינות שביקרנו\" - the countries of closed trips and of countries marked by hand, the world map and its card (countries-visited)",
+    "side": "memories"
    },
    {
     "path": "js/recommendations.js",
-    "about": "Recommendations for friends: a message, or a page with a map"
+    "about": "Recommendations for friends: a message, or a page with a map",
+    "side": "memories"
    },
    {
     "path": "js/trip-picture.js",
-    "about": "THE TRIP PICTURE - candidates, my changes, layout, drawing, the route skeleton, the schematic data"
+    "about": "THE TRIP PICTURE - candidates, my changes, layout, drawing, the route skeleton, the schematic data",
+    "side": "memories"
    },
    {
     "path": "js/trip-picture-editor.js",
-    "about": "THE TRIP PICTURE: the editor - points, frame, style, a point's card, my changes, ＋ נקודה, Wikipedia pictures"
+    "about": "THE TRIP PICTURE: the editor - points, frame, style, a point's card, my changes, ＋ נקודה, Wikipedia pictures",
+    "side": "memories"
    },
    {
     "path": "js/trip-picture-out.js",
-    "about": "THE TRIP PICTURE: the memory screen's block, the file for Claude, the illustrated version"
+    "about": "THE TRIP PICTURE: the memory screen's block, the file for Claude, the illustrated version",
+    "side": "memories"
    },
    {
     "path": "js/draft-round.js",
-    "about": "DRAFT IMPROVEMENT ROUND WITH CLAUDE"
+    "about": "DRAFT IMPROVEMENT ROUND WITH CLAUDE",
+    "side": "ai"
    },
    {
     "path": "generated/kit.js",
-    "about": "THE INSTRUCTIONS FOR CLAUDE: the KIT block - written by tests/kit.py from claude/"
+    "about": "THE INSTRUCTIONS FOR CLAUDE: the KIT block - written by tests/kit.py from claude/",
+    "side": "ai"
    },
    {
     "path": "js/claude-instructions.js",
-    "about": "THE INSTRUCTIONS FOR CLAUDE: a goal's paste, the skill ZIP, the Claude screen"
+    "about": "THE INSTRUCTIONS FOR CLAUDE (the AI group): a goal's paste, the packed kit unpacked, the skill ZIP, the Claude screen, the install window, the build window, the Claude windows' 📋 and install doors",
+    "side": "ai"
+   },
+   {
+    "path": "js/kit-card.js",
+    "about": "The kit as main screens and files know it (KIT_FACTS): which kit this device's AI has, the card \"יש הוראות חדשות ל-AI\" and the ⋮ dot, and the header every file for an AI carries (withClaude)",
+    "side": "main"
+   },
+   {
+    "path": "js/render-menu.js",
+    "about": "Drawing the screen (render: the screens in order, the banners on top), the top search, the legend, the theme, the ⋮ menu and its screens, installing the app",
+    "side": "main"
+   },
+   {
+    "path": "js/report-queue.js",
+    "about": "REPORTS, the part every opening runs: the waiting list (reportOut), whether this page may send, the ⋮ row's count, the send and the flush at the opening and when the network returns - split from reports.js in diet-groups (the window stays there, management)",
+    "side": "main"
    },
    {
     "path": "js/reports.js",
-    "about": "REPORTS - a problem or an idea from inside the app"
+    "about": "REPORTS - a problem or an idea from inside the app",
+    "side": "management"
    },
    {
     "path": "js/place-gid-look.js",
-    "about": "THE GOOGLE ID LOOKED UP (11.23.0) - the background lookup on the app's server function: which places, in what order, re-checks and refresh, writing the answer, the monthly pause"
+    "about": "THE GOOGLE ID LOOKED UP (11.23.0) - the background lookup on the app's server function: which places, in what order, re-checks and refresh, writing the answer, the monthly pause",
+    "side": "main"
    },
    {
     "path": "js/startup.js",
-    "about": "The page's last steps: the network badge, weekdays by date fields, the title button, offline and update (service worker), startup"
+    "about": "The page's last steps: the network badge, weekdays by date fields, the title button, offline and update (service worker), startup",
+    "side": "main"
    }
   ]
+ },
+ "groups": {
+  "ai": "The instructions for AI, their screen, the improvement round, the schedule proposal, the incoming draft (decisions 2026-11-23 · A diet for the main script, Q4)",
+  "memories": "Closing, the memory screen and its maps, the trip picture, mementos, the Timeline, recommendations, pages for people, the countries and the passport book (Q4; moved by diet-groups)",
+  "special-maps": "The offline maps' download screen, 3D, \"מפה בעברית\", \"מה יש כאן\" and \"לאורך הדרך\", the route's side view (Q4; moved by diet-groups)",
+  "management": "Files, import and sharing, backup, reports, settings and the ⋮ screens, the guide, the tour, the text of \"מה חדש\", the layer and destination editors (Q4; moved by diet-groups)"
  },
  "generated": "generated",
  "generators": {

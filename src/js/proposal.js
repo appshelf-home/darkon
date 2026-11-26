@@ -8,12 +8,7 @@
 const PROP_SLOTS = ['morning', 'afternoon', 'evening'], PROP_ANS = ['pace', 'hours', 'who', 'special'];
 let PROP_VIEW = null;              // set while the preview's days are drawn: { marks, fixed, seen } (cdCard reads it)
 let PROP_OPEN = null;              // the preview's open days
-function propOf(id) { const td = (STATE.tripData || {})[id || STATE.activeTrip]; return (td && td.proposal) || null; }
 function propSet(p, prefs) { const td = tdOf(STATE.activeTrip); if (p) td.proposal = p; else delete td.proposal; if (prefs) td.planPrefs = prefs; persist(); }
-function propDays(P) { return TRIP_DAYS.map(d => d.key).filter(k => P && P.days && P.days[k]); } // the days still in the proposal, in the trip's order
-function propMusts(P) { return propDays(P).reduce((n, k) => n + P.days[k].items.filter(x => x.must).length, 0); }
-function propCan() { const t = activeTripObj(), st = tripState(t); return !!t.id && !ARCHIVE_VIEW && (st === 'before' || st === 'during') && !document.body.classList.contains('read-only'); }
-const propN = n => n === 1 ? 'יום אחד' : n + ' ימים';
 // ---- the trip's fixed things now ----
 function propFixed() {
   const out = [], t = activeTripObj(), dk = iso => (TRIP_DAYS.find(d => d.date === iso) || {}).key;
@@ -74,10 +69,6 @@ function propApply(keys) {
   showUndoToast(whole && keys.length > 1 || (whole && !(P.applied || []).length) ? `הלו״ז מה-${AI} הוחל על ${propN(keys.length)}` : keys.length === 1 ? `יום ${dayIdx(keys[0])} מההצעה הוחל` : `הלו״ז מה-${AI} הוחל על ${propN(keys.length)}`);
 }
 function propDrop() { if (!propOf()) return; propSet(null); showUndoToast('הצעת הלו״ז מה-' + AI + ' נמחקה'); }
-// when the trip ends an unapplied proposal goes quietly (Q6): the app's own change, in no undo row
-function propExpire() { let n = 0; Object.keys(STATE.tripData || {}).forEach(id => { const td = STATE.tripData[id], t = STATE.trips[id]; if (!td || !td.proposal) return; const st = t ? tripState(t) : 'ended';
-    if (st !== 'ended' && st !== 'archived') return; if (id === STATE.activeTrip) stashActive(); delete STATE.tripData[id].proposal; n++; try { hAbsorb(hKey(['d', id, 'proposal'])); } catch (e) {} });
-  if (n) persist(true); return n; }
 // ---- a proposal arrives. In a file its days are dates (or day numbers) and its places "@dest:id" / a trip place's number ----
 function propDayKey(t, x) { if (x == null) return null; if (x.date) { const i = tripDayList(t).findIndex(d => d.date === x.date); return i >= 0 ? 'd' + (i + 1) : null; }
   const n = Number(x.day); return n >= 1 && n <= tripLen(t) ? 'd' + n : null; }
@@ -110,19 +101,6 @@ function receiveProposal(data) {
 // a proposal that came inside a trip file (a new trip from the draft, or an update): stored after the trip is in (importTripNow), no toast of its own
 function propAfterImport(data, nid, gone) { if (!data || !data.proposal || nid !== STATE.activeTrip) return;
   const X = propFromFile(data.proposal, activeTripObj(), gone ? { gone } : null); if (X) propStore(X); }
-// days moved, added or parked (rebuildTripDays): the proposal's days follow the plan's; a day that left the trip leaves the proposal
-function propRemap(td, mapK) { const P = td && td.proposal; if (!P) return; const days = {}, sig = {};
-  Object.keys(P.days || {}).forEach(k => { const j = mapK(k); if (j == null) return; days['d' + j] = P.days[k]; if (P.sig && P.sig[k] != null) sig['d' + j] = P.sig[k]; });
-  if (Object.keys(days).length) td.proposal = { ...P, days, sig, applied: (P.applied || []).map(k => { const j = mapK(k); return j == null ? null : 'd' + j; }).filter(Boolean) }; else delete td.proposal; }
-// ---- the arrival row at the top of the plan (no ✕: the preview drops it) ----
-function propRowHTML() { const P = propOf(); if (!P || !propCan()) return ''; const n = propDays(P).length; if (!n) return '';
-  const ap = (P.applied || []).filter(k => dayByKey(k)).map(dayIdx).sort((a, b) => a - b), m = propMusts(P);
-  const sub = ap.length ? `נותרו ${propN(n)} בהצעה${SEP}${ap.length === 1 ? 'יום ' + ap[0] : 'ימים ' + ap.join(', ')} כבר אצלך` : `${propN(n)}${m ? `${SEP}${m} לא לפספס` : ''}${SEP}התוכנית שלך לא השתנתה`;
-  return `<button type="button" class="prop-row t-wrap" id="propRow" data-act="prop.view">${claudeMark({ size: 24 })}<span class="prop-row-t"><b>הצעת לו״ז מה-${AI}</b><small>${sub}</small></span><span class="prop-row-go">לעיון</span></button>`; }
-// ---- the doors: an empty plan's one empty state; a button in the plan's top row (Q7) ----
-function planEmpty() { return !TRIP_DAYS.some(d => mergedIds(d.key).some(id => !isTravelItem(planItem(id))) || scheduleOf(d.date).some(s => !isTravelKind(s.kind))); } // travels alone are not a plan yet
-function propAskBtn(id) { return `<button type="button" class="chip prop-ask"${id ? ` id="${id}"` : ''} data-act="prop.ask">${claudeMark({ size: 18 })}לו״ז מה-${AI}</button>`; }
-function planEmptyHTML() { return `<div class="card plan-empty">${emptyHTML(msi('event_note'), 'משבצים מקומות מהרשימה, או מבקשים מה-' + AI + ' הצעה ראשונה', '', 'התוכנית עוד ריקה')}${propCan() ? propAskBtn('propAskEmpty') : ''}</div>`; }
 // ---- the request window: which days, "keep what I placed", what Claude will do, copy the instructions / send the request ----
 function propAskDays(F) { const all = TRIP_DAYS.filter(d => !(tripState(activeTripObj()) === 'during' && d.date < todayStr())).map(d => d.key), mode = fmGet(F, 'which');
   return mode === 'empty' ? all.filter(k => !mergedIds(k).length) : mode === 'pick' ? all.filter(k => (F.opts.picked || []).includes(k)) : all; }
@@ -142,7 +120,7 @@ function propPickDays(F) { const all = TRIP_DAYS.filter(d => !(tripState(activeT
     d => { const G = fmLive(F); G.opts.picked = all.map(x => x.key).filter(k => d.includes(k)); }); } // the live form (11.15.1, Q2); in the days' order
 function propRequestFile(keys, keep) {
   const id = STATE.activeTrip, t = activeTripObj(), dated = !!t.start, td = STATE.tripData[id] || {}, ref = x => portableRef(x, t), dd = k => { const d = dayByKey(k); return dated ? { date: d.date } : { day: dayIdx(k) }; };
-  const out = buildTripFile(id, PART_LIST.filter(k => /^(trip|dests|edits)$/.test(k)), false, null);
+  const out = groupFn('management', 'buildTripFile')(id, PART_LIST.filter(k => /^(trip|dests|edits)$/.test(k)), false, null);
   const fixed = propFixed().map(f => { const d = dated ? { date: f.date } : { day: dayIdx(f.day) };
     return f.what === 'booking' ? { what: 'booking', ref: ref(f.pid), name: f.name, ...d, start: f.start, end: f.end } : f.what === 'group' ? { what: 'group', id: f.id, kind: f.kind, name: f.name, ...d, start: f.start, end: f.end, ...(f.ref != null && f.ref !== '' ? { ref: ref(f.ref) } : {}) }
       : { what: 'travel', id: f.id, name: f.name, ...d, start: f.start, end: f.arrive, arriveDay: f.arriveDay, from: f.from, to: f.to }; })
@@ -169,8 +147,8 @@ function propTagsFor(o) { const V = PROP_VIEW, tok = (/data-ipid="([^"]+)"/.exec
 function propCard(o) { return { ...o, body: '', vis: '', acts: '', cls: (o.cls || '').replace(/\bg-swipe\b/, '') + ' pv-card', tags: (o.tags || []).concat(propTagsFor(o)) }; }
 function propDayHTML(d, P, R) { const D = P.days[d.key], open = PROP_OPEN.has(d.key);
   const saved = { it: STATE.itinerary, times: STATE.times }; let tl = '', total = 0;
-  STATE.itinerary = R.it; STATE.times = R.times; PROP_VIEW = { marks: R.marks, fixed: propFixed(), seen: P.seen || {} };
-  try { total = mergedIds(d.key).length + scheduleOf(d.date).length; if (open) tl = dayTimelineHTML(d); } finally { STATE.itinerary = saved.it; STATE.times = saved.times; PROP_VIEW = null; }
+  STATE.itinerary = R.it; STATE.times = R.times; PROP_VIEW = { marks: R.marks, fixed: propFixed(), seen: P.seen || {} }; cardViewSet(propCard);
+  try { total = mergedIds(d.key).length + scheduleOf(d.date).length; if (open) tl = dayTimelineHTML(d); } finally { STATE.itinerary = saved.it; STATE.times = saved.times; PROP_VIEW = null; cardViewSet(null); }
   const nw = D.items.filter(x => { const m = R.marks[d.key + '|' + x.id]; return m && (m.nw || m.mv); }).length, info = dayHeadInfo(d);
   const lines = (propEdited(P, d.key) ? `<div class="pv-line">${msi('edit_calendar', { size: 18 })}<span>שינית את היום הזה אחרי שההצעה נבנתה</span></div>` : '') + (D.drop ? `<div class="pv-line">${msi('playlist_remove', { size: 18 })}<span>מקום שהורדת בטיוטה ירד מהיום הזה</span></div>` : '')
     + (String(D.note || '').trim() ? `<div class="pv-say pv-daysay">${msi('chat', { size: 18 })}<span>${escH(D.note)}</span></div>` : '');
@@ -198,6 +176,7 @@ act('prop.drop', () => { propClose(); propDrop(); });
 act('prop.send', async c => { const F = fmOf(c.el); if (!F) return; const keys = propAskDays(F), t = activeTripObj();
   if (!keys.length) return fmFail(F, 'which', 'בוחרים לפחות יום אחד');
   const keep = !F.kinds.keep || (fmGet(F, 'keep') || []).includes('keep');
+  if (!(await needGroup('management'))) { showToast(GROUP_FAIL); return 'quiet'; } // diet-groups: the trip file is built by the files' group
   if (await shareJson(propRequestFile(keys, keep), `${PACK.fileName}-schedule-request-${fileStamp()}.json`)) { logEvent(`נשלחה ל-${AI} בקשה להצעת לו״ז: ${t.name}`, true); closeSheet(); } });
 // ---- the draft's row: a proposal that came with a new trip (Q9) - information only, with its ⓘ ----
 function draftPropN(D) { const d = D && D.data, fp = d && d.kind === 'trip' && d.proposal; if (!fp || fp.status !== 'answered' || !Array.isArray(fp.plan)) return 0;

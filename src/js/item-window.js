@@ -235,3 +235,10 @@ function openItemMap(it, ctx) {
 act('layer.back', () => winBackLayer(false)); // ✕ of a full layer that is not a window (a full-screen map)
 function closeItemMap() { if (!IW_MAP) return; const y = IW_MAP.y; mapDispose(IW_MAP.map); IW_MAP.el.remove(); IW_MAP = null; if (y) requestAnimationFrame(() => appScroll(y)); } // 5.3.0: the list underneath stays where it was
 // close the top layer when it is not a window (a full screen of the stack)
+// legal-credits (C4; decisions 2026-11-21 · Review of the legal-review report, Q13 item 5): a place's description that came from Wikipedia carries,
+// wherever a page or a file passes it on, "מתוך ויקיפדיה · CC BY-SA 4.0" linked to the article and the licence - or "על פי ויקיפדיה" once the person
+// edited it (the text no longer matches the hash kept with its source, src.dh). The words and the licence come from the provider's row.
+function wikiTextOf(p) { const s = p && p.src; if (!s || s.type !== 'wikipedia' || !p.description) return null; return { same: !!s.dh && textHash(p.description) === s.dh, url: /^https:\/\/[a-z-]+\.(m\.)?wikipedia\.org\//.test(s.url || '') ? s.url : '' }; }
+function wikiTextCreditHTML(p) { const w = wikiTextOf(p); if (!w) return ''; const A = PROVIDERS.wikimedia.attr, e = escH, said = w.same ? A.from : A.after;
+  return `<small class="wk-cr">${w.url ? `<a href="${e(w.url)}" target="_blank" rel="noopener">${e(said)}</a>` : e(said)}${SEP}<a href="${e(A.textU)}" target="_blank" rel="noopener">${e(A.text)}</a></small>`; }
+function wikiTextCreditText(p) { const w = wikiTextOf(p); if (!w) return ''; const A = PROVIDERS.wikimedia.attr; return `${w.same ? A.from : A.after}${SEP}${A.text}`; }

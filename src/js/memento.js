@@ -22,7 +22,6 @@ ctlActs('hlExtra', ['clAlbum']);
 // ---- the data behind every memento ----
 const HOME = { lat: 32.0, lng: 34.87, name: 'ישראל' };
 function kmBetween(a, b) { return distanceKm(a, b); }
-function flagOf(cur) { const c = cur && cur.code; if (!c || c === 'EUR') return ''; return flagOfCountry(c.slice(0, 2)); } // 5.12.0: no 🇪🇺 - the euro is not a country
 function mementoData(id) {
   const M = tripMemoryData(id); if (!M) return null; const t = M.t, snap = M.snap || {}, dmeta = d => (snap.dests && snap.dests[d]) || (DESTS[d] && { ...DESTS[d].meta, idBase: DESTS[d].idBase }) || {};
   // stops: a stop per lodging (in order), or a stop per destination segment when lodging has no point

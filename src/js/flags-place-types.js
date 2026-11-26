@@ -81,3 +81,4 @@ const BASE_TYPES = {
 };
 const HEADING_FONTS = ['Frank Ruhl Libre', 'Rubik', 'Secular One', 'Suez One', 'Assistant'];
 const NO_DEST = { id: '', idBase: 0, builtin: true, meta: { name: '', description: '', center: [31.78, 35.22], timeZone: 'Asia/Jerusalem', currency: { code: 'EUR', name: 'אירו' }, theme: { primary: '#1C2B33', accent: '#C08A2E', headingFont: 'Rubik' }, layers: [], regions: [] }, places: [], info: '' };
+function flagOf(cur) { const c = cur && cur.code; if (!c || c === 'EUR') return ''; return flagOfCountry(c.slice(0, 2)); } // 5.12.0: no 🇪🇺 - the euro is not a country

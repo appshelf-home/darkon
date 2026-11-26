@@ -1,4 +1,5 @@
 // ================= 11.9.0: GOOGLE TIMELINE - import at the end of a trip (task timeline-import; decisions 2026-11-07, Q1-Q4 and addendum) =================
+// diet-groups (11.62.0): tlOf, tlCancelled, the before-trip row and the late line are in js/ratings.js (main: the trips screen and the general screen draw them)
 // Google keeps Timeline on the phone since 2024 and exports it to a file (Android: Location → Timeline → Export; iPhone: Google Maps →
 // Personal content → Export Timeline data). The file is read here, on the phone, and forgotten at once (Q4): only the trip's days are
 // read; what is kept, with the trip (registry row "timeline", td.tl, the trip's "visits" part - a friend's trip file leaves it out):
@@ -142,7 +143,6 @@ function tlPrivate(F, inTrip) {
   return ll => homes.some(h => distanceKm(h, ll) <= TL_PRIV_KM) || freq(ll);
 }
 function tlDates(t) { return dayList(t.start, t.end).map(x => x.date || x); }
-function tlOf(id) { return (STATE.tripData[id] || {}).tl || null; }
 function tlKm(id) { const tl = tlOf(id); return tl ? Math.round(Object.values(tl.days || {}).reduce((s, x) => s + (x.km || 0), 0) * 10) / 10 : 0; }
 // ride-km (Q1): the rides' km from the Timeline, by kind - only the days imported with kinds (s); { by: { kind: km }, days: Set }
 // ride-no-home (Q5): an import from ride-no-home on (tl.rh) left the way from home and back out of r already (tlHomeMoves); a day imported
@@ -318,8 +318,6 @@ function tlDoorsHTML(id) { const t = STATE.trips[id];
     <div class="brow export-actions"><button type="button" class="btn-nav" data-act="tl.dates" data-v="${escH(id)}">${msi('edit_calendar', { size: 18 })} בחירת התאריכים</button></div>`;
   return `<div class="brow export-actions">${tlDoorHTML(id, true)}<button type="button" class="link-btn" data-act="tl.how">איך מייצאים</button></div>
     <p class="sh-hint">${msi('lock', { size: 16, cls: 'msi-in' })} ${tipText('tl.privacy')}</p>`; }
-// B1: a cancelled trip never offers the Timeline import (the memory ⋮ row, the late line, the before-trip reminder)
-function tlCancelled(t) { return !!(t && t.archived && t.archived.reason === 'cancelled'); }
 function openTlImport(id, redraw) { if (tlCancelled(STATE.trips[id])) return; layerNote(openTlImport, arguments); const sheet = document.getElementById('sheet'), had = !!tlOf(id);
   sheet.innerHTML = `${fmHead(`${msi('timeline', { size: 20 })} ${had ? 'ייבוא מחדש מציר הזמן' : 'ייבוא מציר הזמן של גוגל'}`)}
     <p class="sh-p">${had ? 'הקובץ קורא שוב את ימי הטיול: המסלול, השעות והק״מ מתעדכנים. מקומות שכבר סימנתם "' + TX.visited + '" או "לא הגענו" לא משתנים.' : 'אם ציר הזמן היה דלוק בטיול, הקובץ ממלא את "איפה ' + TX.visited + '", מציע מקומות שלא היו ברשימה ומצייר את המסלול האמיתי של כל יום.'}</p>
@@ -385,13 +383,4 @@ function openTlHow(kind, redraw) { layerNote(openTlHow, arguments); const sheet 
 act('tl.os', c => { TL_OS = c.v; const on = !!document.querySelector('#sheet [data-act="tl.isOn"]'); openTlHow(on ? 'on' : 'export', true); return 'quiet'; });
 act('tl.isOn', () => { const t = activeTripObj(); if (!t.id) return; const td = tdOf(t.id); td.tlOn = 1; tdSave(t.id); closeSheet(); showUndoToast('מעולה. ציר הזמן ימלא את סגירת הטיול'); });
 act('tl.never', () => { closeSheet(); hintMark('tl.never'); showToast('לא נזכיר. אפשר להחזיר בהגדרות'); return 'redraw'; }); // a device hint: no data changed, so the draw is asked for
-// the "לקראת הטיול" row: until "כבר דלוק" (this trip) or "לא מעניין אותי" (this phone; the settings switch brings it back)
-function tlRemindRowHTML(t, ic) { if (!t || !t.id || tlCancelled(t) || hintSeen('tl.never') || (tdOf(t.id) || {}).tlOn) return '';
-  return `<button type="button" class="tc-row tc-btn t-wrap" id="tcTl" data-act="tl.remind">${ic('timeline')}<span><b>להדליק את ציר הזמן של גוגל?</b><small>כדי שסגירת הטיול תהיה קלה ומדויקת ›</small></span></button>`; }
 act('tl.remind', () => openTlHow('on'));
-// the welcome-back card's quiet line (addendum; C7, decisions 2026-11-13): Google deletes each day on its own after about three months,
-// the first days first - so from the day the trip's first day is 70 days old until its last day is 90 days old, until imported
-// (a long trip is warned in time; no trip is warned after everything is gone)
-const TL_LATE = { first: 70, last: 90 };
-function tlLateLineHTML(t) { if (!t || !t.start || !t.end || tlOf(t.id) || tlCancelled(t)) return ''; const now = todayStr();
-  return daysBetween(t.start, now) >= TL_LATE.first && daysBetween(t.end, now) <= TL_LATE.last ? `<p class="wb-late">${msi('timeline', { size: 16, cls: 'msi-in' })} ${tipText('tl.late')}</p>` : ''; }

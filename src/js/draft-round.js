@@ -4,17 +4,6 @@
 // what I removed stays removed (sent as draftRemoved), my fixes stay (a field Claude changed anyway is marked
 // "📝 ה-AI הציע אחרת"), my additions keep name, layer and point and only get empty fields filled. Notes 💬 can be written
 // on anything in the draft (by target id, so anything added later gets notes for free) and Claude answers each one.
-// every file the app sends for Claude carries a short English note at its top (ignored on import) - standard 4.27.0
-// 10 (ה5, ה6, ה9): the line is built from the goals table; the file also carries kitVersion, the instructions version it needs
-function claudeHeader(goal, kind) { const g = goal && kitGoal(goal);
-  return `A ${kind} file of the Hebrew trip app "מחתימים דרכון" (Darkon), for instructions ${KIT.version} (kitVersion). ${g ? g.header + ' ' : 'To build, complete or update it with an AI assistant: '}Use the skill "darkon"; without it, ask the user to paste the instructions from the window they sent this file from (📋 העתקת ההוראות).`; }
-function withClaude(obj, goal, kind) { const out = { _claude: claudeHeader(goal, kind || obj.kind) };
-  Object.keys(obj).forEach(k => { if (k === 'kitVersion') return; out[k] = obj[k]; if (k === 'appVersion') out.kitVersion = KIT.version; }); if (!out.kitVersion) out.kitVersion = KIT.version; return out; } // 10.8.0: always this app's instructions version (a file that came with an older one kept it)
-function itemTarget(x) { return x.scope === 'dest' ? 'place:' + x.key : x.scope === 'trip' ? 'trip-place:' + x.p.id : x.key; }
-function targetItemKey(t) { t = String(t || ''); if (t.startsWith('place:')) return t.slice(6); if (t.startsWith('trip-place:')) return 'trip:' + t.slice(11); if (t.startsWith('add:')) return t; return null; }
-function dNotes(D) { return (D && D.notes) || {}; }
-function noteOf(D, t) { return dNotes(D)[t] || null; }
-function openNotes(D) { return Object.entries(dNotes(D)).filter(([, n]) => n.state === 'open'); }
 function noteBtnHTML(target, label, text) {
   const n = noteOf(DRAFT, target), st = n ? n.state : '';
   return `<button type="button" class="note-btn${text ? ' note-btn-text' : ''}" data-act="note.open" data-v="${escH(target)}" data-nlabel="${escH(label)}" data-st="${st}" title="הערה ל-${AI}" aria-label="הערה ל-${AI}">${msi('chat', { size: 18 })}${text ? ' ' + text : ''}</button>`; // 10.15.0 (F37): the line icon
@@ -47,20 +36,6 @@ act('noteWin.save', c => { const F = fmOf(c.el); if (!F || !DRAFT) return; const
 act('noteWin.del', c => { const F = fmOf(c.el); if (!F || !DRAFT) return; delete DRAFT.notes[F.opts.target]; saveDraft(); closeSheet(); showUndoToast('💬 ההערה נמחקה'); });
 act('noteWin.done', c => { const F = fmOf(c.el); if (!F || !DRAFT) return; const n = DRAFT.notes[F.opts.target]; DRAFT.notes[F.opts.target] = { ...n, state: 'closed' }; saveDraft(); closeSheet(); showUndoToast('✓ ההערה נסגרה'); });
 act('noteWin.again', c => { const F = fmOf(c.el); if (!F || !DRAFT) return; const n = DRAFT.notes[F.opts.target]; DRAFT.notes[F.opts.target] = { ...n, state: 'open', sentIn: 0, prevReply: n.reply }; saveDraft(); closeSheet(); showUndoToast('ההערה תישלח שוב בסבב הבא'); });
-// what else is in the draft besides places: layers, travels, lodging, organized schedule, info sections - each gets 💬
-function draftMoreRows(D) {
-  const rows = [], d = D.data;
-  draftNewDests(D).forEach(dp => { const nm = (dp.meta || {}).name || dp.id;
-    ((dp.meta || {}).layers || []).forEach(l => rows.push({ group: '🎨 שכבות', t: `layer:${dp.id}:${l.id}`, label: `${l.name}${draftNewDests(D).length > 1 ? SEP + nm : ''}` }));
-    /* 10.15.0: a file's section head (with or without data-icon); 11.8.1: its leading words, read by parsing */ htmlFrag(dp.info || '').querySelectorAll('.accordion-header').forEach(h => { let title = ''; for (const n of h.childNodes) { if (n.nodeType !== 3) break; title += n.nodeValue; } title = title.trim(); rows.push({ group: 'ℹ️ מידע כללי', t: `info:${dp.id}:${title}`, label: `${title}${draftNewDests(D).length > 1 ? SEP + nm : ''}` }); }); });
-  if (d.kind === 'trip') { const t = d.trip;
-    rows.push({ group: '🧳 הטיול', t: 'trip', label: `${t.name || 'הטיול'}${SEP}${tmFmt('range', [t.start, t.end], { year: true })}` });
-    (t.travels || []).forEach(x => rows.push({ group: '✈️ נסיעות', t: `travel:${x.id}`, label: `${(TRAVEL_MODES[x.mode] || TRAVEL_MODES.flight)[1]} ${x.from || ''} ← ${x.to || ''}${SEP}${tmFmt('date', x.date)}${x.number ? SEP + x.number : ''}` }));
-    (t.lodging || []).forEach(x => rows.push({ group: '🏨 לינות', t: `lodging:${x.id}`, label: `${x.name || ''}${SEP}${tmFmt('range', [x.checkIn, x.checkOut], { year: true })}` }));
-    (t.schedule || []).slice().sort((a, b) => String(a.date).localeCompare(String(b.date))).forEach(x => rows.push({ group: SY.group + ' ' + TX.group, t: `schedule:${x.id}`, label: `${tmFmt('date', x.date)}${x.start ? ' ' + x.start : ''}${SEP}${x.title || ''}` }));
-  }
-  return rows;
-}
 function draftMoreHTML(D) {
   let rows = draftMoreRows(D); if (!rows.length) return '';
   const total = rows.length, withNote = rows.filter(r => noteOf(D, r.t)).length;
@@ -81,15 +56,6 @@ function draftRoundHTML(D) {
   return h;
 }
 // filter chips for the list: changed in the round, has a note
-function draftRoundCounts(D, all) { // 4.27.0: ✳ changed in the round, 💬 with a note - switches in the filter window (5.14.0)
-  return { ch: all.filter(x => (D.changed || {})[x.key] || (D.suggest || {})[x.key] || (D.byClaude || {})[x.key]).length,
-    nt: all.filter(x => noteOf(D, itemTarget(x))).length + draftMoreRows(D).filter(r => noteOf(D, r.t)).length };
-}
-function draftRoundFilter(D, list) {
-  if (FILTER.draft.changed) list = list.filter(x => (D.changed || {})[x.key] || (D.suggest || {})[x.key] || (D.byClaude || {})[x.key]);
-  if (FILTER.draft.notes) list = list.filter(x => noteOf(D, itemTarget(x)));
-  return list;
-}
 // markers of one draft place after a round
 function roundMarksHTML(D, x) {
   const k = x.key, out = [];

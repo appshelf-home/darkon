@@ -1,6 +1,7 @@
 // מחתימים דרכון · service worker · 4.3.3 · 7.1.0: TILE_HOSTS is written by build.py from the registry (the screen tiles' providers)
 // Shell: the page opens from the saved copy (cache-first) and the copy is refreshed in the background - 11.29.0 (task launch-fast; decisions
 // 2026-11-19 · The launch screen, Q4): an opening never waits for the network; the first opening (nothing saved) goes to the network. Libraries and fonts: cache-first.
+// The groups loaded on demand (diet-mechanism): saved with the page in their own cache, each file fetched once (its name holds its hash).
 // Map tiles: cache-first, capped by size - storage (decisions 2026-11-23 · Storage on the phone, Q2-Q3): kept only at a known size (fetched with CORS,
 // never an opaque response, which Chrome counts as several MB), 200 MB at most, the least recently used going first past it. Shared files (share_target POST) go to the share cache, then the app opens with ?shared=files.
 // A new version installs in the background and waits; the page asks it for its version ('version' on a MessageChannel port): the same
@@ -18,14 +19,22 @@ const SHELL_FILES = ['./', './index.html', './manifest.json', './icon-192.png', 
 const PAGES = { '/terms': './terms.html', '/terms.html': './terms.html', '/licenses.txt': './licenses.txt' }; // 11.39.0: pages of the site outside the app - a navigation to one gets that page, not the app (task terms-inside: licenses.txt too - opened inside the app it is a navigation of its frame)
 const LIB_HOSTS = ['cdnjs.cloudflare.com']; // legal-credits-2 (S9): no jsDelivr - the route pictures' borders are a file of the site (LIB_FILES) // legal-server (11.41.0): the fonts come from the site (FONT_FILES), not from Google Fonts
 const LIB_KEEP = []; // written by build.py: the page's library addresses (LIB_HOSTS), the site's font files and the 3D map's engine (maplibre/) - the library cache keeps only these at activate (arch-guard item 4: an old Leaflet does not stay forever); empty - nothing pruned
+const GROUP_FILES = []; // written by build.py (diet-mechanism; decisions 2026-11-23 · A diet for the main script, Q5): the files of the groups loaded on demand (g-<group>.<hash>.js) - saved with the page at install; empty in the source
+const GROUPS = 'darkon-groups'; // their cache: a file's name carries its content's hash, so an update fetches only a group that changed and activate drops the ones no longer named
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(SHELL).then(c => c.addAll(SHELL_FILES))); // 11.29.1: a failure fails the install - never a worker with no saved page
+  e.waitUntil(Promise.all([caches.open(SHELL).then(c => c.addAll(SHELL_FILES)), // 11.29.1: a failure fails the install - never a worker with no saved page
+    caches.open(GROUPS).then(async c => { const have = new Set((await c.keys()).map(r => r.url)); // diet-mechanism (Q5): only the groups this cache lacks; a failure fails the install too
+      await c.addAll(GROUP_FILES.filter(f => !have.has(new URL(f, self.registration.scope).href))); })]));
 });
 self.addEventListener('activate', e => {
   e.waitUntil((async () => {
     const keys = await caches.keys(), mine = await (await caches.open(SHELL)).match('./index.html');
     if (mine) await Promise.all(keys.filter(k => k.startsWith('darkon-shell-') && k !== SHELL).map(k => caches.delete(k)));
+    if (mine && keys.includes(GROUPS)) try { // diet-mechanism (Q5): a group file this version no longer names goes
+      const keep = new Set(GROUP_FILES.map(f => new URL(f, self.registration.scope).href)), c = await caches.open(GROUPS);
+      await Promise.all((await c.keys()).filter(r => !keep.has(r.url)).map(r => c.delete(r)));
+    } catch (err) {}
     if (LIB_KEEP.length && keys.includes(LIBS)) try { // the library cache: what this version's page no longer asks for goes
       const keep = new Set(LIB_KEEP.map(u => new URL(u, self.registration.scope).href)), c = await caches.open(LIBS);
       await Promise.all((await c.keys()).filter(r => !keep.has(r.url.split(/[?#]/)[0])).map(r => c.delete(r)));

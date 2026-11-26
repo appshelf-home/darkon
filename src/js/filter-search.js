@@ -124,7 +124,7 @@ async function setSort(v) {
 }
 // a change: the screen behind follows at once, and the filter window (when it is open) shows the new state at the same scroll
 function filterChanged(fam, keepTop) {
-  if (fam === 'draft') renderDraftScreen(); else if (activeTab === 'map') rerenderKeepingMap(); else { const y = window.scrollY; render(); appScroll(keepTop ? 0 : Math.min(y, document.documentElement.scrollHeight)); }
+  if (fam === 'draft') groupScreen('ai', 'renderDraftScreen'); else if (activeTab === 'map') rerenderKeepingMap(); else { const y = window.scrollY; render(); appScroll(keepTop ? 0 : Math.min(y, document.documentElement.scrollHeight)); }
   const t = layerTop(); if (t && t.key === 'openFilterSheet' && _sheetOpen && t.draw) { const sh = document.getElementById('sheet'), y = sh.scrollTop; t.draw(); sh.scrollTop = y; }
   fsSyncAll();
 }

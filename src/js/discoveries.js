@@ -1,29 +1,14 @@
 // ================= 📚 discoveries - what's around here (4.25.0) =================
+// diet-groups (11.62.0): DISC, DISC_MAPS, the switch, discAttach, discNorm / discExisting, the Wikipedia link, alongCan / alongBtnHTML and the draft's layer choice are in js/disc-door.js (main)
 // What is around: Wikipedia articles with a location (📚, Hebrew when there is one, English otherwise) in a wide radius,
 // and small sights from OpenStreetMap (🏛️ statues, memorials, viewpoints, fountains, historic buildings) in a small one.
 // Businesses only through a Google Maps link. A switch per device that stays on; data loads only on "🔄 חיפוש באזור הזה".
 // Everything found is kept on the device (Cache API) for use without a network; images only for discoveries opened,
 // capped at ~20MB. What is already one of my places gets no pin of its own: "✓ כבר ביעד" in the list and a Wikipedia
 // link in its details. Adding opens the place editor prefilled; the layer is chosen only when it is clear.
-const DISC = { items: {}, searches: [], imgs: [], loaded: false };
-const DISC_CACHE = REG_BY.disc.where.cache[0], DISC_IMG_CACHE = REG_BY.disc.where.cache[1], DISC_DOC = 'https://darkon.local/disc-v1.json', DISC_IMG_MAX = 20e6, DISC_ITEMS_MAX = 6000;
-const DISC_MAPS = {}; // containerId -> { map, ctx, markers, last: {lat,lng,r}, busy }
-const DISC_LAST = {}; // 10.11.0: containerId -> the area last searched there, kept when its map is disposed (the next map of that container starts from it)
 const OSM_KIND = { artwork: 'יצירת אמנות', viewpoint: 'נקודת תצפית', attraction: 'אטרקציה', memorial: 'אנדרטה או לוח זיכרון', monument: 'אנדרטה', ruins: 'חורבות',
   castle: 'טירה', building: 'מבנה היסטורי', archaeological_site: 'אתר ארכאולוגי', wayside_shrine: 'מקדש קטן', wayside_cross: 'צלב דרכים', city_gate: 'שער עיר', fort: 'מבצר', tomb: 'קבר',
   fountain: 'מזרקה', tower: 'מגדל', lighthouse: 'מגדלור', church: 'כנסייה', manor: 'אחוזה', palace: 'ארמון' };
-function discOn() { return !!DEV.disc; }
-function setDiscOn(v) { devSet({ disc: !!v }); }
-async function discLoad() {
-  if (DISC.loaded) return;
-  try { const c = await regCache(DISC_CACHE), r = await c.match(DISC_DOC); if (r) { const j = await r.json(); DISC.items = j.items || {}; DISC.searches = j.searches || []; DISC.imgs = j.imgs || []; } } catch (e) {}
-  DISC.loaded = true; Object.keys(DISC_MAPS).forEach(discDraw);
-}
-let _discSaveT = 0;
-function discSave() { clearTimeout(_discSaveT); _discSaveT = setTimeout(async () => {
-  const ks = Object.keys(DISC.items); if (ks.length > DISC_ITEMS_MAX) ks.sort((a, b) => DISC.items[a].at - DISC.items[b].at).slice(0, ks.length - DISC_ITEMS_MAX).forEach(k => delete DISC.items[k]);
-  DISC.searches = DISC.searches.slice(-400);
-  try { const c = await regCache(DISC_CACHE); await regCachePut(c, DISC_DOC, new Response(JSON.stringify({ items: DISC.items, searches: DISC.searches, imgs: DISC.imgs }), { headers: { 'Content-Type': 'application/json' } })); } catch (e) {} }, 400); }
 async function discKeepImg(url) { // only for a discovery that was opened; the oldest go first above the cap
   if (!url || !svcOnline() || DISC.imgs.some(x => x.u === url)) return;
   try { const rr = await svcAsk('pointImage', { key: url, prio: 'screen', build: () => ({ url, init: { mode: 'cors' }, as: 'resp' }), parse: d => d }); if (rr.kind !== 'ok') return; // 7.1.0: through the client (ויקימדיה)
@@ -32,12 +17,6 @@ async function discKeepImg(url) { // only for a discovery that was opened; the o
     while (tot > DISC_IMG_MAX && DISC.imgs.length) { const o = DISC.imgs.shift(); tot -= o.s; c.delete(o.u); }
     discSave(); } catch (e) {}
 }
-function discNorm(t) { return String(t || '').toLowerCase().replace(/\s*\(.*$/, '').replace(/[״"'׳,.\-–]/g, ' ').replace(/\s+/g, ' ').trim(); }
-function discExisting(it) { // one of my places (any destination of this trip, or a trip place) is the same thing
-  const n = discNorm(it.title);
-  return POINTS.find(p => { if (p.src && p.src.url && it.url && p.src.url === it.url) return true; if (p.src && p.src.key === it.k) return true;
-    const c = routeCoordOf(p); if (!c || distanceKm(c, it) > 0.15) return false; const m = discNorm(p.name); return m.length > 2 && n.length > 2 && (m.includes(n) || n.includes(m)); }) || null;
-}
 // 4.26.0: in the draft, a discovery that is already one of the draft's places (or one I added to it)
 function discInDraft(it) {
   if (!DRAFT) return null; const n = discNorm(it.title);
@@ -45,7 +24,6 @@ function discInDraft(it) {
     const c = draftCoord(p); if (!c || distanceKm(c, it) > 0.15) return false; const m = discNorm(p.name); return m.length > 2 && n.length > 2 && (m.includes(n) || n.includes(m)); }) || null;
 }
 function discHave(it, st) { return discExisting(it) || (st && st.ctx === 'draft' ? discInDraft(it) : null); }
-function discWikiUrlFor(p) { if (p.src && p.src.url) return p.src.url; const it = Object.values(DISC.items).find(x => x.url && discExisting(x) === p); return it ? it.url : ''; }
 async function discWiki(c, r, alive) { // alive (limits-and-safety): "along the drive" stopped waiting - its requests not sent yet are dropped
   const q = (lang, extra) => `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=geosearch&ggscoord=${c.lat.toFixed(5)}%7C${c.lng.toFixed(5)}&ggsradius=${r}&ggslimit=50&prop=coordinates%7Cpageimages%7Cdescription${extra}&piprop=thumbnail%7Cname&pithumbsize=200&pilimit=50&pilicense=free&colimit=50`; // legal-credits (C5): free pictures only, said explicitly; the file's name for its credit
   const get = async u => { const r = await svcAsk('discWiki', { alive, build: () => ({ url: u }), parse: j => { if (!j || typeof j !== 'object' || j.error) throw new Error('answer'); return Object.values((j.query && j.query.pages) || {}); } }); return r.kind === 'ok' ? r.value : null; }; // 7.1.0: through the client
@@ -94,17 +72,6 @@ function discInView(hostId) { if (DISC_MAPS[hostId] && DISC_MAPS[hostId].along) 
   return Object.values(DISC.items).filter(x => !b || !b.contains || b.contains([x.lat, x.lng])); }
 function discCovered(hostId) { const st = DISC_MAPS[hostId]; if (!st) return false; const ce = st.map.getCenter(), c = { lat: ce.lat, lng: ce.lng };
   return DISC.searches.some(s => distanceKm(c, s) * 1000 < s.r * 0.6); }
-function discAttach(hostId, map, ctx, hostEl) {
-  const host = hostEl || document.getElementById(hostId); if (!host || !map) return;
-  const old = DISC_MAPS[hostId]; if (old && old.map === map) { alongGo(hostId); return; }
-  DISC_MAPS[hostId] = { map, ctx, markers: [], last: old ? old.last : DISC_LAST[hostId], busy: !!(old && old.along && old.along.busy), host, along: old ? old.along : null }; // along-drive: a map drawn again keeps its drive's search
-  alongGo(hostId);
-  let btn = host.querySelector(':scope > .disc-btn');
-  if (!btn) { btn = document.createElement('button'); btn.type = 'button'; btn.className = 'disc-btn'; btn.innerHTML = msi('auto_stories'); btn.title = 'מה יש כאן'; btn.setAttribute('aria-label', 'מה יש כאן'); btn.dataset.act = 'disc.toggle'; host.appendChild(btn); mapCtl(btn); }
-  btn.setAttribute('aria-pressed', String(discOn()));
-  map.on('moveend', () => { if (DISC_MAPS[hostId] && DISC_MAPS[hostId].map === map) discDraw(hostId); });
-  if (!DISC.loaded) discLoad(); else discDraw(hostId);
-}
 const discHostOf = el => { const h = el.closest('.disc-bar, .disc-btn').parentElement; return Object.keys(DISC_MAPS).find(k => DISC_MAPS[k].host === h); };
 act('disc.toggle', c => { const hostId = discHostOf(c.el), on = !discOn(); if (on && c.el.classList.contains('disc-btn') && discMenu(c.el, hostId)) return 'quiet'; // walk-time + along-drive: the 📚 menu
   Object.values(DISC_MAPS).forEach(x => { x.along = null; }); discSet(on);
@@ -271,17 +238,6 @@ function draftAddFromDisc(it) {
   openPlaceEditor({ draftAdd: { name: it.title, manualCoord: { lat: +(+it.lat).toFixed(6), lng: +(+it.lng).toFixed(6) }, coordSource: it.src === 'wiki' ? 'Wikipedia' : 'OpenStreetMap', description: desc, dest: near.id, ty: discType(it),
     src: { type: it.src === 'wiki' ? 'wikipedia' : 'osm', key: it.k, url: it.url || it.osmUrl || '', dh: textHash(desc) } } });
 }
-function draftClearLayer(D, destId, ty) {
-  const ls = draftDestLayers(D, destId), same = ty ? ls.filter(l => l.type === ty) : [];
-  if (same.length === 1) return { clear: same[0], maybe: [] };
-  const first = t => ls.filter(l => l.type === t).slice(0, 1);
-  return { clear: null, maybe: (same.length ? same : [].concat(first('attractions'), first('nature'), first('food'))).slice(0, 3) };
-}
-function removeDraftAdd(key) {
-  const D = DRAFT; if (!D) return; const a = draftAdds(D).find(x => x.key === key); if (!a) return;
-  D.add = D.add.filter(x => x.key !== key); delete D.off[key]; saveDraft();
-  showUndoToast(SY.del + ' נמחק מהטיוטה: ' + a.name);
-}
 
 
 // ================= 📚 לאורך הדרך - what is along a drive (along-drive; decisions 2026-11-23 · "📚 לאורך הדרך", Q1-Q2) =================
@@ -295,8 +251,6 @@ function removeDraftAdd(key) {
 const ALONG_W = [2, 5, 10], ALONG_STEP = { 2: [4, 7], 5: [7.5, 11], 10: [10, 10] }, ALONG_WORDS = 'מחפשים בקטעי הדרך', ALONG_NET = 'לאורך הדרך צריך רשת';
 const ALONG_GO = { go: null }; // a drive's card asked for its day map (go: { h, id }): the search starts when that map is attached
 function alongKm(t) { const v = t && t.id ? +(tdOf(t.id).alongKm) : 0; return ALONG_W.includes(v) ? v : 5; }
-function alongCan(f) { return !!f && f.mode === 'car' && !f.group && MAP_AVAILABLE && !ARCHIVE_VIEW && !(activeTripObj() || {}).archived && !!travelPts(f, tvCtx()); }
-function alongBtnHTML(f, day, ro) { return ro || !alongCan(f) ? '' : `<button type="button" class="tl-tag along-tag" data-act="along.open" data-v="${escH(f.id + '|' + day)}">${tagIc('auto_stories')}לאורך הדרך${svcOnline() ? '' : SEP + 'צריך רשת'}</button>`; }
 function alongAft(hostId) { const A = DISC_MAPS[hostId] && DISC_MAPS[hostId].along; return A ? { day: A.day, stop: A.id } : null; }
 function alongGo(hostId) { const g = ALONG_GO.go; if (g && g.h === hostId) { ALONG_GO.go = null; setTimeout(() => alongStart(hostId, g.id), 0); } }
 function lineAt(pts, d) { let run = 0; for (let i = 1; i < pts.length; i++) { const a = pts[i - 1], b = pts[i], s = distanceKm({ lat: a[0], lng: a[1] }, { lat: b[0], lng: b[1] });

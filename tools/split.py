@@ -132,7 +132,7 @@ KEYWORDS_BEFORE_REGEX = {'return', 'typeof', 'instanceof', 'in', 'of', 'new', 'd
 DECL = {'function', 'var', 'let', 'const', 'class'}
 
 
-def top_names(text):
+def top_names(text, words=None):
     """The names a script part declares at its top level - `function NAME`, `async function NAME`, `class NAME`, and every name
     of a `var` / `let` / `const` statement (simple names; a destructuring pattern is skipped) - as [(name, line, kind)].
     A small lexer: strings, template literals (with nested ${...}), comments and regex literals are skipped, so a declaration
@@ -185,6 +185,7 @@ def top_names(text):
             j = i
             while j < n and (text[j].isalnum() or text[j] in '_$' or ord(text[j]) > 127): j += 1
             w = text[i:j]
+            if words is not None and (prev != '.' or text[max(0, i - 3):i] == '...') and w not in JS_WORDS and not _is_key(text, j, prev): words.append((w, line))
             if depth == 0 and prev != '.':
                 if decl and decl[1]:
                     if w != 'async' or decl[0] != 'function':
@@ -204,6 +205,71 @@ def top_names(text):
             elif c == ';': decl = None
         elif depth == 1 and c in '([{' and decl and decl[1]: decl[1] = False   # a destructuring pattern - not a simple name
         prev = c; i += 1
+    return out
+
+
+def _is_key(text, j, prev):
+    """an object literal's key - a name after `{` or `,` followed by `:` (not `::`) - names no binding (diet-groups: the services' registry
+    names a service as a key, `discWiki: {…}`, the same word as a function of a group)"""
+    if prev not in ('{', ','): return False
+    k = j
+    while k < len(text) and text[k] in ' \t': k += 1
+    return k < len(text) and text[k] == ':' and text[k + 1:k + 2] != ':'
+
+
+JS_WORDS = {'break', 'case', 'catch', 'class', 'const', 'continue', 'debugger', 'default', 'delete', 'do', 'else', 'export', 'extends',
+            'false', 'finally', 'for', 'function', 'if', 'import', 'in', 'instanceof', 'new', 'null', 'return', 'super', 'switch', 'this',
+            'throw', 'true', 'try', 'typeof', 'var', 'void', 'while', 'with', 'let', 'static', 'yield', 'await', 'async', 'of', 'undefined'}
+
+
+def idents(text):
+    """every identifier the code of a script part names (not a property after `.`; a spread `...x` counts), as [(name, line)] - the
+    same lexer as top_names, so strings, comments and regex literals are skipped and the code inside a template's ${...} is read"""
+    out = []; top_names(text, out); return out
+
+
+def sides(order):
+    """the parts loaded on demand (diet-mechanism, Darkon 11.61.0): when order.json names "groups" ({name: about}), every slot entry says
+    its "side" - "main" (the main script, or the page's one style) or one of the groups; a group's part not moved yet carries
+    "notMoved" (the task that moves it) and is still joined into the main script. -> (errors, {group: [paths moved]}, {main paths})"""
+    groups = order.get('groups')
+    if groups is None: return [], {}, None
+    errs, moved, main = [], {g: [] for g in groups}, set()
+    for slot, es in order.get('slots', {}).items():
+        for e in es:
+            p, sd = e.get('path', '?'), e.get('side')
+            if not sd: errs.append(f'{p}: has no "side" in order.json - "main" or a group ({", ".join(groups)}); a task that adds a part decides where it goes'); continue
+            if sd != 'main' and sd not in groups: errs.append(f'{p}: "side" {sd!r} is neither "main" nor a group of order.json "groups"'); continue
+            if slot != 'script' and sd != 'main': errs.append(f'{p}: a {slot} part loads with the page - its side is "main"'); continue
+            if e.get('notMoved') is not None and (sd == 'main' or not str(e['notMoved']).strip()): errs.append(f'{p}: "notMoved" belongs to a part of a group and names the task that moves it'); continue
+            if sd == 'main' or e.get('notMoved'): main.add(p)
+            else: moved[sd].append(p)
+    return errs, moved, main
+
+
+def group_refs(src, order):
+    """a part in the main script never names a top-level name of a moved group's part: the group is loaded on demand, so a direct call
+    from the main script would find nothing. The main script reaches a group only through the app's loader (an action of the group, a
+    function named as a string). The same holds between groups (Darkon diet-groups): a group's part never names another group's top-level
+    name - the other group may not be in; it reaches it through the loader too (needGroup / viaGroup / groupFn). -> [errors]"""
+    errs, moved, main = sides(order)
+    if errs or main is None: return []
+    owner = {}
+    for g, ps in moved.items():
+        for p in ps:
+            if p.endswith('.js'):
+                for name, ln, kind in top_names(_read(src, p)): owner[name] = (g, p)
+    side_of = {p: g for g, ps in moved.items() for p in ps}
+    out = []
+    for e in order.get('slots', {}).get('script', []):
+        p = e.get('path')
+        if (p not in main and p not in side_of) or not os.path.isfile(os.path.join(src, p)): continue
+        mine, seen = side_of.get(p), set()
+        for name, ln in idents(_read(src, p)):
+            if name in owner and owner[name][0] != mine and (name, ln) not in seen:
+                seen.add((name, ln)); g, gp = owner[name]
+                who = 'the main script' if mine is None else f'the group "{mine}"'
+                out.append(f'{p}:{ln}: names {name} of the group "{g}" ({gp}) - {who} reaches a group only through its loader (needGroup / viaGroup / groupFn, or an action of the group)')
     return out
 
 
@@ -271,6 +337,7 @@ def check(src):
             errs.append(f'{p}: {len(t.encode()):,} bytes, above the ~{LIGHT // 1024} KB light - split it at a natural seam, or mark it "whole" with the reason')
     errs += unknown_props(src, [page_path] + [p for p in paths if p and os.path.isfile(os.path.join(src, p))])
     errs += same_names(src, order, [e.get('path') for e in order.get('slots', {}).get('script', []) if e.get('path') and os.path.isfile(os.path.join(src, e['path']))])
+    errs += sides(order)[0] + group_refs(src, order)  # diet-mechanism: every part's side, and no direct call from the main script into a group
     # orphans: every file is the page, a part, order.json, the generated hashes, or outside the join on purpose ("outside")
     known = set(paths) | {page_path, 'order.json', f'{gdir}/{HASHES}'}
     for root, dirs, names in os.walk(src):

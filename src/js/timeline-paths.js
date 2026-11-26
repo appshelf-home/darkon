@@ -65,3 +65,7 @@ function tlPaths(id) { const tl = tlOf(id); if (!tl) return []; const key = (tl.
   TL_PATH_MEMO[id] = { key, tl, v }; return v; }
 // Q5: a day stored before tl-paths (p, no s) - the re-import line shows while any is left
 function tlOldDays(id) { const tl = tlOf(id); return tl ? Object.values(tl.days || {}).some(x => x && !Array.isArray(x.s) && Array.isArray(x.p) && x.p.length > 1) : false; }
+// the memory: a day's Timeline walk (its walking segments, cleaned as tlPaths reads them)
+function svTlRoute(id, date) { const tl = tlOf(id), x = tl && (tl.days || {})[date]; if (!x) return null;
+  const segs = Array.isArray(x.s) ? x.s.filter(g => g && g.m !== 'r' && Array.isArray(g.p) && g.p.length > 1).map(g => g.p) : Array.isArray(x.p) && x.p.length > 1 ? tlCleanOld(x.p) : [];
+  return segs.length ? { key: 'tl:' + id + '|' + date, name: 'הליכה' + SEP + tmFmt('day', date), segs, via: [] } : null; }

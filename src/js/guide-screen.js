@@ -38,3 +38,5 @@ function renderGuideScreen() {
   guideDraw();
 }
 
+// diet-groups (11.62.0; from chips.js): "עוד במדריך ›" in an ⓘ or a screen's intro opens the guide at that chapter
+act('tip.more', c => { hideChipBubble(); hintGone(); GUIDE_Q = ''; GUIDE_AT = c.v; openMenuScreen('guide'); const ch = document.querySelector(`#main [data-gch="${c.v}"]`); reveal(ch, false, { align: 'start', instant: true }); GUIDE_AT = null; return 'quiet'; });

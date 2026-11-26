@@ -243,23 +243,6 @@ function picWikiGet(id, key) { const m = PIC_ED && PIC_ED.id === id ? (PIC_ED.al
 function picWikiSet(x, v) { regCacheSet('picwiki', picWikiCK(x), v || { none: 1, at: Date.now() }); } // 6.0.0: the cap (600) by last use, in the daily cleanup
 const picCore = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s*\(.*$/, '').replace(/[^\p{L}\p{N} ]+/gu, ' ').replace(/\s+/g, ' ').trim();
 function picNameMatch(title, names) { const t = picCore(title); return names.filter(Boolean).map(picCore).some(n => n.length >= 3 && (t.includes(n) || n.includes(t) || n.split(' ').filter(w => w.length >= 4).some(w => t.split(' ').includes(w)))); }
-// 7.1.0: Wikipedia's API through the client (service "תמונה למקום"): the query's pages; no answer throws, so nothing is kept
-async function wikiPages(lang, q) {
-  const r = await svcAsk('pointImage', { build: () => ({ url: `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&origin=*&${q}` }),
-    parse: j => { if (!j || typeof j !== 'object' || j.error) throw new Error('answer'); return Object.values((j.query || {}).pages || {}); } });
-  if (r.kind !== 'ok') throw new Error('wiki ' + r.kind); return r.value; }
-// legal-credits (C5): free pictures only, said explicitly; the file's name for its facts
-function picWikiApi(lang, params) { return wikiPages(lang, `prop=pageimages&piprop=thumbnail%7Cname&pithumbsize=480&pilicense=free&redirects=1&${params}`); }
-// legal-credits (Q8, C1): a Commons picture's facts, asked with the picture - its author (plain text; legal-credits-2: the licensor's requested attribution when there is one), licence, the licence's address, whether
-// attribution is required, and the file page. A picture whose licence is unknown or not free gets null: it is never used. Throws on no answer.
-async function wikiFileCredit(lang, file) { if (!file) return null;
-  const pg = (await wikiPages(lang, `prop=imageinfo&iiprop=extmetadata&iiextmetadatafilter=Artist%7CAttribution%7CLicenseShortName%7CLicenseUrl%7CAttributionRequired%7CNonFree&titles=${encodeURIComponent('File:' + String(file).replace(/^(File|קובץ):/i, ''))}`))[0];
-  return wikiCreditOf(pg && pg.imageinfo && pg.imageinfo[0] && pg.imageinfo[0].extmetadata, file, lang); }
-// the file page (fp): on the wiki the picture was found on - it shows the Commons file and its licence
-function wikiCreditOf(md, file, lang) { if (!md || md.empty) return null; const v = k => md[k] && md[k].value != null ? String(md[k].value) : '';
-  const lic = htmlText(v('LicenseShortName')).trim(); if (!lic || /non-?free|fair use/i.test(lic) || /^true$/i.test(v('NonFree'))) return null;
-  const a = htmlText(v('Attribution') || v('Artist')).replace(/\s+/g, ' ').trim().slice(0, 80); // legal-credits-2 (C17): the attribution the licensor asks for (Commons' "Attribution" field), when the file has one, in place of the author
-  return { a, lic: lic.slice(0, 40), lu: /^https?:\/\//.test(v('LicenseUrl')) ? v('LicenseUrl') : '', req: !/^false$/i.test(v('AttributionRequired')), fp: `https://${/^[a-z-]{2,12}$/.test(lang || '') ? lang : 'he'}.wikipedia.org/wiki/File:` + encodeURIComponent(String(file).replace(/^(File|קובץ):/i, '').replace(/ /g, '_')) }; }
 // the found picture with its facts, or null when its licence is not known to be free
 async function picWikiWithCredit(found) { if (!found) return null; const cr = await wikiFileCredit(found.l, found.f); return cr ? { ...found, cr } : null; }
 // finds Wikipedia's picture of exactly this place (by its link, its name or a page right next to it with the same name)
@@ -325,7 +308,6 @@ undoAfter(keys => { const ts = new Set();
   keys.forEach(k => { const p = JSON.parse(k); if (p[0] === 'd' && (p.length === 2 || ['pic', 'mementoStyle', 'photoOrder', 'highlights'].includes(p[2]))) ts.add(p[1]);
     if (p[0] === 'm') { const t = photoTripOf(p[1]); if (t) ts.add(t); } });
   ts.forEach(t => { if (MEMO_VIEW[t]) delete MEMO_VIEW[t].style; });
-  if (PIC_FS.open && PIC_FS.key && !MEMO.has(PIC_FS.key)) closePhotoView();
   ts.forEach(t => { if (PIC_ED && PIC_ED.id === t) { picEdDraw(); if (_sheetOpen && _sheetKind === 'picCard' && PIC_ED.card) picCard(PIC_ED.card, true); }
     if (PIC_FS.open && PIC_FS.id === t && !PIC_FS.key) photoViewDraw(); }); });
 function picSt(s) { MEM_ST.img = s || null; memStDraw(); } // 7.1.0: the same one line as the background
