@@ -105,6 +105,7 @@ const hSize = s => Object.values(s).reduce((n, p) => n + (p.v === undefined ? 40
 // closes one row: the slots that changed since the last row; returns the row's id (null when the history can't keep it)
 function hCommit(label, extra) {
   if (H_MUTE || OLD_COPY) return null;
+  if (!(extra && extra.x) && typeof parkedTidyAll === 'function') parkedTidyAll(); // draw-no-write: a change that put a place into a plan day takes it out of the waiting days in its own row (an undo row restores, never tidies)
   const now = H_BASE ? hTake() : null; let s = now ? hDiff(H_BASE, now) : null; if (now) H_BASE = now;
   const id = 'h' + Date.now().toString(36) + (++H_N).toString(36) + Math.random().toString(36).slice(2, 4);
   let text = label;

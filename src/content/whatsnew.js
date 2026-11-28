@@ -71,6 +71,80 @@ const CHANGELOG = [ // 10.14.0 (guide diet Q5): empty until the first version di
   // (the standard: nothing noticeable, no entry) - a user updating from 11.60.0 reads nothing again; the next noticeable line opens one
   // 11.63.0 (two-windows; kind y): the next noticeable line opens a new entry - a stale second window no longer writes back what was
   // deleted or changed in another window (decisions 2026-11-25 · Deleted trips came back: two windows of the app; idea imwwdymj1)
+  // 11.63.1 (t830-steady; kind z) joins it too: the entry moves to it, with no line of its own - a page for people no longer carries the app's
+  // services' state (another trip's addresses waiting for the network, a provider down); nothing the user sees changes
+  // 11.63.2 (friend-page-map; kind z): the entry moves to it with one line - the friends' page's live map draws its tiles again, its map type
+  // switches and its full screen fills the screen (phone round 6, G128-G130)
+  // 11.63.3 (nav-short-page; kind z) joins it too: the entry moves to it, with no line of its own (the task: a fix of a look) - the bottom bar
+  // returns when the page stops scrolling, a credit never breaks inside itself, the picture's numbers count what it shows, the memory map's
+  // filter sits in its title row, "עיון מלא" opens its own trip, the 3D view waits with the one "in progress" bar (phone round 7, G135-G139)
+  // 11.64.0 (prev-recs; kind y): the entry moves to it with one line - "המלצות קודמות", the anonymous summary of others' visits and ratings
+  // on every place, and the share window's box that adds mine (decisions 2026-11-24 · A new trip based on another trip, Q5-Q15)
+  // 11.65.0 (trip-base-plus; kind y): the entry moves to it with one line - "⧉ טיול חדש על בסיסו" copies the schedule, travels, lodging and
+  // the trip's own places, also from a trip file a friend sent (decisions 2026-11-24 · A new trip based on another trip, Q2-Q4, Q14, Q17, Q18)
+  // 11.65.1 (archive-redraw; kind z) joins it too: the entry moves to it, with no line of its own - an archive view ends only by an explicit
+  // action (a redraw of a covered screen never ends it), and two fixes inside 11.64.0's "המלצות קודמות" line (a place I added carries my
+  // contribution; my own marks back through a friend's base not counted as others') - decisions 2026-11-26 · Reviews of steps 1-4, 5 and 6
+  // 11.66.0 (name-lead; kind y): the entry moves to it with one line - a place shows one name per line, the local one for hotels and places
+  // whose Hebrew name is only a transliteration; a setting "שם המקומות" and ⇄ in a place's window (decisions 2026-11-26 · Which of a
+  // place's two names leads, Q1-Q10). Item 9's banners' outline is a look fix, with no line
+  // 11.67.0 (big-dest-search; kind y): the entry moves to it with one line - places in a large destination are found near where the
+  // travellers are that day, and places not found before are looked up once more (decisions 2026-11-26 · Finding places in a large
+  // destination, Q2-Q4); item 8 (Google's search by the name on the sign) is a small fix inside 11.66.0's line, with no line of its own
+  // 11.67.1 (ai-names; kind z): the entry moves to it with one line - the AI doors' clearer names and an example per door (decisions
+  // 2026-11-26 · Clear names for the AI doors, Q2-Q3); item 4a's WhatsApp line in the share window has no line of its own (that decision, Q1)
+  // 11.67.2 (diet-room; kind z) joins it too: the entry moves to it, with no line of its own - parts not needed at an ordinary opening moved
+  // into groups loaded on demand (four new: proposal, discoveries, pages, editors, door), saved on the phone with the app; nothing the user
+  // sees changes (decisions 2026-11-26 · Review of `big-dest-search`, Q1); item 5 reads the AI doors' words from the dictionary, unchanged
+  // 11.68.0 (file-over-existing; kind y): the entry moves to it with one line - a full file of a trip or destination already on the phone
+  // updates it and keeps what was done on the phone; "לתקן עם AI" beside the count of places not found (decisions 2026-11-26 · An updated
+  // trip file for a trip already on the phone, Q2-Q5); item 6 (the demo files brought to the current kit) is unseen
+  // 11.69.0 (destination-view; kind y): the entry moves to it with three lines - a destination's places without opening a trip; back leaves a
+  // memory's full view; deleting a place says which trips use it (decisions 2026-11-26 · A destination's places without opening a trip, Q1-Q6)
+  // 11.70.0 (trip-cards; kind y): the entry moves to it with one line - every trip has the same card, a tap opens it, ✏️ 📤 ⋯ in the same
+  // place, "מחכה לסגירה" leads to the closing (decisions 2026-11-26 · The trips screen's cards behave differently in every state, Q2-Q8)
+  // 11.71.0 (ai-fix-mine; kind y): the entry moves to it with one line - what an AI finds wrong in what you set comes as a suggestion you
+  // decide on, instead of being dropped (decisions 2026-11-26 · An AI's correction of what the user set reaches the user, Q2-Q5)
+  // 11.71.1 (step-bar; kind z): the entry moves to it with two lines - in closing a trip "הבא" and "הקודם" always at the screen's bottom
+  // (decisions 2026-11-26 · The next step always in reach, Q1-Q3); an open day's "רשימה | מפה" across the row and "גובה" a row of its own
+  // under it (decisions 2026-11-26 · A day's controls in the plan, Q1); item 6 (the Santiago day's numbers) changed nothing - unseen
+  // 11.71.2 (tl-zigzag; kind z): the entry moves to it with one line - the Timeline path no longer zig-zags between two places, a re-import
+  // of the file needed (decisions 2026-11-26 · The Timeline path's remaining jumps, Q1)
+  // 11.72.0 (passport-look; y): one line - the passport book's new look (decisions 2026-11-26 · "הדרכון שלי" feels like a real booklet)
+  // 11.72.1 (draw-no-write; kind z): the entry moves to it with one line - a range of numbers or times reads left to right ("3–5 דקות"), and
+  // the windows' short motion is back on the site (decisions 2026-11-27 · Review of night chain steps 1-4 after 11.67.1, Q8, Q10); the draw
+  // that wrote (Q3) and the suites are unseen
+  // 11.73.0 (map-credit-line; kind y): the entry moves to it with one line - the map's sources in one thin line at its bottom, a tap shows
+  // them all (decisions 2026-11-27 · The map's credits take over the map, Q1-Q5)
+  // 11.74.0 (page-look; kind y): the entry moves to it with one line - the pages sent look like the app, and their live map opens from a
+  // mail's file (decisions 2026-11-27 · The pages for people in the app's current look, Q1-Q3; G128 reopened); the passport's smoother paper (G146) is unseen as a line
+  // 11.74.1 (ai-origin; kind z): the entry moves to it with no line - one rule for a file from an AI (decisions 2026-11-27 · Review of
+  // night chain steps 1-4 after 11.67.1, Q6) and no blue tap background (G145) bring back what was meant, unseen as a line
+  // 11.74.2 (dup-both-names; z): one line - a place known by its other name too (decisions 2026-11-27 · Duplicates by either of a place's names), and G147's walk
+  // 11.74.3 (chain-followups; z): the entry moves to it with no line - a name join only when near, the kit's check on the app's rule
+  { version: '11.74.3', date: '28.11.2026', items: [
+    'דף ההמלצות לחברים וסיכום הטיול: המפה החיה מוצגת שוב, אפשר להחליף בה סוג מפה ולפתוח אותה במסך מלא.',
+    'המלצות קודמות: כל מקום מראה כמה מטיילים אחרים היו בו ואיך דירגו - בלי שמות. כששולחים לחבר טיול שנסגר, אפשר לצרף גם את ההמלצות שלכם.',
+    'טיול חדש על בסיס טיול אחר מעתיק עכשיו גם את הנסיעות, הלינות והמקומות של הטיול, וגם מקובץ טיול שחבר שלח: "לבנות ממנו טיול חדש שלי" בטיוטה. בלי הזיכרונות, הדירוגים וההזמנות שלו.',
+    'שם המקום כמו על השלט: מלונות ומקומות ששמם בעברית הוא רק תעתיק מוצגים בשם המקומי, וכל השאר בעברית - שם אחד בכל שורה. ב-⋮ ← הגדרות ← "שם המקומות" אפשר לבחור תמיד עברית או תמיד השם המקומי, ובחלון של מקום נגיעה בשם השני מחליפה ביניהם.',
+    'יעד גדול: מקומות נמצאים עכשיו ליד המקום שבו אתם באותו יום - המלון של הלילה, האזור, ואם צריך כל היעד או כל המדינה. מקומות שלא נמצאו קודם מחפשים שוב פעם אחת, והודעה אומרת כמה נמצאו.',
+    'שמות ברורים לעבודה עם \u2068AI\u2069: "שיפור הטיוטה" לפני האישור, "עדכון הטיול" או "עדכון היעד" אחריו, ובכל חלון דוגמה למה לכתוב.',
+    'קובץ של טיול או יעד שכבר בטלפון מעדכן אותו: התוכן החדש נכנס, ומה שעשיתם בטלפון נשאר ("להחליף לגמרי" - רק אם בוחרים). ליד מקומות שלא נמצאו - "לתקן עם \u2068AI\u2069".',
+    'המקומות של יעד בלי לפתוח טיול: במסך הטיולים, נגיעה ביעד תחת "יעדים בטלפון" פותחת את המקומות, המפה והמידע הכללי שלו. עורכים ומוסיפים כמו בטיול.',
+    'חזור בעיון מלא בזיכרון מחזיר למסך הזיכרון, ובתצוגת יעד - למסך הטיולים.',
+    'מחיקה של מקום יעד אומרת באילו טיולים הוא בתוכנית או במועדפים, ומוציאה אותו מכולם. מקום מוסתר נשאר בתוכנית, מסומן "מוסתר".',
+    'במסך הטיולים לכל טיול אותו כרטיס, ברשימה אחת "הטיולים שלי": נגיעה בכרטיס פותחת את הטיול, עריכה, שיתוף ו-⋯ תמיד באותו מקום, ו"מחכה לסגירה" מוביל לסגירה. לזיכרון וליעד יש ⋯ משלהם.',
+    'מה שה-\u2068AI\u2069 מוצא לא נכון במה שקבעתם בעצמכם (מקום שהוספתם, שם שתיקנתם, מקום שסימנתם "נסגר") כבר לא נזרק: הוא מגיע כהצעה עם הסיבה, ואתם מחליטים - "לתקן" או "להשאיר שלי". הצעה שלא הוחלטה מחכה על המקום וב"כללי".',
+    'בסגירת טיול "הבא" ו"הקודם" תמיד בתחתית המסך - לא צריך לגלול עד הסוף כדי להמשיך.',
+    'יום פתוח בתוכנית: "רשימה | מפה" לרוחב כל השורה, ו"גובה" בשורה משלו מתחת, עם העלייה והירידה כשהן ידועות.',
+    'מסלול ההליכה מציר הזמן כבר לא קופץ הלוך ושוב בין שני מקומות קרובים (למשל משני צדי נהר). כדי לראות את זה בטיול שכבר יובא - לייבא שוב את הקובץ.',
+    'הדרכון שלי: עיצוב חדש - נייר, כריכה, דפדוף כמו בספרון, עמוד פרטים ועמוד לחותמת הבאה.',
+    'מספרים ושעות בטווח (כמו "\u20663–5\u2069 דקות" או "\u206610:00–12:00\u2069") נקראים עכשיו נכון, משמאל לימין, וחלונות ומסכים נפתחים שוב בתנועה קצרה.',
+    'מקורות המפה בשורה דקה אחת בתחתית כל מפה, במקום הגוש שכיסה חלק ממנה. נגיעה בשורה מציגה את כל המקורות והקישורים.',
+    'הדפים שאתם שולחים - סיכום הטיול וההמלצות לחברים - נראים עכשיו כמו האפליקציה: אותם צבעים, כרטיסים וסמלים, בהיר או כהה לפי הטלפון. המפה החיה בהם נפתחת גם מקובץ שהגיע במייל.',
+    'מקום שכבר יש לכם מזוהה גם בשמו השני: "Cerro Santa Lucía" מציע את "גבעת סנטה לוסיה", גם ב"מה יש כאן" ובקובץ שחזר מ-\u2068AI\u2069. מסלול הליכה מציר הזמן מגיע עד הסוף - לייבא שוב את הקובץ.',
+  ] },
+  // 11.63.0 released: split off by shared/whatsnew/close_entry.py with exactly its 1 released lines (darkon/dist/release.json at b66ac31b6)
   { version: '11.63.0', date: '25.11.2026', items: [
     'האפליקציה פתוחה בשני חלונות? חלון ישן כבר לא מחזיר דברים שמחקתם או שיניתם בחלון השני - הוא מתרענן לבד.',
   ] },

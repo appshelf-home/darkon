@@ -91,7 +91,7 @@ function wxAvg(clim, c, iso) { // mean of the same calendar days (±3) over the 
   const m = a => { const v = a.filter(x => typeof x === 'number'); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; };
   if (!acc.tmax.length) return null;
   const y1 = Math.min(...acc.yrs), y2 = Math.max(...acc.yrs);
-  return { tmax: m(acc.tmax), tmin: m(acc.tmin), rainDays: Math.round(100 * acc.rain.filter(x => x >= 1).length / acc.rain.length), wind: m(acc.wind), yrs: y1 === y2 ? String(y1) : y1 + '–' + y2 };
+  return { tmax: m(acc.tmax), tmin: m(acc.tmin), rainDays: Math.round(100 * acc.rain.filter(x => x >= 1).length / acc.rain.length), wind: m(acc.wind), yrs: tmSpan(y1, y1 === y2 ? '' : y2) };
 }
 function wxDaily(fc, c, iso) { const e = fc[wxKey(c)]; if (!e || !e.daily) return null; const i = e.daily.time.indexOf(iso); if (i < 0) return null;
   const D = e.daily; return { code: D.weather_code[i], tmax: D.temperature_2m_max[i], tmin: D.temperature_2m_min[i], pop: D.precipitation_probability_max[i], rain: D.precipitation_sum[i],
@@ -254,11 +254,4 @@ function renderTripWeather() {
 act('wx.day', c => { const el = c.el.closest('.wx-day'); if (el.querySelector('.wx-det') || el.classList.contains('far')) { el.classList.toggle('open'); if (el.classList.contains('open')) reveal(el, false); } return 'quiet'; });
 act('wx.pick', c => { _wxPick = c.v; renderTripWeather(); return 'quiet'; }); // a view, not data: the weather draws itself
 act('wx.more', () => { _wxMore = true; renderTripWeather(); return 'quiet'; });
-function wxSettingsHTML() { const S = wxSet(), ch = (k, label, opts) => choiceHTML({ label, act: 'set.weather', cur: S[k], attrs: v => ` data-wxset="${k}" data-wxval="${v}"`, opts }); // 10.9.0 (design-forms, gap 32): segmented; "feels like" a switch
-  return `<p>התחזית לפי התחנה של כל יום, מהיום והלאה. ימים רחוקים מקבלים ממוצע עונתי.</p>
-    ${ch('view', 'תצוגת הימים', [['list', 'רשימה'], ['twodays', 'היום ומחר', 'היום ומחר, השאר מתקפלים'], ['picker', 'יום אחד', 'יום אחד בכל פעם']])}
-    ${ch('open', 'פתוח מראש', [['today', 'היום', 'הפירוט של היום'], ['none', 'כלום']])}
-    ${ch('extra', 'שורות למקומות מהתוכנית', [['rule', 'רחוקים', 'רחוקים (25 ק״מ) או גבוהים (500 מ׳)'], ['keys', 'נק׳ מפתח', 'רק נקודות מפתח ' + SYM_KEY], ['none', 'בלי']])}
-    ${ch('wind', 'רוח', [['kmh', 'קמ״ש'], ['ms', 'מטר לשנייה']])}
-    ${setSwitchHTML('set.weather', ` data-wxset="feels" data-wxval="${!S.feels}"`, !!S.feels, '"מרגיש כמו"', 'הטמפרטורה המורגשת ליד הטמפרטורה')}`; }
 

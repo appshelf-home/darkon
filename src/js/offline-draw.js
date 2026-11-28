@@ -47,14 +47,15 @@ function offDrawLayers(ctx, L, px, py, ds, zf, r, pass, st) {
         const x = px + q[0] * k, y = py + q[1] * k; if (x < 0 || y < 0 || x >= W || y >= H || q[0] < 0 || q[1] < 0 || q[0] >= E || q[1] >= E) return;
         ctx.font = `${c[1]} ${c[0] * r}px Rubik, Arial, sans-serif`; ctx.direction = /[\u0590-\u05FF]/.test(nm) ? 'rtl' : 'ltr'; ctx.lineWidth = 3 * r; ctx.strokeStyle = S.halo; ctx.strokeText(nm, x, y); ctx.fillStyle = S.label; ctx.fillText(nm, x, y); }); } }
 }
+function offDraws() { return !svcOnline() && OFF_KEYS.size > 0; } // the offline drawing draws only with no network and an area on the phone
 function offLayerFor(map) {
   if (!window.L || !L.GridLayer || map._offLayer) return;
   const Lyr = L.GridLayer.extend({ createTile(co, done) { const c = document.createElement('canvas'), r = Math.min(2, window.devicePixelRatio || 1); c.width = c.height = 256 * r; c.style.width = c.style.height = '256px';
-    if (svcOnline() || !OFF_KEYS.size) { setTimeout(() => done(null, c), 0); return c; }
+    if (!offDraws()) { setTimeout(() => done(null, c), 0); return c; }
     offDrawTile(c, co, r).then(() => done(null, c), () => done(null, c)); return c; } });
-  map._offLayer = new Lyr({ zIndex: 0, maxZoom: 22, attribution: OFF_KEYS.size ? svcCredit('openfreemap') : '' }).addTo(map);
+  map._offLayer = new Lyr({ zIndex: 0, maxZoom: 22, crd: ['openfreemap'] }); map._offLayer.crNow = offDraws; map._offLayer.addTo(map); // map-credit-line (Q3): credited only while it draws
   offBadge(map); map.on('moveend zoomend', () => offBadgeUpdate(map)); }
-function offRefreshMaps() { if (typeof LIVE_MAPS === 'undefined') return; LIVE_MAPS.forEach(m => { try { if (!m.getContainer().isConnected) return; if (!m._offLayer) offLayerFor(m); else m._offLayer.redraw(); offBadgeUpdate(m); } catch (e) {} }); }
+function offRefreshMaps() { if (typeof LIVE_MAPS === 'undefined') return; LIVE_MAPS.forEach(m => { try { if (!m.getContainer().isConnected) return; if (!m._offLayer) offLayerFor(m); else m._offLayer.redraw(); offBadgeUpdate(m); mapCrDraw(m.getContainer()); } catch (e) {} }); } // map-credit-line: the network came or went - the offline drawing's credit with it
 act('map.offInfo', c => showToast(c.el.dataset.st === 'none' ? 'אין רשת, והאזור הזה לא הורד לטלפון. מה שכבר ראית מוצג כרגיל.' : 'אין רשת. אזורים שכבר ראית מוצגים כרגיל, והשאר מהמפה שהורדה לטיול, שהיא פשוטה יותר. כשתחזור הרשת הכל יתעדכן.'));
 function offBadge(map) { if (map._offBadge || !L.control) return; const C = L.Control.extend({ onAdd() { const b = L.DomUtil.create('button', 'off-badge'); b.type = 'button'; b.hidden = true; b.dataset.act = 'map.offInfo'; mapCtl(b); return b; } });
   map._offBadge = new C({ position: 'topleft' }).addTo(map); offBadgeUpdate(map); }

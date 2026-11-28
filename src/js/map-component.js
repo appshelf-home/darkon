@@ -4,14 +4,51 @@
 // not told elsewhere), and pins whose tap opens the floating card. A screen adds only what is its own. Tools (picking a point,
 // the small map in an editor, the areas for offline maps, 🗺️ במפה) use mapTool - the same base map without a view.
 // No screen calls L.map directly (a test scan checks it).
-function mapTool(box, o) { o = o || {}; mapSweep(typeof box === 'string' ? document.getElementById(box) : box); const map = L.map(box, { zoomControl: screenAtLeast('wide'), ...(o.leaflet || {}) }); /* 5.15.0 (ד3): no ＋/− on a phone (pinch), the scale takes their corner */ addBaseTiles(map); if (o.twoFinger) mapTwoFinger(map, typeof box === 'string' ? document.getElementById(box) : box); return map; }
+function mapTool(box, o) { o = o || {}; mapSweep(typeof box === 'string' ? document.getElementById(box) : box); const map = L.map(box, { zoomControl: screenAtLeast('wide'), attributionControl: false, ...(o.leaflet || {}) }); /* 5.15.0 (ד3): no ＋/− on a phone (pinch), the scale takes their corner; map-credit-line: Leaflet's corner off - the credit line below */
+  const c = map.getContainer(); map.on('layeradd layerremove', e => { if (e.layer && e.layer.options && e.layer.options.crd) mapCrDraw(c); }); map.on('click', () => { if (MAPCR.host === c) mapCrClose(); });
+  addBaseTiles(map); mapCrMount(c, () => mapCrOf(map)); if (o.twoFinger) mapTwoFinger(map, typeof box === 'string' ? document.getElementById(box) : box); return map; }
+// ================= map-credit-line (decisions 2026-11-27 · The map's credits take over the map, Q1-Q5; standard ui-maps.md) =================
+// Every live map's credits are one thin line at its bottom edge, in place of Leaflet's corner (off in mapTool): 12 px whatever the text size,
+// the credits left to right, the short required names first (a row's `lead`, Esri's "Powered by", then OpenStreetMap's credit), cut with "…",
+// ⓘ at its end. A tap opens "מקורות המפה" above it inside the map: every credit of what is drawn, a row each with its links (svcCredit -
+// OSM's copyright page, "לתקן את המפה", OpenTopoMap's donation, Mapterhorn's list, Esri's), at the app's text size, scrolling inside. A second
+// tap, ✕, a tap on the map, Back (a layer of the stack) or the map leaving the page closes it. Only what is drawn is credited: a layer carries
+// its credit as crd ([provider, options], the base types' rows and the offline drawing's), and a layer with crNow() is credited only while it
+// answers true (the offline drawing: no network). Leaflet's own name is in "מקורות ורישיונות" (TERMS_LIBS), not on the map. The 3D view mounts
+// the same line on its own box (m3Open), a page for people gets it with the packed map component.
+const MAPCR = { host: null }; // the box whose panel is open - one at a time
+function mapCrOf(map) { const out = []; try { map.eachLayer(l => { const d = l.options && l.options.crd; if (d && !(l.crNow && !l.crNow())) out.push(d); }); } catch (e) {} return out; }
+// the panel stands beside the map's own buttons (◎, the type): a map's box is isolated, so inside it the panel would lie under them
+function mapCrMount(host, list) { if (!host.querySelector(':scope > .map-cr')) { const ln = document.createElement('button'), pn = document.createElement('div'), P = host.parentElement;
+    ln.type = 'button'; ln.className = 'map-cr'; ln.dataset.act = 'map.cr'; ln.setAttribute('aria-expanded', 'false'); ln.setAttribute('aria-label', 'מקורות המפה'); ln.innerHTML = `<span class="map-cr-t" dir="ltr"></span>${msi('info')}`;
+    pn.className = 'map-crp'; pn.hidden = true; pn.setAttribute('role', 'dialog'); pn.setAttribute('aria-label', 'מקורות המפה'); pn.innerHTML = `<div class="map-crp-h"><b>מקורות המפה</b><button type="button" class="map-crp-x" data-act="map.crX" aria-label="סגירה">${msi('close', { size: 20 })}</button></div><ul class="map-crp-l" dir="ltr"></ul>`;
+    host.append(ln); (host.classList.contains('leaflet-container') && P && P !== document.body && /relative|absolute|fixed/.test(getComputedStyle(P).position) ? P : host).append(pn); host._crPn = pn; mapCtl(ln); mapCtl(pn); if (L.DomEvent && L.DomEvent.disableScrollPropagation) L.DomEvent.disableScrollPropagation(pn); }
+  host._crList = list; mapCrDraw(host); }
+// a map's rows: a row per credit of what is drawn; OpenStreetMap named inside another credit (Esri's labels) gets its own row with its copyright page
+function mapCrDraw(host) { const ln = host && host._crList && host.querySelector(':scope > .map-cr'); if (!ln) return; const all = host._crList();
+  const line = mapCrLine(all), seen = new Set(); ln.hidden = !all.length; ln.querySelector('.map-cr-t').textContent = line;
+  let rows = all.filter(([p, o]) => { const k = p + ':' + ((o && o.as) || ''); return !seen.has(k) && seen.add(k); });
+  if (line.includes(OSM_ATTR.t) && !rows.some(([p, o]) => svcCredit(p, o).includes(OSM_ATTR.u))) rows = rows.concat([['osm']]);
+  host._crPn.querySelector('.map-crp-l').innerHTML = rows.map(([p, o]) => `<li>${svcCredit(p, o)}</li>`).join(''); }
+// the line: every credit's parts (between SEPs) once, in three ranks - a row's lead part, then OpenStreetMap's credit (pulled out of a list that names
+// it among others, as Esri's labels do), then the rest in the layers' order
+function mapCrLine(all) { const U = [], seen = new Set(), O = OSM_ATTR.t, mid = ', ' + O;
+  all.forEach(([p, o]) => { const A = PROVIDERS[p].attr, as = o && o.as; String(as ? A[as] : A.t).split(SEP).forEach((t, i) => { let r = A.lead && !as && !i ? 0 : 2;
+    if (t.includes(mid)) { t = t.replace(mid, ''); U.push([1, O]); } else if (t.includes(O)) r = 1; U.push([r, t]); }); });
+  return U.filter(u => !seen.has(u[1]) && seen.add(u[1])).sort((a, b) => a[0] - b[0]).map(u => u[1]).join(SEP); }
+function mapCrOpen(host) { mapCrClose(); const ln = host.querySelector(':scope > .map-cr'), pn = host._crPn; if (!ln || !pn) return;
+  MAPCR.host = host; mapCrDraw(host); pn.hidden = false; ln.setAttribute('aria-expanded', 'true'); document.body.classList.add('mapcr-open'); layerPush('mapcr', 'panel', fp => mapCrClose(fp)); }
+function mapCrClose(fromPop) { const host = MAPCR.host; if (!host) return; MAPCR.host = null;
+  const ln = host.querySelector(':scope > .map-cr'), pn = host._crPn; if (pn) pn.hidden = true; if (ln) ln.setAttribute('aria-expanded', 'false'); document.body.classList.remove('mapcr-open'); layerDone('mapcr', fromPop); }
+act('map.cr', c => { const host = c.el.parentElement; if (MAPCR.host === host) mapCrClose(); else mapCrOpen(host); return 'quiet'; });
+act('map.crX', () => { mapCrClose(); return 'quiet'; }); // the panel's ✕
 // 10.11.0 (task memory-leak, decisions 2026-11-08 Q1): one lifecycle for every map. Every map is born in mapTool and listed in
 // LIVE_MAPS; it is disposed - map.remove() and everything attached to it: its MAPS entry (markers, clusters and their timer), "מה יש כאן"
 // (DISC_MAPS), the measuring's drawing, its ResizeObserver, the tiles' retry timers, the floating card, the legend and a form's
 // fmLocMaps entry - when its container gets a new map (mapTool) or has left the page (mapSweep: on every draw of a screen, when a
 // window closes and before any new map). A window's content kept aside for a moment (layerStash) is not "left".
 function mapDispose(map) {
-  if (!map || map._removed) return; map._removed = true; LIVE_MAPS.delete(map);
+  if (!map || map._removed) return; map._removed = true; LIVE_MAPS.delete(map); { const cc = map.getContainer(); if (MAPCR.host === cc) mapCrClose(); if (cc._crPn && !cc.contains(cc._crPn)) cc._crPn.remove(); } // map-credit-line: leaving the map closes its panel, and the panel beside the box goes with it
   if (M3.l2 === map) groupFn('special-maps', 'm3Lost')(); // diet-groups: M3 is set only by its group // map-3d: the 3D view over it goes with it
   Object.keys(MAPS).forEach(id => { const r = MAPS[id]; if (r.map !== map) return; if (r.clu) clearTimeout(r.clu.t); delete MAPS[id];
     const host = document.getElementById(id); if (!host || !host.isConnected) { const lg = document.getElementById(id + '-legend'); if (lg) lg.remove(); } });
@@ -108,7 +145,7 @@ function sortPoints(pts) { // 4.12.0: ✓ visited places last when the setting s
 function sortPointsBase(pts) {
   const arr = [...pts];
   if (FP.sort === 'alpha') {
-    arr.sort((a,b) => a.name.localeCompare(b.name, 'he'));
+    arr.sort((a,b) => placeLabel(a).localeCompare(placeLabel(b), 'he'));
     return arr;
   }
   if (FP.sort === 'near' && userPos) {
@@ -121,14 +158,17 @@ function sortPointsBase(pts) {
     const rest = withDist(arr.filter(p => !STATE.favorites.has(p.id)));
     return [...favs, ...rest];
   }
-  const favs = arr.filter(p => STATE.favorites.has(p.id)).sort((a,b) => a.name.localeCompare(b.name,'he'));
-  const rest = arr.filter(p => !STATE.favorites.has(p.id)).sort((a,b) => a.name.localeCompare(b.name,'he'));
+  const favs = arr.filter(p => STATE.favorites.has(p.id)).sort((a,b) => placeLabel(a).localeCompare(placeLabel(b),'he'));
+  const rest = arr.filter(p => !STATE.favorites.has(p.id)).sort((a,b) => placeLabel(a).localeCompare(placeLabel(b),'he'));
   return [...favs, ...rest];
 }
 
 function navUrl(address) {
   return 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(address);
 }
+// big-dest-search item 8 (decisions 2026-11-26 · Review of `name-lead`, Q2): a place is searched on Google by the name on its sign - its
+// local name when it has one (placeForeign), else its name; the address as before
+function googlePlaceUrl(p) { return googleInfoUrl(placeForeign(p) || p.name, p.address); }
 function googleInfoUrl(name, address) {
   return 'https://www.google.com/search?q=' + encodeURIComponent(name + ' ' + address);
 }
@@ -165,85 +205,8 @@ function copyAddress(address, btn) {
   copyWithFallback(address, 'הכתובת הועתקה');
 }
 
-// ---- 8.0.0 (ק19-ק21, ק23, cl-files-impl-plan stage 7): the map of a page for people is this component itself, packed from
-// the running code (no second map code in the files): fileMapView is its view for a page - pins from the page's data, the
-// read-only floating card, ⛶, the map type, ◎, the scale and clustering (no 📏 and no 📚). fmapPack() takes fileMapView and
-// everything it reaches (functions, constants, the map's own actions and CSS) into one script; what belongs to the app only
-// answers "nothing" there (FMAP_STUB), and the state a page starts with is FMAP_HOST - the small host of ק20 (1).
-function fileMapView(F) {
-  const host = document.getElementById('fmapLive'); if (!host || !window.L) return null;
-  const c0 = (F.b && F.b[0]) || (F.items[0] ? [F.items[0].a, F.items[0].o] : [0, 0]), M = mapMake('fmapLive', { loading: false, restore: null, track: false, clusters: true, center: c0 }); if (!M) return null; const map = M.map;
-  if (F.fade) host.classList.add('faded');
-  const card = x => openFloatCard('fmapLive', cdCard({ cls: 'mc-card mc-ro', lead: leadHTML('place', x.h ? msi('hotel', { size: 18 }) : typeIcon(x.i, { size: 18 }), x.h ? 'var(--primary)' : x.c, x.n !== '' && x.n != null ? x.n : ''), name: x.t,
-    tags: x.s ? [cdMeta([x.s])] : [], desc: x.d ? `<span class="mc-desc">${x.d}</span>` : '',
-    acts: `<div class="tl-acts mc-acts">${x.v ? `<a class="tl-act a-nav" href="${x.v}" target="_blank" rel="noopener" aria-label="ניווט">${actIc('navigation')}</a>` : ''}<a class="tl-act a-g" href="https://www.google.com/search?q=${encodeURIComponent(x.q || x.t)}" target="_blank" rel="noopener" aria-label="חיפוש ב-Google">${actIc('travel_explore')}</a></div>` }), null, null, null);
-  const all = F.items.map((x, i) => { const p = { id: 'f' + i, color: x.h ? 'var(--hotel-pin)' : x.c, icon: x.i || '', name: x.t };
-    const mk = M.pin(p, { lat: x.a, lng: x.o }, x.h ? {} : { numbered: x.n !== '' && x.n != null, number: x.n !== '' && x.n != null ? x.n : (x.l ? '❤️' : null) }, () => card(x)); mk._x = x; M.grow({ lat: x.a, lng: x.o }); return mk; });
-  if (F.r && F.r.length > 1) L.polyline(F.r, { color: '#1C2B33', weight: 3, opacity: .55, dashArray: '6 6' }).addTo(map);
-  // memory-photos (Q4-Q5): the memory's photos at their highlights' places, as the phone's choice was when the page was made (F.ph); a tap shows them in the card
-  (F.ph || []).forEach(x => L.marker([x.a, x.o], { keyboard: false, zIndexOffset: 800, icon: L.divIcon({ className: 'mem-ph-ic', html: `<span class="mem-ph${x.u.length > 1 ? ' mem-ph-st' : ''}"><span class="ph-cut mem-ph-bg" style="background-image:url(${x.u[0]})"></span>${x.u.length > 1 ? `<b>${x.u.length}</b>` : ''}</span>`, iconSize: [48, 48], iconAnchor: [24, 54] }) })
-    .on('click', () => openFloatCard('fmapLive', cdCard({ cls: 'mc-card mc-ro', lead: '', name: x.t, tags: [], desc: `<span class="fmap-phs">${x.u.map(u => `<span role="img" aria-label="תמונה" style="background-image:url(${u})"></span>`).join('')}</span>`, acts: '' }), null, null, null)).addTo(map));
-  M.finish('');
-  let line = null; const fit = b => { if (b && b.length) map.fitBounds(L.latLngBounds(b), { padding: [24, 24], maxZoom: 16 }); };
-  return { filter(fn, pts) { all.forEach(mk => { const on = fn(mk._x); if (on && !map.hasLayer(mk)) mk.addTo(map); if (!on && map.hasLayer(mk)) map.removeLayer(mk); });
-      if (line) { map.removeLayer(line); line = null; } if (pts && pts.length > 1) { line = L.polyline(pts, { color: '#C08A2E', weight: 4, opacity: .85 }).addTo(map); fit(pts); }
-      else { const v = all.filter(mk => map.hasLayer(mk) && !mk._x.h).map(mk => [mk._x.a, mk._x.o]); fit(v.length ? v : F.b); } } };
-}
-const FMAP_WORDS = new Set('setTimeout clearTimeout setInterval clearInterval requestAnimationFrame cancelAnimationFrame Date ClockDate performance true false null undefined this new typeof instanceof return if else for while do const let var function class of in delete void yield await async break continue switch case default try catch finally throw'.split(' '));
-const FMAP_ACTS = ['map.full', 'map.typeMenu', 'map.type', 'map.locate', 'float.close'];
-// the app's own things a page has no use for (ק23: no 📏, no 📚, no offline maps, no windows or saving) - stubs that do nothing; relief-phone: no relief in a page
-// (reliefLayer, reliefLine - the drawing would pass the packed map's size cap; Esri's relief never drew there, its key is the site's only)
-// merge 11.50.0 (decisions 2026-11-23 · Review of the parallel day's summaries, Q6): introShow too - a page shows no screen intro (only introMaybe
-// starts one), and through tipDismiss (TOUCH_ANY) it carried the whole guide (GUIDE, ~12 KB) past the packed map's cap (t830: 121,769 on the merged build; no function of the pack changed since 11.49.0)
-// diet-groups: no group in a page (groupHas, groupFn, needGroup - a page's map type is never one a group draws)
-// map-3d: no 3D in a page (m3Row - 3d-find: the menu's row -, m3Close, m3Again, m3ThemeChanged - its engine is a file of the site, and its code would pass the cap)
-const FMAP_STUB = ['groupHas', 'groupFn', 'needGroup', 'introShow', 'mapSweep', 'm3Row', 'm3Close', 'm3Again', 'm3ThemeChanged', 'mapDispose', 'measBtn', 'measDraw', 'measOnMapClick', 'measActiveOn', 'measAddMe', 'measAddPoint', 'measFrom', 'discAttach', 'offLayerFor', 'planItem', 'draftItems', 'openPlaceEditor', 'openPlaceSheet',
-  'layerPush', 'layerPushHistory', 'render', 'persist', 'devSet', 'refreshBaseMaps', 'showUndoToast', 'dataChanged', 'redrawSoon', 'winRedraw', 'refOf', 'svcLine', 'svcGaveUpCount', 'curDest', 'regRead', 'regWrite', 'regChanged', 'filterAct',
-  'showMapCard', 'miniCardHTML', 'itemOf', 'fsFilterHTML', 'filterHiddenCount', 'filterCountText', 'isHiddenPoint', 'routeHiddenCount', 'searchShown', 'tdOf', 'stashActive', 'rerenderKeepingMap', 'layerAppBack', 'hintMark', 'hintSeen', 'applyMapRestore', 'takeMapRestore', 'mapStatusLine', 'pastRatingFor', 'activeTripObj', 'hasTrip', 'heMapLayer', 'heLabelLayer', 'mapLightSync', 'reliefLayer', 'reliefLine']; // hebrew-map: a page has no "מפה בעברית" (its "מפה" is already the vector drawing); relief-phone: no relief in a page
-// what a page starts with (the host): the device's choices are the defaults, nothing is saved
-const FMAP_HOST = `var FMAP_PAGE=1,DESTS={},POINTS=[],FP={},FILTER={points:{},draft:{}},GEOCODE_CACHE={},TRIP_DAYS=[],LAYER_DEFS=[],TRIP_HIDDEN=new Set(),ARCHIVE_VIEW=null,activeTab='map',_SIMULATED_DATE=null,_tmFmtCache={},_sheetFromMap=null,_lastBuild=null;
-var DEV={hints:{}},STATE={settings:{prefs:{cluster:'full',selfLoc:'off'}},visited:new Set(),favorites:new Set(),trips:{},tripData:{}},MAPS={},_mapState={},LIVE_MAPS=new Set(),FS=null,FS_FILTER={},MEAS=null,userPos=null,_selfAt=0,_keepMapView=false,_dataGen=0,_inAct=0,ACT_ERRORS=[],ACTIONS={},WIN_STACK=[],MAP_AVAILABLE=true,DRAFT=null;
-function act(n,f){ACTIONS[n]=f;}function showToast(){}function render(){}function persist(){}function leafGate(){return true}
-function runAct(el,ev,name){name=name||el.dataset.act;var f=ACTIONS[name];if(!f)return;try{f({el:el,v:el.dataset.v,ev:ev})}catch(e){console.error(e)}}
-document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('[data-act]');if(!a||a.closest('.leaflet-container'))return;runAct(a,e);});`;
-function fmapPack() {
-  const G = globalThis, ev = n => { try { return (0, eval)(n); } catch (e) { return undefined; } };
-  const host = new Set(['FMAP_PAGE', 'DESTS', 'POINTS', 'FP', 'FILTER', 'GEOCODE_CACHE', 'TRIP_DAYS', 'LAYER_DEFS', 'TRIP_HIDDEN', 'ARCHIVE_VIEW', 'activeTab', '_SIMULATED_DATE', '_tmFmtCache', '_sheetFromMap', '_lastBuild', 'DEV', 'STATE', 'MAPS', '_mapState', 'LIVE_MAPS', 'FS', 'FS_FILTER', 'MEAS', 'userPos', '_selfAt', '_keepMapView', '_dataGen', '_inAct', 'ACT_ERRORS', 'ACTIONS', 'WIN_STACK', 'MAP_AVAILABLE', 'DRAFT', 'act', 'runAct', 'showToast', 'render', 'persist', 'leafGate']); // 11.29.0: a page loads the library in its head - its maps never wait
-  const stub = new Set(FMAP_STUB), fns = new Map(), vals = new Map(), todo = ['fileMapView'].concat(FMAP_ACTS.map(a => '\u0000' + a));
-  const fsrc = f => { let t = Function.prototype.toString.call(f); if (!/^(async\s+)?function\b|^\(|^(async\s+)?[\w$]+\s*=>|^async\s*\(/.test(t)) t = 'function ' + t; return t; };
-  const scan = src => { const ids = new Set(); src.replace(/(^|[^.\w$'"`])([A-Za-z_$][\w$]*)/g, (m, a, n) => { ids.add(n); return m; }); return ids; };
-  const take = src => scan(src).forEach(n => { if (!fns.has(n) && !vals.has(n) && !host.has(n) && !stub.has(n)) todo.push(n); });
-  while (todo.length) { const n = todo.pop(); if (fns.has(n) || vals.has(n) || FMAP_WORDS.has(n)) continue;
-    if (n[0] === '\u0000') { const f = ACTIONS[n.slice(1)]; if (f) { const t = fsrc(f); fns.set(n, `act(${JSON.stringify(n.slice(1))},${t});`); take(t); } continue; }
-    if (Object.prototype.hasOwnProperty.call(G, n) && typeof G[n] === 'function') { if (G[n].__life) continue; /* 10.11.0: a browser function counted by LIFE is still the browser's */ const t = fsrc(G[n]); if (/\[native code\]/.test(t)) continue; fns.set(n, /^function|^async function/.test(t) ? t : `var ${n}=${t};`); take(t); continue; }
-    if (n in G || FMAP_WORDS.has(n)) continue; // a browser global (window, document, JSON...) or a word of the language
-    const v = ev(n); if (v === undefined || typeof v === 'function' && /\[native code\]/.test(String(v))) continue;
-    const s = fmapSer(v); if (s == null) continue; vals.set(n, `var ${n}=${s};`); take(s); }
-  const stubs = [...stub].map(n => `function ${n}(){return false}`).join('');
-  return FMAP_HOST + stubs + [...vals.values()].join('\n') + '\n' + [...fns.values()].join('\n');
-}
-function fmapSer(v, d) { d = d || 0; if (d > 8) return 'null';
-  if (v === null || ['number', 'boolean', 'string'].includes(typeof v)) return JSON.stringify(v);
-  if (typeof v === 'function') { let t = Function.prototype.toString.call(v); if (/\[native code\]/.test(t)) return null; if (!/^(async\s+)?function\b|^\(|^(async\s+)?[\w$]+\s*=>|^async\s*\(/.test(t)) t = 'function ' + t; return '(' + t + ')'; }
-  if (v instanceof Set) return `new Set(${fmapSer([...v], d + 1)})`; if (v instanceof Map) return `new Map(${fmapSer([...v], d + 1)})`;
-  if (Array.isArray(v)) return '[' + v.map(x => fmapSer(x, d + 1) || 'null').join(',') + ']';
-  if (typeof v === 'object') { if (Object.getPrototypeOf(v) !== Object.prototype && Object.getPrototypeOf(v) !== null) return null;
-    return '{' + Object.entries(v).map(([k, x]) => JSON.stringify(k) + ':' + (fmapSer(x, d + 1) || 'null')).join(',') + '}'; }
-  return null; }
-// the CSS the packed map uses: the theme's colours (light and dark) and the rules of the map, its buttons and the card
-// legal-credits (11.40.0; decisions 2026-11-21 · Review of the map-upgrades report, Q1): the page's icons are its own small subset (FMAP_FONT, made by
-// tests/msfont.py from ICON_MS and this line), never the app's font - the built app's CSS has no copy a page could take (the empty squares)
-// FMAP_MS: fullscreen close layers my_location navigation travel_explore hotel location_on map landscape satellite_alt terrain check
-const FMAP_CSS_KEYS = ['mem-ph', 'ph-cut', 'cd-', 'msi', 'pin-marker', 'pin-sel', 'map-float', 'mf-', 'tl-', 'mc-', 'ly-', 'fs-btn', 'fs-on', 'locate-me', 'clu-', 'fanned', 'leaflet', 'map-status', 'map-empty', 'faded', 'mem-tt', 'card'];
-function fmapCSS() {
-  const css = [...document.querySelectorAll('style')].map(x => x.textContent).join('\n'), out = [];
-  const walk = (txt, wrap) => { let i = 0; while (i < txt.length) { const o = txt.indexOf('{', i); if (o < 0) break; const head = txt.slice(i, o).trim();
-      let d = 1, k = o + 1; while (k < txt.length && d) { if (txt[k] === '{') d++; else if (txt[k] === '}') d--; k++; }
-      const body = txt.slice(o + 1, k - 1);
-      if (head.startsWith('@media')) walk(body, head); else if (head === '@font-face') { /* the app's fonts stay in the app (FMAP_FONT below) */ } else if (/^:root/.test(head) || FMAP_CSS_KEYS.some(x => head.includes(x))) out.push(wrap ? `${wrap}{${head}{${body}}}` : `${head}{${body}}`);
-      i = k; } };
-  walk(css.replace(/\/\*[\s\S]*?\*\//g, ''), ''); return FMAP_FONT + '\n' + out.join('\n'); }
-
+// diet-room: the map of a page for people, packed from this component (fileMapView, fmapPack, fmapCSS, FMAP_*), is js/map-pack.js - the
+// pages group, with the page's icon subset (generated/ms-font-page.js) and the recommendations' page
 // 11.4.0 (the 11.2.0 review's Q3; standard ui-maps.md "Points outside a map's frame"): the maps' one live edge arrow. A map framed on part
 // of its points shows, for each point outside the view, an arrow on the frame's edge where its line leaves (from near - the line's other
 // end, or the frame's centre - toward the point; from the view's centre when near is out of view too), named "<name> · N ק״מ"; moved as

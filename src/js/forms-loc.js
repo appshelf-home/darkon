@@ -6,7 +6,7 @@ function fmLoc(F, id, o) { o = o || {}; fmReg(F, id, 'loc', o.value || null, o);
   // 11.20.0 (place-search-upgrade): the field is a host of the one place search - typing pauses ask Photon, "חיפוש" / Enter both services
   // 11.28.0 (area-search): o.kind 'area' (the destination's centre) - an area search, with the full-screen pick from its ⛶; a picked area's
   // extent waits in F.locs[id].ext for the small map to fit (fmLocShow), and its country code and kind go to o.onPick
-  const ps = F.locs[id].ps = psHost({ kind: o.kind, box: () => { const G = fmLive(F); return G && fmQ(G, `[data-fmres="${id}"]`); }, near: () => { const G = fmLive(F), m = fmLocMaps[id]; return o.near ? o.near(G) : (m && m.map ? m.map.getCenter() : undefined); },
+  const ps = F.locs[id].ps = psHost({ kind: o.kind, where: o.where ? () => o.where(fmLive(F)) : null /* big-dest-search: the chain of the place */, box: () => { const G = fmLive(F); return G && fmQ(G, `[data-fmres="${id}"]`); }, near: () => { const G = fmLive(F), m = fmLocMaps[id]; return o.near ? o.near(G) : (m && m.map ? m.map.getCenter() : undefined); },
     pick: x => { const G = fmLive(F); if (G && G.locs && G.locs[id]) G.locs[id].ext = x.area ? x.ext : null; fmLocSet(G, id, x.coord, { name: x.name, addr: [x.name, x.sub].filter(Boolean).join(', '), city: x.city, country: x.country, cc: x.cc, area: x.area }, true); },
     map: MAP_AVAILABLE ? () => { const G = fmLive(F), b = G && fmQ(G, `[data-act="fm.locFs"][data-v="${id}"]`); if (b) b.click(); } : null, ret: F.locs[id].ret = o.ret ? () => psFormRet(fmLive(F), o.ret, id) : null }); // 11.21.0 (Q3): with the whole form
   return `<div class="sh-field fm-f fm-loc" data-fmw="${id}">${fmLabel(o)}
@@ -44,7 +44,7 @@ function fmLocStart(F, id) { const o = F.conf[id] || {}; fmLocShow(F, id); if (!
     setTimeout(() => map.invalidateSize(), 250); }, 60); }
 act('fm.locFs', c => { const F = fmOf(c.el); if (!F) return; const id = c.v, v = F.vals[id], m = fmLocMaps[id], o = F.conf[id];
   const s = v || (m && m.map && m.map.getCenter()) || { lat: (o.center || curDest().meta.center)[0], lng: (o.center || curDest().meta.center)[1] };
-  openPick({ how: 'btn', has: !!v, start: [s.lat, s.lng], zoom: v ? (o.zoom === 'area' ? 12 : 17) : 15, kind: o.kind, ret: F.locs[id].ret || null, onPick: r => { const G = fmLive(F); if (G && G.locs && G.locs[id]) G.locs[id].ext = r.area ? r.ext : null; fmLocSet(G, id, r.coord, r); } }); return 'quiet'; }); // 11.28.0: kind, the area's extent
+  openPick({ how: 'btn', has: !!v, start: [s.lat, s.lng], zoom: v ? (o.zoom === 'area' ? 12 : 17) : 15, kind: o.kind, where: o.where ? () => o.where(fmLive(F)) : null, ret: F.locs[id].ret || null, onPick: r => { const G = fmLive(F); if (G && G.locs && G.locs[id]) G.locs[id].ext = r.area ? r.ext : null; fmLocSet(G, id, r.coord, r); } }); return 'quiet'; }); // 11.28.0: kind, the area's extent
 act('fm.locMe', async c => { const F = fmOf(c.el); if (!F) return; const b = c.el, back = btnBusy(b, 'מאתר…'); const pos = await requestUserLocation(); back(); // final-review-fixes (finding 20): the chip keeps its line icon
   if (pos) fmLocSet(F, c.v, pos); else showToast('לא התקבל מיקום (צריך הרשאת מיקום, באפליקציה המותקנת)'); });
 act('fm.locLink', c => { const F = fmOf(c.el); if (!F) return; const b = fmQ(F, `[data-fmlink="${c.v}"]`); if (b) { b.hidden = !b.hidden; if (!b.hidden) reveal(b); } return 'quiet'; }); // 10.6.0: the link field comes into view; focus on its button, the keyboard waits for a tap
@@ -55,7 +55,7 @@ act('fm.locLink', c => { const F = fmOf(c.el); if (!F) return; const b = fmQ(F, 
 // o.onRead(r) === true - the share found a place already in the trip and closed the window (psShareKnown)
 async function fmLocLinkRead(F, id, text, pre, o) { const box0 = fmQ(F, `[data-fmres="${id}"]`), sh = box0 && box0.closest('.sheet');
   const W = pre === undefined ? waitOn(sh, { head: sh && sh.querySelector(':scope > .sheet-head, :scope > .fm-head, :scope > h3'), line: box0, map: fmQ(F, `#fmMap_${id}`), stage: 'קוראים את הקישור' }) : null;
-  let r; try { r = pre !== undefined ? pre : await psReadLink(text, { idOnly: !!(F.locs[id] && F.locs[id].relink), stage: () => W && W.stage('מחפשים את המקום'), known: o && o.known }); } finally { if (W) W.done(); }
+  let r; try { r = pre !== undefined ? pre : await psReadLink(text, { idOnly: !!(F.locs[id] && F.locs[id].relink), stage: () => W && W.stage('מחפשים את המקום'), known: o && o.known, where: F.conf[id] && F.conf[id].where ? F.conf[id].where(F) : null }); } finally { if (W) W.done(); }
   if (o && o.onRead && o.onRead(r) === true) return; F = fmLive(F); if (!F) return; const box = fmQ(F, `[data-fmres="${id}"]`), H = PS_HOSTS[F.locs[id].ps]; if (box) box.innerHTML = '';
   if (!r) { showToast('לא זיהיתי קישור'); return; } const L0 = F.locs[id];
   if (L0.relink) { fmGidLinkRead(F, id, r); return; } // 11.22.0 (Q8 (3)): relink - the id only; the location and the name stay (place-find Q3: in the details' row)

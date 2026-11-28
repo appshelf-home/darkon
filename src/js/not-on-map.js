@@ -51,7 +51,11 @@ act('diag.run', () => {
   const all = diagPlaces(), fix = all.filter(x => x.fix), wait = all.filter(x => !x.fix), dn = p => (DESTS[p.dest] && DESTS[p.dest].meta.name) || (p.trip ? 'הטיול' : '');
   const row = x => [x.p.name, x.p.address || '', dn(x.p), x.why].join(' | ');
   document.getElementById('diagBox').value = fix.length ? 'שם | כתובת | יעד | סיבה\n' + fix.map(row).join('\n') : '';
-  document.getElementById('diagSum').innerHTML = `${DIAG.dest ? `רק ${escH(dn({ dest: DIAG.dest }))}${SEP}` : ''}צריך תיקון: <bdi>${fix.length}</bdi>${wait.length ? `${SEP}ממתינים לשירות: <bdi>${wait.length}</bdi> (${escH([...new Set(wait.map(x => x.why))].join(', '))})` : ''}${!all.length ? (SEP + 'כל המקומות על המפה ✓') : ''}`;
+  document.getElementById('diagSum').innerHTML = `${DIAG.dest ? `רק ${escH(dn({ dest: DIAG.dest }))}${SEP}` : ''}צריך תיקון: <bdi>${fix.length}</bdi>${wait.length ? `${SEP}ממתינים לשירות: <bdi>${wait.length}</bdi> (${escH([...new Set(wait.map(x => x.why))].join(', '))})` : ''}${!all.length ? (SEP + 'כל המקומות על המפה ✓') : ''}${fix.length ? `${SEP}<button type="button" class="pw-link" data-act="diag.ai">${TX.claude.fix}</button>` : ''}`;
   document.getElementById('diagResultBox').style.display = 'block'; return 'quiet'; });
+// file-over-existing (Q3): "לתקן עם AI" beside the count of places to fix - the door that fits: "עדכון עם AI" of the destination shown alone,
+// else of the open trip, else of the destination on screen; the places not found go in its file by themselves (unlocated)
+act('diag.ai', () => { const did = DIAG.dest || (inTrip() ? '' : (curDest() || {}).id);
+  if (did) viaGroup('management', 'openDestFile', did, 'improve'); else if (inTrip()) viaGroup('management', 'openTripFile', STATE.activeTrip, 'improve'); return 'quiet'; });
 act('diag.copy', () => { const v = document.getElementById('diagBox').value; if (!v) { showToast('אין מה לתקן'); return; } copyWithFallback(v, 'הועתק'); });
 

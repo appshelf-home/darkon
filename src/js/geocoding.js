@@ -19,17 +19,17 @@ function geocodeForget() { GEOCODE_CACHE = {}; Object.keys(GEO_NONE_AT).forEach(
 // one question to the address service; first = the provider asked first (the other answers when it is busy).
 // Returns a place, null (a real "not found"), or throws GEO_NO (no network, busy, an error): nothing is kept then.
 const GEO_NO = new Error('geocode: no answer');
-async function geoOne(first, q, center, bounded, address) {
+async function geoOne(first, q, center, bounded, address, half) { // half: a clue's box, half its side in degrees (big-dest-search)
   const r = await svcAsk('geocode', { key: address, order: first === 'photon' ? ['photon', 'nominatim'] : ['nominatim', 'photon'],
     build: prov => { if (prov === 'nominatim') { // 4.2.2: a destination's center biases the search to its area (viewbox, not bounded); 4.47.7: bounded - only inside it
-        const d = bounded ? 1.2 : 0.7, vb = center ? `&viewbox=${center[1] - d},${center[0] + d},${center[1] + d},${center[0] - d}${bounded ? '&bounded=1' : ''}` : '';
+        const d = bounded ? half || 1.2 : 0.7, vb = center ? `&viewbox=${center[1] - d},${center[0] + d},${center[1] + d},${center[0] - d}${bounded ? '&bounded=1' : ''}` : '';
         return { url: 'https://nominatim.openstreetmap.org/search?format=json&limit=1' + vb + '&q=' + encodeURIComponent(q), init: { headers: { 'Accept-Language': 'en' } } }; }
       const c = center || curDest().meta.center; return { url: 'https://photon.komoot.io/api/?limit=1&lat=' + c[0] + '&lon=' + c[1] + '&q=' + encodeURIComponent(q) }; },
     parse: (data, prov) => { if (prov === 'nominatim') { if (!Array.isArray(data)) throw new Error('answer'); return data[0] ? { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) } : SVC_EMPTY; }
       if (!data || !Array.isArray(data.features)) throw new Error('answer'); const f = data.features[0]; if (!f) return SVC_EMPTY; const [lng, lat] = f.geometry.coordinates; return { lat, lng }; } });
   if (r.kind === 'ok') return r.value; if (r.kind === 'empty') return null; throw GEO_NO;
 }
-function nominatimQuery(q, center, bounded, address) { return geoOne('nominatim', q, center, bounded, address); }
+function nominatimQuery(q, center, bounded, address, half) { return geoOne('nominatim', q, center, bounded, address, half); }
 function photonQuery(q, center, address) { return geoOne('photon', q, center, false, address); }
 const HU_STREET_RE = /((?:[A-ZÁÉÍÓÖŐÚÜŰ][\wÁÉÍÓÖŐÚÜŰáéíóöőúüű'\.]*\s+){0,3}(?:utca|tér|út|körút|krt\.?|rakpart|sétány|híd|köz|udvar|fasor))\s*(\d{1,4})?/;
 function extractStreetToken(address) {
@@ -42,20 +42,24 @@ async function geocodeAddress_(address, center, name) { // undefined (above): no
   // 4.2.2: Budapest addresses keep the tuned Hungarian search; any other destination searches near its own center
   const isHU = /budapest|hungary|magyarorsz/i.test(address) || !!extractStreetToken(address);
   if (!isHU) {
-    const c = center || curDest().meta.center;
-    // 4.47.7: the same name can exist elsewhere (Haifa's "טיילת לואי" landed in Jerusalem): first only inside the
-    // destination's area, then anywhere - and a result far from every destination it may belong to is dropped
-    const cs = center ? [center] : geoCentersNow(), near = r => r && (!cs.length || cs.some(k => distanceKm({ lat: k[0], lng: k[1] }, r) <= geoLimitKm(k))) ? r : null;
+    // big-dest-search (Q2): where = the chain of clues (placeWhere); a bare centre (an older caller) is the chain of one destination
+    const W = whOf(center), c = (whFirst(W) || {}).c || curDest().meta.center;
+    // 4.47.7: the same name can exist elsewhere (Haifa's "טיילת לואי" landed in Jerusalem): a result far from every destination it may belong to is dropped
+    const cs = W && W.dc ? [W.dc] : geoCentersNow(), near = r => r && (!cs.length || cs.some(k => distanceKm({ lat: k[0], lng: k[1] }, r) <= geoLimitKm(k))) ? r : null;
     const fb = geocodeFallbacks(address); let coord = null;
-    const bc = center || (cs.length === 1 ? cs[0] : null); // inside one known area only - a trip across destinations searches each address everywhere
-    if (bc) for (const q of [address, ...fb]) { coord = await nominatimQuery(q, bc, true, address); if (coord) break; }
+    // the chain's steps, nearest first (that night's lodging, the region's centre, the destination's centre): the address bounded around
+    // each clue, then the name with the address in the clue's box (11.20.0, place-search-upgrade Q6; a fitting name only) - the nearer clue
+    // biases, the next one widens; a trip across destinations with no context searches each address in its one known area, or everywhere
+    const steps = W ? W.clues : cs.length === 1 ? [{ k: 'dest', c: cs[0] }] : [];
+    for (const s of steps) { const half = s.k === 'dest' ? 1.2 : (WH_KM[s.k] || 150) / 111;
+      for (const q of [address, ...fb]) { coord = await nominatimQuery(q, s.c, true, address, half); if (coord) return coord; }
+      if (name) { coord = await geoByName(name, address, s.c, s.k === 'dest' ? null : whBox(s), W && W.cc); if (coord) return coord; } }
+    if (W && W.cc) return name ? geoCountry(name, address, W) : null; // (4) the whole country: a fitting name and city only, never the first result alone
+    // no country known: the address anywhere, kept only near the destinations (4.37.0: without the name, without a road's km, name + town)
     if (!coord) coord = near(await nominatimQuery(address, c, false, address));
     if (!coord) coord = near(await photonQuery(address, c, address));
-    // 4.37.0: addresses that open with the place's name ("Mercado Central, San Pablo 967, Santiago") or give a road
-    // kilometer ("Av. Bustillo km 17.5") fail as a whole - try again without the name, without the km, then name + town
     if (!coord) for (const q of fb) { coord = near(await nominatimQuery(q, c, false, address)); if (coord) break; }
     if (!coord && fb.length) coord = near(await photonQuery(fb[fb.length - 1], c, address));
-    if (!coord && name && bc) coord = await geoByName(name, address, bc); // 11.20.0 (place-search-upgrade, Q6): then the name with the address, inside the area
     return coord;
   }
   const withCountry = /hungary/i.test(address) ? address : address + ', Hungary';
@@ -74,9 +78,11 @@ async function geocodeAddress_(address, center, name) { // undefined (above): no
 
 // 11.20.0 (Q1, Q6): the place's name with its address through the improved open search, inside the destination's box; a result is
 // taken by itself only when its name matches the place's name - otherwise "not found", fixed in the place's editor
-async function geoByName(name, address, c) { const q = String(address || '').toLowerCase().includes(String(name).toLowerCase()) ? address : name + ', ' + address;
-  const r = await placeSearch(q, c, { explicit: true, limit: 5, prio: 'bg' }); if (r === null) throw GEO_NO;
-  const hit = r.find(x => (x.names || []).concat(x.name).some(n => n && psNameMatch(n, name))); return hit ? { lat: hit.coord.lat, lng: hit.coord.lng } : null; }
+// big-dest-search: box - a clue's box (none - the destination's box around c); cc - the destination's country: the same fit at every step,
+// the name and the address's city (whCityFit), never the first result alone
+async function geoByName(name, address, c, box, cc) { const q = String(address || '').toLowerCase().includes(String(name).toLowerCase()) ? address : name + ', ' + address;
+  const r = await placeSearch(q, c, { explicit: true, limit: 5, prio: 'bg', box: box || undefined }); if (r === null) throw GEO_NO;
+  const hit = r.find(x => (x.names || []).concat(x.name).some(n => n && whNameFit(n, name)) && whCityFit(x, address, cc, true)); return hit ? { lat: hit.coord.lat, lng: hit.coord.lng } : null; }
 function geocodeFallbacks(address) {
   const parts = String(address || '').split(',').map(x => x.trim()).filter(Boolean), out = [];
   const noKm = x => x.replace(/\s*\b(?:km|k\.m\.|ק"מ)\s*[\d.,]+/gi, '').replace(/\s{2,}/g, ' ').trim();
@@ -99,7 +105,7 @@ const _geocodeQueue = [];
 let _queueRunning = false;
 function queueGeocode(address, onDone, center, name) {
   // 4.47.7: an answer kept from before that is far from this destination is looked up again
-  { const v = GEOCODE_CACHE[address], cs = center ? [center] : geoCentersNow(); if (v && cs.length && !cs.some(k => distanceKm({ lat: k[0], lng: k[1] }, v) <= geoLimitKm(k))) delete GEOCODE_CACHE[address]; }
+  { const v = GEOCODE_CACHE[address], w0 = whOf(center), cs = w0 && w0.dc ? [w0.dc] : geoCentersNow(); if (v && cs.length && !cs.some(k => distanceKm({ lat: k[0], lng: k[1] }, v) <= geoLimitKm(k))) delete GEOCODE_CACHE[address]; }
   if (address in GEOCODE_CACHE) { if (onDone) onDone(GEOCODE_CACHE[address]); return; }
   if (!(address in _geocodeInFlight)) {
     _geocodeInFlight[address] = new Promise((resolve) => {
@@ -115,7 +121,8 @@ async function runQueue() {
   while (_geocodeQueue.length) {
     const { address, resolve, center, name } = _geocodeQueue.shift();
     if (address in GEOCODE_CACHE) { resolve(GEOCODE_CACHE[address]); delete _geocodeInFlight[address]; continue; }
-    const coord = await geocodeAddress(address, center, name);
+    let w = center; try { if (typeof w === 'function') w = w(); } catch (e) { w = null; } // big-dest-search: the chain read when its turn comes (the hotels go first)
+    const coord = await geocodeAddress(address, w, name);
     if (coord !== undefined) { GEOCODE_CACHE[address] = coord || null; if (!coord) GEO_NONE_AT[address] = Date.now(); saveGeocodeCache(GEOCODE_CACHE); } // 7.1.0 (ש4, ש9): no answer is not "not found"
     resolve(coord === undefined ? null : coord);
     delete _geocodeInFlight[address];
@@ -125,6 +132,7 @@ async function runQueue() {
 async function ensureGeocoded(points, onProgress, onEach) {
   const todo = points.filter(p => !p.manualCoord && !p.quiet && !(p.address in GEOCODE_CACHE));
   let done = 0; if (onProgress && todo.length) onProgress(0, todo.length); // 7.1.0: counts answered addresses (found or a real "not found"); no answer is not counted
+  const hot = new Set(tripLodging().map(l => l.placeId)); points = points.filter(p => hot.has(p.id)).concat(points.filter(p => !hot.has(p.id))); // the hotels first: the next clue of the places scheduled around them
   await Promise.all(points.map(p => new Promise((resolve) => {
     if (p.manualCoord) {
       GEOCODE_CACHE[p.address] = p.manualCoord;
@@ -137,7 +145,7 @@ async function ensureGeocoded(points, onProgress, onEach) {
       if (todo.includes(p)) { if (p.address in GEOCODE_CACHE) done++; if (onProgress) onProgress(done, todo.length); }
       if (onEach) onEach(p, coord);
       resolve();
-    }, DESTS[p.dest] && DESTS[p.dest].meta.center, p.name);
+    }, () => placeWhere(p), p.name); // big-dest-search (Q2): where the travellers are, read when its turn comes
   })));
 }
 

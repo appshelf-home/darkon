@@ -1,5 +1,5 @@
 // ================= THE TRIPS SCREEN'S MEMORY LINES (split from memory-screen.js in diet-groups, 11.62.0; the book, the countries' screen and the memory screen's parts stay there, in the memories group) =================
-const PP = { page: 0, land: null, dir: 0, skip: false };
+const PP = { page: 0, land: null, turn: null, turnF: 0, skip: false };
 const PP_PER = 4, PP_SHAPES = 4, PP_INK_CLS = ['pp-ink0', 'pp-ink1', 'pp-ink2', 'pp-ink3'], PP_INKS = PP_INK_CLS.length; // the four inks' classes, named in full (t770 reads every class)
 const ppClosedHere = t => !!(t && t.archived && t.archived.reason === 'ended' && !t.archived.recv);
 function ppHash(s) { let h = 2166136261; for (const ch of String(s)) { h ^= ch.codePointAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }

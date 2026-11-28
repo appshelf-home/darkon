@@ -88,14 +88,24 @@ function rebuildTripDays(t, o, tdIn) {
   if (!tdIn && t.id === STATE.activeTrip) loadPersonal(t.id);
   return total;
 }
-// places scheduled again in a day of the trip leave the waiting day; an empty waiting day goes
-function pruneParked() {
-  const t = activeTripObj(); if (!t.id) return; const td = STATE.tripData[t.id]; if (!td || !(td.parked || []).length) return;
-  const inPlan = new Set(TRIP_DAYS.flatMap(d => dayIds(STATE.itinerary[d.key])).map(String));
-  td.parked.forEach(e => DAY_SLOTS.forEach(s => { if (e.day && e.day[s]) e.day[s] = e.day[s].filter(id => !inPlan.has(String(id))); }));
-  td.parked = td.parked.filter(e => dayIds(e.day).length);
+// places scheduled again in a day of the trip leave the waiting day; an empty waiting day goes.
+// draw-no-write (decisions 2026-11-27 · Review of night chain steps 1-4 after 11.67.1, Q3): written only by a change - hCommit tidies every
+// trip before it closes the change's own history row, so its undo restores the plan and the waiting days together - and once by the
+// migration row 'parkedTidy' for data stored before; a draw never writes it: parkedOf filters what it shows (t1254 keeps both)
+function planIdsOf(id) { const it = id === STATE.activeTrip && !DEST_VIEW ? STATE.itinerary : (STATE.tripData[id] || {}).itinerary, t = STATE.trips[id], n = t ? tripLen(t) : 0, out = new Set();
+  for (let i = 1; i <= n; i++) dayIds((it || {})['d' + i]).forEach(x => out.add(String(x))); return out; }
+const parkedLeft = (e, inPlan) => { const day = {}; DAY_SLOTS.forEach(s => { if (e.day && e.day[s]) day[s] = e.day[s].filter(id => !inPlan.has(String(id))); }); return day; };
+function parkedTidy(id) { // one trip's stored waiting days; returns whether it wrote
+  const td = STATE.tripData[id]; if (!td || !(td.parked || []).length || !tripWritable(id)) return false; const inPlan = planIdsOf(id);
+  if (!td.parked.some(e => !dayIds(e.day).length || dayIds(e.day).some(x => inPlan.has(String(x))))) return false;
+  td.parked.forEach(e => { if (e.day) Object.assign(e.day, parkedLeft(e, inPlan)); });
+  td.parked = td.parked.filter(e => dayIds(e.day).length); return true;
 }
-function parkedOf(id) { const td = STATE.tripData[id || STATE.activeTrip] || {}; return td.parked || []; }
+function parkedTidyAll() { let n = 0; Object.keys(STATE.tripData || {}).forEach(id => { if (parkedTidy(id)) n++; }); return n; }
+migRun('parkedTidy', () => { try { const u = regRead('upkeep'); if (u.parkedTidy) return; const n = parkedTidyAll(); if (n) persist();
+  regWrite('upkeep', { ...regRead('upkeep'), parkedTidy: APP_VERSION, parkedTidyTrips: n }); } catch (e) {} });
+function parkedOf(id) { id = id || STATE.activeTrip; const list = (STATE.tripData[id] || {}).parked || []; if (!list.length) return list; const inPlan = planIdsOf(id);
+  return list.map(e => e.day && dayIds(e.day).some(x => inPlan.has(String(x))) ? { ...e, day: { ...e.day, ...parkedLeft(e, inPlan) } } : e).filter(e => dayIds(e.day).length); }
 function parkedHas(pid) { return parkedOf().some(e => dayIds(e.day).some(x => String(x) === String(pid))); }
 // one undo for anything that changes the days
 // (undo-history: more() - a change that needs the rebuilt days, e.g. a duplicated day's content - runs before the toast, in the same row)

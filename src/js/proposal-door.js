@@ -24,3 +24,6 @@ function propRowHTML() { const P = propOf(); if (!P || !propCan()) return ''; co
 function planEmpty() { return !TRIP_DAYS.some(d => mergedIds(d.key).some(id => !isTravelItem(planItem(id))) || scheduleOf(d.date).some(s => !isTravelKind(s.kind))); } // travels alone are not a plan yet
 function propAskBtn(id) { return `<button type="button" class="chip prop-ask"${id ? ` id="${id}"` : ''} data-act="prop.ask">${claudeMark({ size: 18 })}לו״ז מה-${AI}</button>`; }
 function planEmptyHTML() { return `<div class="card plan-empty">${emptyHTML(msi('event_note'), 'משבצים מקומות מהרשימה, או מבקשים מה-' + AI + ' הצעה ראשונה', '', 'התוכנית עוד ריקה')}${propCan() ? propAskBtn('propAskEmpty') : ''}</div>`; }
+// diet-room: a proposal day's key in the trip (moved from proposal.js - the draft's row reads it too, and the proposal is its own group)
+function propDayKey(t, x) { if (x == null) return null; if (x.date) { const i = tripDayList(t).findIndex(d => d.date === x.date); return i >= 0 ? 'd' + (i + 1) : null; }
+  const n = Number(x.day); return n >= 1 && n <= tripLen(t) ? 'd' + n : null; }

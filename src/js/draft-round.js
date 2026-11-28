@@ -43,7 +43,7 @@ function draftMoreHTML(D) {
   let html = '', g = null;
   rows.forEach(r => { if (r.group !== g) { html += `<div class="draft-lhead">${sepTie(icText(r.group))}</div>`; /* 10.15.0: the group's symbol as its line icon */ g = r.group; }
     html += `<div class="draft-row more-row"><div class="draft-txt"><b>${escH(r.label)}</b>${notePreviewHTML(r.t)}</div>${noteBtnHTML(r.t, r.label)}</div>`; });
-  return accHTML('dr-more', `📋 עוד בטיוטה (${total})${withNote ? `${SEP}${msi('chat', { cls: 'msi-in' })} ${withNote}` : ''}`, `<p class="sh-hint">שכבות, מידע כללי${D.data.kind === 'trip' ? ', נסיעות, לינות ולו"ז' : ''}: ${msi('chat', { cls: 'msi-in' })} מוסיף הערה ל-${AI} לסבב השיפורים.</p><div class="draft-list">${html}</div>`, !!FILTER.draft.notes);
+  return accHTML('dr-more', `📋 עוד בטיוטה (${total})${withNote ? `${SEP}${msi('chat', { cls: 'msi-in' })} ${withNote}` : ''}`, `<p class="sh-hint">שכבות, מידע כללי${D.data.kind === 'trip' ? ', נסיעות, לינות ולו"ז' : ''}: ${msi('chat', { cls: 'msi-in' })} מוסיף הערה ל-${AI} ${TX.claude.round.inName}.</p><div class="draft-list">${html}</div>`, !!FILTER.draft.notes);
 }
 // summary block of the draft: the round that is out, the last round that came back, the general note
 function draftRoundHTML(D) {
@@ -51,7 +51,8 @@ function draftRoundHTML(D) {
   const on = openNotes(D).length, gen = noteOf(D, 'general');
   if (D.round) h += `<div class="callout round-out">${claudeMark()} <b>נשלחה ל-${AI}${SEP}סבב ${D.round.n}</b>${SEP}${tmFmt('date', D.round.sentAt)} ${tmFmt('stamp', D.round.sentAt)}<br><small>ממשיכים לעבוד כרגיל. מה שתשנו בינתיים נשמר.</small> <button type="button" class="btn-sec" id="drRoundStop" data-act="draft.drRoundStop">✕ לא מחכים לסבב</button></div>`;
   if (D.last) { const L = D.last;
-    h += `<div class="callout round-back">${claudeMark()} <b>סבב ${L.n} חזר</b>: ה-${AI} עדכן ${L.upd}, הוסיף ${L.added}, טיפל ב-${L.replies} הערות${L.removed ? `, הוריד ${L.removed} שנסגרו` : ''}${L.suggest ? `, ממליץ להוריד ${L.suggest}` : ''}.${L.summary ? `<br><small>${escH(L.summary)}</small>` : ''}${L.conflicts ? `<br><small>${msi('edit_note', { size: 16, cls: 'msi-in' })} ב-${L.conflicts} מקומות ה-${AI} הציע אחרת ממה שתיקנתם - התיקון שלכם נשאר עד שתחליטו.</small>` : ''}</div>`; }
+    h += `<div class="callout round-back">${claudeMark()} <b>סבב ${L.n} חזר</b>: ה-${AI} עדכן ${L.upd}, הוסיף ${L.added}, טיפל ב-${L.replies} הערות${L.removed ? `, הוריד ${L.removed} שנסגרו` : ''}${L.suggest ? `, ממליץ להוריד ${L.suggest}` : ''}.${L.summary ? `<br><small>${escH(L.summary)}</small>` : ''}</div>`; }
+  h += sgSecHTML('draft'); // ai-fix-mine (Q5): "הצעות לתיקון במה שקבעתם (N)" atop the summary - the AI suggests, your fix stays until you decide
   h += `<div class="brow export-actions round-acts"><button type="button" class="claude-btn" id="drRound" data-act="draft.drRound">${claudeH(TX.claude.round.btn)}</button>${tipI('claude.round')}</div>`; // 5.15.0 (ד7): 💬 הערה כללית moved into the round's window
   return h;
 }
@@ -62,38 +63,15 @@ function roundMarksHTML(D, x) {
   const c = (D.changed || {})[k]; if (c) out.push(`<span class="rmark">${c === 'new' ? claudeMark() + ' חדש מה-' + AI : claudeMark() + ' עודכן בסבב'}</span>`);
   if ((D.byClaude || {})[k]) out.push(`<span class="rmark rm-off">✕ הוצא על ידי ה-${AI}: ${escH(D.byClaude[k])}${D.off[k] ? '' : (SEP + 'הוחזר')}</span>`);
   if ((D.suggest || {})[k] && !D.off[k]) out.push(`<span class="rmark rm-sugg">${claudeMark()} מומלץ להוריד: ${escH(D.suggest[k])} <button type="button" class="mini-btn" data-sugg="${escH(k)}" data-act="draft.sugg" data-v="off">להוריד</button><button type="button" class="mini-btn" data-sugg="${escH(k)}" data-act="draft.sugg" data-v="keep">להשאיר</button></span>`);
-  if ((D.conflict || {})[k] && Object.keys(D.conflict[k]).length) out.push(`<button type="button" class="rmark rm-conf" data-act="draft.conflict" data-v="${escH(k)}">${msi('edit_note', { size: 16 })} ה-${AI} הציע אחרת ›</button>`);
+  if (sgDraftOpen(D, k)) out.push(`<button type="button" class="rmark rm-conf" data-act="sg.draft" data-v="${escH(k)}">${msi('edit_note', { size: 16 })} הצעת תיקון ›</button>`); // ai-fix-mine (Q5): the mark on the place, as on a place of a trip
   return out.length ? `<div class="rmarks">${out.join('')}</div>` : '';
 }
-const FIELD_LABEL = { name: 'שם', layer: 'שכבה', address: 'כתובת', description: 'תיאור', manualCoord: 'מיקום', region: 'אזור', transit: 'איך מגיעים', reservation: 'הזמנה', price: 'מחיר' };
-function openConflictSheet(key) { const ctl = {}; layerNote(openConflictSheet, arguments);
-  const D = DRAFT, cf = (D.conflict || {})[key]; if (!cf) return;
-  const x = draftItems(D).find(i => i.key === key); if (!x) return;
-  const show = (f, v) => f === 'manualCoord' ? (v ? `${v.lat}, ${v.lng}` : '—') : f === 'layer' ? draftLayer(x.dp, v).name : bpFieldText(f, v) != null ? escH(bpFieldText(f, v) || '—') /* 11.42.0: a booking or price in words */ : escH(v == null || v === '' ? '—' : v);
-  const sheet = document.getElementById('sheet');
-  sheet.innerHTML = `${fmHead(`📝 ה-${AI} הציע אחרת${SEP}${escH(x.p.name)}`, 'cfClose')}
-    <p class="sh-hint">תיקנתם את השדות האלה בעצמכם, וה-${AI} שינה אותם בקובץ שחזר. התיקון שלכם נשאר עד שתבחרו - נגיעה בכרטיס בוחרת.</p>
-    ${Object.entries(cf).map(([f, v]) => twoCardsHTML(FIELD_LABEL[f] || f, [{ cap: 'שלכם', val: show(f, (D.fix[key] || {})[f]), on: true, act: 'conflict.cfk', data: ` data-cfk="${f}"` },
-      { cap: `${claudeMark({ size: 16 })} ${AI}`, val: show(f, v), act: 'conflict.cfa', data: ` data-cfa="${f}"` }])).join('')}
-    <div class="brow sheet-actions sheet-save-bar"><button class="btn-nav" data-act="win.done">✓ סיום</button></div>`; // 10.5.0: a tap on a card chooses it (yours stays until then)
-  
-  const done = (f, accept) => {
-    if (accept) { const fx = { ...(D.fix[key] || {}) }; delete fx[f]; if (f === 'manualCoord') delete fx.coordSource; if (Object.keys(fx).length) D.fix[key] = fx; else delete D.fix[key]; }
-    const c = { ...D.conflict[key] }; delete c[f]; if (Object.keys(c).length) D.conflict[key] = c; else delete D.conflict[key];
-    saveDraft(); if (D.conflict[key]) openConflictSheet(key); else closeSheet(); renderDraftScreen();
-    showUndoToast(accept ? '' + SY.claude + ' התקבל מה-' + AI : 'נשאר שלי'); };
-  ctl.cfa = b => done(b.dataset.cfa, true);
-  ctl.cfk = b => done(b.dataset.cfk, false);
-  showSheetBackdrop('openConflictSheet'); layerTop().ctl = ctl;
- 
-}
-ctlActs('conflict', ['cfa', 'cfk']);
+// ai-fix-mine (item 4): what the AI suggests for a field you fixed is decided in the one list (js/ai-suggest.js) - atop the summary, or from the place's mark
 // 💬, suggestions and conflicts work in the list, in map cards and in dialogs (6.1.0: actions)
 act('note.open', c => openNoteSheet(c.v, c.el.dataset.nlabel));
 act('draft.sugg', c => { if (!DRAFT) return; const k = c.el.dataset.sugg, D = DRAFT;
   if (c.v === 'off') D.off[k] = 1; delete D.suggest[k]; saveDraft();
   showUndoToast(c.v === 'off' ? 'הורד לפי ההמלצה' : 'נשאר'); return 'redraw'; });
-act('draft.conflict', c => { if (DRAFT) openConflictSheet(c.v); });
 
 // ---- sending a round ----
 function roundCounts(D) {
@@ -139,7 +117,7 @@ function buildRoundFile(D, opts) {
   const userAdds = draftAdds(D).filter(a => !D.off[a.key]).map(a => { const o = { key: a.key, dest: a.dest, name: a.name, layerName: draftAddLayer(D, a).name };
     ['manualCoord', 'coordSource', 'src', 'foreign', 'description', 'transit', 'reservation', 'price', 'address', 'icon', 'region'].forEach(k => { o[k] = a[k] != null ? JSON.parse(JSON.stringify(a[k])) : (k === 'manualCoord' || k === 'src' ? null : ''); });
     hashes[a.key] = placeHash(o); return o; });
-  const out = withClaude({ ...d, appVersion: APP_VERSION, createdAt: new Date().toISOString(), signature: `${draftTitle(D)} · טיוטה לסבב שיפורים ${n} · ${tmFmt('date', Date.now())} · v${APP_VERSION}`, unlocated: unlocatedOut(draftOffMap(D)) }, 'round');
+  const out = withClaude({ ...d, appVersion: APP_VERSION, createdAt: new Date().toISOString(), signature: `${draftTitle(D)} · ${TX.claude.round.name} ${n} · ${tmFmt('date', Date.now())} · v${APP_VERSION}`, unlocated: unlocatedOut(draftOffMap(D)) }, 'round');
   out.round = { n, status: 'sent', sentAt: new Date().toISOString(), options: opts, notes, userFixed, userAdds };
   out._sentHash = hashes;
   return out;
@@ -171,19 +149,25 @@ function mergeRound(data) {
     ['places', 'travels', 'lodging', 'schedule'].forEach(k => { const have = new Set((nw.trip[k] || []).map(x => String(x.id))); nw.trip[k] = (nw.trip[k] || []).concat((D.data.trip[k] || []).filter(x => !have.has(String(x.id)))); }); }
   destsOf(nw).forEach(dp => { if (!dp) return; const od = destsOf(D.data).find(x => x && x.id === dp.id); if (!od) return; const have = new Set((dp.places || []).map(p => p.id)); dp.places = (dp.places || []).concat((od.places || []).filter(p => !have.has(p.id))); });
   const changed = {}, conflict = { ...(D.conflict || {}) }; let upd = 0, added = 0, conflicts = 0;
-  const visit = (p, key) => { delete p.draftRemoved; const o = oldPlaces.get(key);
+  const visit = (p, key) => { delete p.draftRemoved; const sugIn = p.suggest; delete p.suggest; const o = oldPlaces.get(key); if (o) recSet(p, recClean(o.p.recs)); // prev-recs (Q12): the round's file brought none - the draft's summary stays
     if (!o) { changed[key] = 'new'; added++; return; }
     const sentP = { ...o.p, ...(sentFix[key] || {}) }; if (sentFix[key] && sentFix[key].manualCoord === null) { delete sentP.manualCoord; delete sentP.coordSource; }
     const was = sentHash[key] || placeHash(sentP);
     const pc = { ...p }; if (D.off[key]) pc.draftRemoved = true; const now = placeHash(pc);
     if (was !== now && !D.off[key]) { changed[key] = 'upd'; upd++; }
-    const fx = D.fix[key]; if (fx) Object.keys(fx).forEach(f => { if (f === 'coordSource') return; const sv = sentP[f], nv = p[f];
-      if (JSON.stringify(nv) !== JSON.stringify(sv) && JSON.stringify(nv) !== JSON.stringify(fx[f])) { conflict[key] = { ...(conflict[key] || {}), [f]: nv === undefined ? null : nv }; conflicts++; } }); };
+    // ai-fix-mine (Q1, Q5): a field I fixed (userFixed) - the AI's other value comes as its suggestion with a reason (`suggest`); one written
+    // straight over my fix (an older kit) is read as a suggestion with no reason. Only a field of the closed set (SG_FIELDS); not equal to my
+    // fix, nor the value I kept ("להשאיר שלי") - a newer suggestion of another value replaces an open one (Q6)
+    const fx = D.fix[key], old = conflict[key] || {}, put = (f, e) => { const k = old[f] && sgDraftEntry(old[f]); if (k && k.d === 0 && sgSame(k.v, e.v)) return; conflict[key] = { ...(conflict[key] || {}), [f]: { ...e, at: Date.now() } }; conflicts++; };
+    if (fx) { const sug = new Map(sgClean(sugIn).map(x => [x.field, x]));
+      Object.keys(fx).forEach(f => { if (f === 'coordSource' || !SG_FIELDS.includes(f)) return; const sv = sentP[f], nv = p[f], g = sug.get(f);
+        if (g && !sgSame(g.value, fx[f])) put(f, { v: g.value, why: g.reason, src: g.source });
+        else if (!g && JSON.stringify(nv) !== JSON.stringify(sv) && JSON.stringify(nv) !== JSON.stringify(fx[f]) && sgValue(f, nv) !== undefined) put(f, { v: sgValue(f, nv), why: '', src: '' }); }); } };
   destsOf(nw).forEach(dp => dp && newIds.has(dp.id) && (dp.places || []).forEach(p => visit(p, dp.id + ':' + p.id)));
   if (kind === 'trip') (nw.trip.places || []).forEach(p => visit(p, 'trip:' + p.id));
   // my additions: Claude fills only what is empty; name, layer, point and source stay mine
   (rd.userAdds || []).forEach(r => { const a = (D.add || []).find(x => x.key === r.key); if (!a) return; let any = false;
-    ['foreign', 'description', 'transit', 'reservation', 'price', 'address', 'icon'].forEach(f => { if ((a[f] == null || a[f] === '') && r[f]) { a[f] = r[f]; any = true; } });
+    ['foreign', 'nameLead', 'description', 'transit', 'reservation', 'price', 'address', 'icon'].forEach(f => { if ((a[f] == null || a[f] === '') && r[f]) { a[f] = r[f]; any = true; } });
     if (any) { changed[a.key] = 'upd'; upd++; } });
   D.byClaude = { ...(D.byClaude || {}) }; D.suggest = { ...(D.suggest || {}) };
   (rd.removed || []).forEach(r => { const k = targetItemKey(r.target); if (!k) return; D.off[k] = 1; D.byClaude[k] = r.reason || 'נסגר'; delete D.suggest[k]; });
@@ -192,6 +176,7 @@ function mergeRound(data) {
   (rd.replies || []).forEach(r => { const t = Object.keys(D.notes).find(k => D.notes[k].id === r.note); if (!t) return; const n = D.notes[t];
     if (n.sentIn !== rd.n || n.state !== 'open') return; // a note changed after sending waits for the next round
     D.notes[t] = { ...n, state: 'answered', reply: String(r.reply || ''), done: r.done !== false, replyAt: Date.now() }; replies++; });
+  sgStrip(nw); delete SG_L.draft; // ai-fix-mine: what is not a suggestion on a field I fixed is not kept; the summary's list is drawn afresh
   D.data = nw; D.changed = changed; D.conflict = conflict; D.roundN = Math.max(D.roundN || 0, rd.n || 1);
   D.last = { n: rd.n || 1, at: Date.now(), summary: rd.summary || '', upd, added, replies, removed: (rd.removed || []).length, suggest: Object.keys(D.suggest).filter(k => !D.off[k]).length, conflicts };
   if (!D.round || D.round.n <= (rd.n || 1)) delete D.round;

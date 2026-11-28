@@ -12,6 +12,7 @@ const TOUCH = {
   slop: .45,                       // em - about half a letter
   hold: 500,                       // ms - a long press
   swipeAt: .17, swipeMax: .26,     // of the row's width - completes past swipeAt, travels at most swipeMax (≈60 / 90 px on a 412 phone)
+  turnAt: .5,                      // of the page's width - a page turned by the finger (a swipe with move) completes past half way (passport-look Q5)
   pullAt: 1 / 3,                   // of the window's height - a pull closes past it
   floatAt: .35, floatUp: .12,      // of the floating card's height - completes past floatAt (≈40 px), upward it moves at most floatUp (a hint)
   edgeTop: .2, edgeBottom: .1, edgeSpeed: 8, // of the scroll area's height - a drag near an edge scrolls, at most edgeSpeed px a frame
@@ -60,15 +61,17 @@ function gMove(x, y, e) { const g = G; if (!g) return; g.x = x; g.y = y; const d
     else { G = null; return; } // scrolling - the browser's
   }
   if (e && e.cancelable) e.preventDefault(); // the gesture owns the finger from here (Q4)
-  if (g.k === 'swipe') { const s = g.c.swipe, w = s.el.offsetWidth, m = w * TOUCH.swipeMax, v = g.dir > 0 ? Math.max(0, Math.min(m, dx)) : Math.max(-m, Math.min(0, dx)), past = Math.abs(v) > w * TOUCH.swipeAt;
-    s.el.style.transform = `translateX(${v}px)`; const k = s.o.stay && s.o.stay(s.el); if (k) k.style.transform = `translateX(${-v}px)`; // the previewing control stays in view
-    if (past !== !!g.past) { g.past = past; s.o.preview(s.el, g.dir, past); if (past) buzz('light'); } }
+  if (g.k === 'swipe') { const s = g.c.swipe, turn = !!s.o.move, w = s.el.offsetWidth, m = turn ? w : w * TOUCH.swipeMax, v = g.dir > 0 ? Math.max(0, Math.min(m, dx)) : Math.max(-m, Math.min(0, dx)), past = Math.abs(v) > w * (turn ? TOUCH.turnAt : TOUCH.swipeAt);
+    if (turn) s.o.move(s.el, g.dir, w ? Math.abs(v) / w : 0); // a page turned by the finger: the screen draws the turn (the passport book)
+    else { s.el.style.transform = `translateX(${v}px)`; const k = s.o.stay && s.o.stay(s.el); if (k) k.style.transform = `translateX(${-v}px)`; } // the previewing control stays in view
+    if (past !== !!g.past) { g.past = past; if (s.o.preview) s.o.preview(s.el, g.dir, past); if (past) buzz('light'); } }
   else if (g.k === 'pull') { const p = g.c.pull, h = p.el.offsetHeight; g.dy = dy; p.el.style.transform = `translateY(${Math.max(-h * (p.o.up || 0), Math.min(h, dy))}px)`; }
   else if (g.k === 'drag') gDragMove(g.d, y);
 }
 function gFinish(ok) { const g = G; if (!g) return false; G = null; clearTimeout(g.timer);
   const s = g.c.swipe, p = g.c.pull, d = g.c.drag; if (d) d.el.classList.remove('g-arm', 'g-lift');
-  if (g.k === 'swipe') { s.el.classList.remove('g-moving'); s.el.style.transform = ''; const k = s.o.stay && s.o.stay(s.el); if (k) k.style.transform = ''; if (g.past) s.o.preview(s.el, g.dir, false); if (ok && g.past) { buzz('confirm'); s.o.done(s.el, g.dir); } }
+  if (g.k === 'swipe' && s.o.move) { s.el.classList.remove('g-moving'); const go = !!(ok && g.past); if (go) buzz('confirm'); s.o.end(s.el, g.dir, go); } // completes past turnAt, else falls back
+  else if (g.k === 'swipe') { s.el.classList.remove('g-moving'); s.el.style.transform = ''; const k = s.o.stay && s.o.stay(s.el); if (k) k.style.transform = ''; if (g.past) s.o.preview(s.el, g.dir, false); if (ok && g.past) { buzz('confirm'); s.o.done(s.el, g.dir); } }
   else if (g.k === 'pull') { p.el.classList.remove('g-moving'); p.el.style.transform = ''; const at = p.el.offsetHeight * p.o.at;
     if (ok && (g.dy > at || (p.o.up && g.dy < -at))) { buzz('confirm'); p.o.done(p.el, g.dy > 0 ? 1 : -1); } }
   else if (g.k === 'drag') gDragEnd(g.d, ok);

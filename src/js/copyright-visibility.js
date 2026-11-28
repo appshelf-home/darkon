@@ -6,7 +6,7 @@ const COPY_FIRST_YEAR = 2026, COPY_OWNER = 'מחתימים דרכון'; // 11.39
 // under MIT - only "כל הזכויות שמורות" was replaced, the form stays "<name> · <words> © <years>"; build.py reads COPY_WORDS for the page head.
 // COPY_REPO is the public repository (app.json publicRepo); the settings line links it, "מקורות ורישיונות" and the terms page link its LICENSE.
 const COPY_WORDS = 'קוד פתוח ברישיון MIT', COPY_REPO = 'https://github.com/appshelf-home/darkon';
-function copyYears(date) { const m = String(date || '').match(/(\d{4})\s*$/), y = m ? Number(m[1]) : COPY_FIRST_YEAR; return y > COPY_FIRST_YEAR ? `${COPY_FIRST_YEAR}–${y}` : String(COPY_FIRST_YEAR); }
+function copyYears(date) { const m = String(date || '').match(/(\d{4})\s*$/), y = m ? Number(m[1]) : COPY_FIRST_YEAR; return y > COPY_FIRST_YEAR ? tmSpan(COPY_FIRST_YEAR, y) : String(COPY_FIRST_YEAR); } // draw-no-write (6): the years read left to right in a Hebrew line
 function copyrightText() {
   return `${COPY_OWNER} · ${COPY_WORDS} © ${copyYears(APP_DATE)}`; } // 10.6.2 (the owner): the name first, "© <years>" at the end
 const TRIP_DAYS = []; // days of the active trip, filled by applyActiveTrip()

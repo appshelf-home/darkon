@@ -31,9 +31,10 @@ function restoreInfoSpot(sp) {
   [150, 400, 800, 1400].forEach(t => setTimeout(() => { if (!moved && activeTab === 'info') put(); }, t));
 }
 function goTab(tab) {
-  if (SCREEN_TABS.has(tab)) { if (tab === 'draft' && activeTab !== 'draft') { try { if (draftView) delete draftView.view; } catch (e) {} } openScreen(tab); return; } // 5.6.0: a full screen over the current place
+  if (SCREEN_TABS.has(tab)) { if (tab === 'draft' && activeTab !== 'draft') { try { if (draftView) delete draftView.view; } catch (e) {} } if (tab === 'memory') archiveViewEnd(); openScreen(tab); return; } // 5.6.0: a full screen over the current place
   if (!layerLeave(() => goTab(tab))) return; // windows-inner-steps (Q7): not over an unsaved change - the row asks in that layer first
   closeAllSheets(); // 5.1.0: moving to another screen closes every window
+  if (tab === 'trips') archiveViewEnd(); // archive-redraw: the trips screen or a memory screen chosen ends an archive view - here, never in their draw
   ARRANGE_DAYS = false; // 4.38.0
   if (isLayerTab(tab)) { FP.layers = new Set([tab]); tab = 'all'; }
  // 4.3.0: one points screen, layers are chips on it

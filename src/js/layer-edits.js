@@ -20,7 +20,7 @@ function renderLayersScreen(target) {
   const el = target || document.getElementById('main'), inSheet = !!target;
   const d = oneDest(), list = destLayersEff(d), multi = tripDests(activeTripObj()).length > 1;
   const esc = escH;
-  const gs = hasTrip() ? chipGroups() : [], manual = !!((STATE.chipOrder || {})[STATE.activeTrip]);
+  const gs = inTrip() ? chipGroups() : [], manual = !!((STATE.chipOrder || {})[STATE.activeTrip]); // destination-view: the chips' order is a trip's
   const rows = list.map((l, i) => `<div class="lyr-row" data-ipid="${l.id}">
       <span class="lyr-dot" style="--lc:${l.color}">${typeIcon(l.icon, { size: 18 })}</span>
       <span class="lyr-name"><b>${esc(l.name)}</b><small>${l.label && l.label !== l.name ? 'בשבב: ' + esc(l.label) + SEP : ''}${layerPlaceCount(l.id)} מקומות${SEP}${l.type && BASE_TYPES[l.type] ? 'בסיס: ' + BASE_TYPES[l.type].name : 'ייחודית'}${l.collection ? SEP + msiT('checklist', 'אוסף') : ''}${l.hidden ? SEP + msiT('visibility_off', 'מוסתרת') : ''}${l.userAdded ? (SEP + 'הוספתי') : (l.edited ? (SEP + 'ערכתי') : '')}</small></span>
@@ -75,7 +75,7 @@ act('le.save', c => { const F = fmOf(c.el); if (!F) return; const { cur, d, o } 
   const name = fmGet(F, 'name'); if (!name) return fmFail(F, 'name', 'חסר שם');
   const data = { name, label: fmGet(F, 'label') || name, color: F.vals.color, icon: F.vals.icon, collection: !!fmGet(F, 'coll'), hidden: !!fmGet(F, 'hide'), type: fmGet(F, 'type') || '' };
   c.el.disabled = true; c.el.textContent = 'שומר…';
-  if (o.draft) { const D = o.draft; if (F.opts.others.some(l => discNorm(l.name) === discNorm(name))) { c.el.disabled = false; c.el.textContent = 'שמירה'; return fmFail(F, 'name', 'יש כבר שכבה בשם הזה'); }
+  if (o.draft) { const D = o.draft; if (F.opts.others.some(l => nameCore(l.name) === nameCore(name))) { c.el.disabled = false; c.el.textContent = 'שמירה'; return fmFail(F, 'name', 'יש כבר שכבה בשם הזה'); }
     const nl = { id: 'nl:' + Date.now().toString(36), dest: o.dest, name, label: data.label === name ? name.slice(0, 10) : data.label, color: data.color, icon: data.icon, type: data.type };
     D.addLayers = D.addLayers || []; D.addLayers.push(nl); saveDraft(); closeSheet(); showUndoToast('שכבה חדשה בטיוטה: ' + name); /* undo-history: a row */ if (o.onNew) o.onNew(o.dest + '|' + nl.id); return; }
   const who = STATE.settings.deviceName || '', had = new Set(LAYER_DEFS.map(l => l.id)); let msg;

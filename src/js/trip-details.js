@@ -18,7 +18,7 @@ async function mclimFetch(cs) { // service "אקלים חודשי": once a year 
   if (r.kind !== 'ok') return cache;
   r.value.forEach((x, i) => { if (!x || !x.daily || !need[i]) return; const m = Array.from({ length: 12 }, () => ({ tx: [], tn: [], r: [] }));
     x.daily.time.forEach((d, k) => { const o = m[+d.slice(5, 7) - 1]; o.tx.push(x.daily.temperature_2m_max[k]); o.tn.push(x.daily.temperature_2m_min[k]); o.r.push(x.daily.precipitation_sum[k]); });
-    cache[need[i].k] = { at: Date.now(), y: `${y - 3}–${y - 1}`, m: m.map(o => ({ tx: avg(o.tx), tn: avg(o.tn), rd: o.r.length ? Math.round(o.r.filter(v => v >= 1).length / o.r.length * 30) : null })) }; });
+    cache[need[i].k] = { at: Date.now(), y: tmSpan(y - 3, y - 1), m: m.map(o => ({ tx: avg(o.tx), tn: avg(o.tn), rd: o.r.length ? Math.round(o.r.filter(v => v >= 1).length / o.r.length * 30) : null })) }; });
   regWrite('mclim', cache);
   return cache;
 }
@@ -44,6 +44,7 @@ act('mclim.month', c0 => { if (!MCLIM) return; const { rows, cache } = MCLIM, [k
     const row = c0.el.closest('.mc-dest'), w = row && row.querySelector(':scope > .wx-words'); if (w) wxSeasonTap(w, +i);
     if (row) row.querySelectorAll('.mc-cell').forEach(b => b.classList.toggle('mc-tap', b === c0.el)); return 'quiet'; });
 function tripBlocksHTML() {
+  if (DEST_VIEW) return weatherBlockHTML(); // destination-view (Q1): the destination's weather; travels, lodging and the group's plan are a trip's
   const lo = tripLodging();
   const esc = escH;
   const sch = rawSchedule();
@@ -131,7 +132,7 @@ function removeFlightFromPlan(fid) {
 function travelDay(f) { const d = TRIP_DAYS.find(x => x.date === f.date); return d ? d.key : null; }
 function syncFlightsToPlan() {
   travelOrphansOut(activeTripObj(), { planItems: STATE.planItems, itinerary: STATE.itinerary, times: STATE.times, planX: STATE.planX }); // 11.0.0 (Q16)
-  tripFlights().forEach(f => { f.day = travelDay(f);
+  tripFlights().forEach(f0 => { const f = { ...f0, day: travelDay(f0) }; // trip-base-plus: the plan's day is the sync's own - never written on the travel (a dateless trip's reading drops a travel's `day`, the file's day number, so a redo came back without it)
     if (!f.day) { removeFlightFromPlan(f.id); return; }
     const had = STATE.planItems[f.id];
     STATE.planItems[f.id] = { ...(had || {}), name: travelTitle(f), address: (had && had.address) || '', icon: 'airport', travel: f.mode || 'flight' };

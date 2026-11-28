@@ -1,5 +1,5 @@
 // ================= 📚 discoveries - what's around here (4.25.0) =================
-// diet-groups (11.62.0): DISC, DISC_MAPS, the switch, discAttach, discNorm / discExisting, the Wikipedia link, alongCan / alongBtnHTML and the draft's layer choice are in js/disc-door.js (main)
+// diet-groups (11.62.0): DISC, DISC_MAPS, the switch, discAttach, discNames / discExisting, the Wikipedia link, alongCan / alongBtnHTML and the draft's layer choice are in js/disc-door.js (main)
 // What is around: Wikipedia articles with a location (📚, Hebrew when there is one, English otherwise) in a wide radius,
 // and small sights from OpenStreetMap (🏛️ statues, memorials, viewpoints, fountains, historic buildings) in a small one.
 // Businesses only through a Google Maps link. A switch per device that stays on; data loads only on "🔄 חיפוש באזור הזה".
@@ -19,9 +19,9 @@ async function discKeepImg(url) { // only for a discovery that was opened; the o
 }
 // 4.26.0: in the draft, a discovery that is already one of the draft's places (or one I added to it)
 function discInDraft(it) {
-  if (!DRAFT) return null; const n = discNorm(it.title);
+  if (!DRAFT) return null;
   return draftItems(DRAFT).find(x => { const p = x.p; if (p.src && ((p.src.key && p.src.key === it.k) || (it.url && p.src.url === it.url))) return true;
-    const c = draftCoord(p); if (!c || distanceKm(c, it) > 0.15) return false; const m = discNorm(p.name); return m.length > 2 && n.length > 2 && (m.includes(n) || n.includes(m)); }) || null;
+    const c = draftCoord(p); if (!c || distanceKm(c, it) > SAME_NEAR_KM) return false; return !!placeNameMatch(discNames(it), p, 'loose'); }) || null;
 }
 function discHave(it, st) { return discExisting(it) || (st && st.ctx === 'draft' ? discInDraft(it) : null); }
 async function discWiki(c, r, alive) { // alive (limits-and-safety): "along the drive" stopped waiting - its requests not sent yet are dropped
@@ -63,10 +63,10 @@ async function discSearch(hostId) {
   showToast(n ? `נמצאו ${n} דברים מעניינים כאן` : 'לא נמצא כאן משהו חדש');
 }
 // the answers kept, each once: Wikipedia's by its article, an OSM sight not when it is one of those articles (its wikipedia tag, or the same name within 100 m)
-function discMerge(w, o) { const wTitles = new Set((w || []).map(x => discNorm(x.title)).concat((w || []).map(x => discNorm(x.enTitle)).filter(Boolean)));
+function discMerge(w, o) { const wTitles = new Set((w || []).map(x => nameCore(x.title)).concat((w || []).map(x => nameCore(x.enTitle)).filter(Boolean)));
   (w || []).forEach(it => { const old = DISC.items[it.k]; DISC.items[it.k] = { ...old, ...it, extract: old && old.extract }; });
-  (o || []).forEach(it => { const wp = it.wp ? discNorm(it.wp.replace(/^[a-z]+:/, '')) : '';
-    if ((wp && wTitles.has(wp)) || (w || []).some(x => distanceKm(x, it) < 0.1 && discNorm(x.title) === discNorm(it.title))) return; DISC.items[it.k] = it; }); }
+  (o || []).forEach(it => { const wp = it.wp ? nameCore(it.wp.replace(/^[a-z]+:/, '')) : '';
+    if ((wp && wTitles.has(wp)) || (w || []).some(x => distanceKm(x, it) < 0.1 && nameCore(x.title) === nameCore(it.title))) return; DISC.items[it.k] = it; }); }
 // along-drive: with a drive's search on, the drive's corridor instead of the view
 function discInView(hostId) { if (DISC_MAPS[hostId] && DISC_MAPS[hostId].along) return alongRows(hostId).map(r => r.it); const st = DISC_MAPS[hostId]; if (!st) return []; let b = null; try { b = st.map.getBounds().pad(0.15); } catch (e) {}
   return Object.values(DISC.items).filter(x => !b || !b.contains || b.contains([x.lat, x.lng])); }
@@ -266,7 +266,7 @@ function alongRows(hostId) { const st = DISC_MAPS[hostId], A = st && st.along; i
     .filter(r => r.off <= w && !discHave(r.it, st)).sort((x, y) => x.km - y.km); }
 // limits-and-safety (decisions 2026-11-24 · Review of short-waits-4 and along-stuck, Q2): the whole search has a time limit (ALONG_TIME.ms); at its end
 // the places found so far stay, and one line names the stretches that did not answer (fail) and those not searched in time (out)
-const ALONG_TIME = { ms: 120e3 }, alongNums = a => a.length === 1 ? `קטע ${a[0]}` : `קטעים ${a.length > 2 && a[a.length - 1] - a[0] === a.length - 1 ? a[0] + '–' + a[a.length - 1] : a.join(', ')}`;
+const ALONG_TIME = { ms: 120e3 }, alongNums = a => a.length === 1 ? `קטע ${a[0]}` : `קטעים ${a.length > 2 && a[a.length - 1] - a[0] === a.length - 1 ? tmSpan(a[0], a[a.length - 1]) : a.join(', ')}`;
 const alongFail = A => [A.fail.length ? alongNums(A.fail) + (A.fail.length === 1 ? ' לא ענה' : ' לא ענו') : '', (A.out || []).length ? 'עבר הזמן - ' + alongNums(A.out) + (A.out.length === 1 ? ' לא נבדק' : ' לא נבדקו') : ''].filter(Boolean).join(SEP);
 const alongMiss = A => A.fail.length + (A.out || []).length > 0;
 // the wait's words: a provider paused (a 429's Retry-After, the growing pauses) is named with its time left - else the search's own words

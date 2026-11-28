@@ -5,3 +5,9 @@ function claudePartHTML(goal, kind, offN) { const g0 = TX.claude[goal]; if (!g0)
     <details class="cl-how"${hintSeen('claude.back') ? '' : ' open'}><summary class="cl-steps">${msi('chat', { size: 16 })} שיחה חדשה <span aria-hidden="true">›</span> ${msi('attach_file', { size: 16 })} מצרפים <span aria-hidden="true">›</span> ${msi('download', { size: 16 })} מחזירים</summary><ol class="claude-steps"><li>פותחים שיחה חדשה עם ה-${AI} (באפליקציה או באתר).</li>
       <li>${g.write} בלי הסקיל: קודם מדביקים את ההוראות (${msi('content_copy', { cls: 'msi-in' })} למטה). <button type="button" class="pw-link" data-act="kit.install">${msi('extension', { cls: 'msi-in' })} <span class="lk-tx">התקנת הסקיל</span></button></li>
       <li>את הקובץ שחוזר: שיתוף ל"${APP.appShort}" או "ייבוא קובץ" - ${g.lands}.</li></ol></details></div>`; } // 9.6.0 (12ו, batch 13.2): open until the first file comes back from Claude
+// a share window's Claude part shows only when the file goes to an AI (✳ עדכון עם AI); ai-names (Q2): its title follows - "עדכון הטיול / היעד
+// עם AI" then, its own name ("📄 קובץ הטיול", "📤 שיתוף") otherwise (F.opts.tt: [kind, the trip's or destination's name])
+function shareGoalShow(F, on) { const r = fmRoot(F), h = r.querySelector('.sheet-head b'), tt = F.opts.tt; r.querySelectorAll('.cl-part, [data-act="kit.copyGoal"]').forEach(x => { x.hidden = !on; });
+  if (h && tt) { h.innerHTML = shareTitleHTML(on, tt); delete h.parentElement.dataset.framed; sheetFrame(r, layerTop()); } } // framed again: its icon, the name that shortens first
+function shareTitleHTML(on, tt) { return (on ? claudeH(TX.claude.improve[tt[0]].title) : shareOwnHead(tt[0])) + SEP + tt[1]; } // tt[1] already escaped by its window (escH)
+function shareOwnHead(k) { return k === 'trip' ? '📄 קובץ הטיול' : '📤 שיתוף'; } // each window's own name, framed with its line icon

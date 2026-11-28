@@ -12,7 +12,7 @@ function tourSteps(replay, part) {
   const p = k => '<p>' + icText(tipText(k)) + '</p>', ent = document.body.classList.contains('on-entrance');
   const steps = [
     { title: 'ברוכים הבאים', ic: 'waving_hand', body: p('tour.welcome') + p('tour.wrong') + name + `<p class="sh-hint">אפשר לשנות אחר כך ב-${msi('settings', { cls: 'msi-in' })} הגדרות</p>`, save: () => { const v = (document.getElementById('tourName') || {}).value; if (v != null) { STATE.settings = { ...STATE.settings, deviceName: v.trim() }; persist(); } } },
-    ent ? { title: 'הטיולים שלי', ic: 'luggage', target: document.querySelector('#main :is(.ent-big, .ent-empty, .ent-row)') ? '#main :is(.ent-big, .ent-empty, .ent-row)' : '#main .ent-hero', body: p('tour.tripsHere') } // 10.3.0: the entrance has no trip button - the step shows the trips themselves
+    ent ? { title: 'הטיולים שלי', ic: 'luggage', target: document.querySelector('#main :is(.ent-card, .ent-empty)') ? '#main :is(.ent-card, .ent-empty)' : '#main .ent-hero', body: p('tour.tripsHere') } // 10.3.0: the entrance has no trip button - the step shows the trips themselves
       : { title: 'הטיולים שלי', ic: 'luggage', target: '#titleBtn', body: p('tour.trips') },
     hasTrip() ? { title: 'הסרגל התחתון', ic: 'bottom_navigation', target: '#bottomNav', body: p('tour.nav') } : { title: 'איך מתחילים', ic: 'rocket_launch', target: '#main .ent-tiles', body: p('tour.start') },
     { title: '⋮ התפריט', ic: 'more_vert', target: '#menuBtn', body: p('tour.menu') },

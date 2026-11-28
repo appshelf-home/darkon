@@ -57,7 +57,7 @@ act('sched.again', c => { const { D, day, rs } = schedRowOf(c); if (!D) return; 
 // "✓ סיום": the days taken out, the rows removed by ✕, the rows' parts of the day and times, then the rows added (a day new in the draft and
 // "＋ עוד פעם"; the first keeps the place itself when it is on no day, the others are copies) - one action, one undo row naming the changes
 function schedApply(p, D) { const baseId = p.id, es = schedEntries(baseId), had = new Set(es.map(e => e.day)), lab = k => (dayByKey(k) || {}).label || k;
-  const tmS = t => t ? t.start + (t.end ? '–' + t.end : '') : '', same = (a, b) => tmS(a) === tmS(b);
+  const tmS = t => t ? tmSpan(t.start, t.end) : '', same = (a, b) => tmS(a) === tmS(b);
   const out = [...had].filter(k => !D.on.has(k)), live = k => D.on.has(k) ? D.rows[k] || [] : [];
   const gone = es.filter(e => D.on.has(e.day) && !live(e.day).some(r => r.id === e.id));
   const kept = es.map(e => ({ e, r: live(e.day).find(r => r.id === e.id) })).filter(x => x.r);

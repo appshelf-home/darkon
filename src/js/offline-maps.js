@@ -35,7 +35,7 @@ function offNearName(c) { let best = null, bd = 0.4; POINTS.forEach(p => { if (i
 function offAnchors() { // the places that decide the areas: the plan (days, the organized schedule), ⭐, ❤️ and the hotels
   const t = activeTripObj(), out = [], add = (c, w, name, hotel, key, title) => { if (c && isFinite(c.lat) && isFinite(c.lng)) out.push({ c: { lat: +c.lat, lng: +c.lng }, w, name: name || '', hotel: !!hotel, key: key || name || '', title: title || '' }); };
   tripLodging().forEach(l => { const p = l.placeId != null ? POINTS.find(q => q.id === l.placeId) : null, n = l.checkIn && l.checkOut ? Math.max(1, nightsBetween(l.checkIn, l.checkOut)) : 1;
-    add(routeCoordOf(p), 3 * n, (p && regionName(p)) || l.name || (p && p.name), true, p ? 'p' + p.id : 'n' + (l.name || ''), (p && p.name) || l.name); }); // phone-round-2b-fixes P5: the row is titled by the hotel (its place's name, else the lodging's), the region's name under it // phone-round-2b-fixes P3 (G46): a hotel's area is keyed by the hotel itself, not its region's name (two hotels of one region shared one ✕)
+    add(routeCoordOf(p), 3 * n, (p && regionName(p)) || l.name || (p && placeLabel(p)), true, p ? 'p' + p.id : 'n' + (l.name || ''), (p && p.name) || l.name); }); // phone-round-2b-fixes P5: the row is titled by the hotel (its place's name, else the lodging's), the region's name under it // phone-round-2b-fixes P3 (G46): a hotel's area is keyed by the hotel itself, not its region's name (two hotels of one region shared one ✕)
   TRIP_DAYS.forEach(d => { try { dayRefCoords(d.key).forEach(c => { if (!c.center) add(c, 1); }); } catch (e) {} });
   const fav = STATE.favorites instanceof Set ? STATE.favorites : new Set(), rate = ((STATE.tripData[t.id] || {}).rating) || {};
   POINTS.forEach(p => { if (isHiddenPoint && isHiddenPoint(p)) return; if (fav.has(p.id) || (rate[p.id] || {}).r === 'love') add(routeCoordOf(p), 1, p.name); });
@@ -132,7 +132,7 @@ async function offDeletePack(id, quiet) {
   const db = await offDB(); if (!db) return; const p = OFF_PACKS[id], b = p ? p.have.bytes : 0;
   await offScanTiles(true, c => { const t = ((c.value && c.value.t) || []).filter(x => x !== id); if (t.length !== ((c.value && c.value.t) || []).length) { if (t.length) { c.update({ ...c.value, t }); OFF_KEYS.set(c.key, t); } else { c.delete(); OFF_KEYS.delete(c.key); OFF_DEC.delete(c.key); } } });
   await offTx('packs', 'readwrite', st => st.delete(id)).catch(() => {}); delete OFF_PACKS[id]; OFF_PLAN_MEMO.sig = '';
-  if (activeTab === 'info') render(); if (!quiet) showToast(`${SY.del} נמחקו מפות הטיול (${offMB(b)})`); logEvent(SY.del + ' נמחקו מפות בלי רשת: ' + ((p && p.name) || id), true); offRefreshMaps(); if (groupHas('special-maps')) groupFn('special-maps', 'offUiRefresh')(); }
+  if (activeTab === 'info') render(); if (!quiet) showToast(`${SY.del} נמחקו מפות הטיול (${offMB(b)})`); logEvent(SY.del + ' נמחקו מפות בלי רשת: ' + ((p && placeLabel(p)) || id), true); offRefreshMaps(); if (groupHas('special-maps')) groupFn('special-maps', 'offUiRefresh')(); }
 // diet-groups: a download that waited (paused, or running when the app closed) goes on in the background - its group comes quietly
 function offResume(id) { needGroup('special-maps').then(ok => { if (ok) groupFn('special-maps', 'offDownload')(id, { quiet: true }); }); }
 function offPackLine(id) { const p = OFF_PACKS[id]; if (!p) return '';

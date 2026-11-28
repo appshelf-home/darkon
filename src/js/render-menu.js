@@ -19,6 +19,7 @@ function render() {
   if (render.held) return; // diet-mechanism: a start that waits for its group draws nothing before it is in (startup.js START_GROUPS)
   _pastRateCache = null; // 4.29.0: past ratings follow archiving and reopening
   { const k = (STATE.activeTrip || '') + '|' + activeTab; if (k !== _navShown) { _navShown = k; navShow(); } } // a trip switch or a screen change shows the bar, on every path that draws (opening a trip from a file, the draft's approval, a menu screen) - it hides only on a scroll down in the screen shown
+  if (!screenTop()) delete document.getElementById('main').dataset.stale; // archive-redraw: the base drawn again - no screen's close owes it a draw
   _render(); document.body.classList.toggle('arr-mode', !!ARRANGE_DAYS && activeTab === 'itinerary'); mapSweep(); if (_clockTimer && !document.getElementById('destClock')) { clearInterval(_clockTimer); _clockTimer = null; } mapCardSync(); updateAddFab(); fsAfterRender(); measAfterRender(); lifeSoon(); firstScreen('drawn'); // arch-guard (3): the first real screen's mark
   if (FP.q && (activeTab === 'all' || activeTab === 'map')) markSearch(document.getElementById('main'), FP.q); // 5.15.0: what was found is marked
   explainSync(); // 10.15.0 (design-review): the close rule - a bubble of another screen, layer or trip goes
@@ -28,7 +29,7 @@ function render() {
   if (nag && activeTab !== 'sync') document.getElementById('main').insertAdjacentHTML('afterbegin', nag);
   const db = draftBannerHTML(); // 4.2.0: a draft waiting for approval shows on top of every screen
   if (db) document.getElementById('main').insertAdjacentHTML('afterbegin', db);
-  const ab = archiveBarHTML(); if (ab) document.getElementById('main').insertAdjacentHTML('afterbegin', ab); // 4.28.0
+  const ab = archiveBarHTML() || destViewBarHTML(); if (ab) document.getElementById('main').insertAdjacentHTML('afterbegin', ab); // 4.28.0; destination-view (Q5): its own strip
   if (activeTab === 'itinerary' || activeTab === 'all') visSwipeHint(); // 9.2.0 (ס5)
   introMaybe(); // 9.6.0 (12ו)
 }
@@ -38,6 +39,7 @@ function _render() {
   if (activeTab === 'passport') { renderTabs(); groupScreen('memories', 'renderPassportScreen'); return; } // passport-book: the book, with or without an open trip
   if (!hasTrip() && !NO_TRIP_TABS.includes(activeTab)) { renderTabs(); renderTripsScreen(!!Object.keys(STATE.trips).length); return; } // 4.45.0: one trips screen, also when no trip is open
   if (isLayerTab(activeTab)) { const t = translateTab(activeTab); FP.layers = t != null ? new Set([t]) : new Set(); activeTab = 'all'; }
+  if (DEST_VIEW && sectionOf(activeTab) === 'plan') activeTab = 'all'; // destination-view (Q5): a destination has no days - no plan
   document.body.classList.remove('map-card-open');
   renderTabs();
   if (activeTab === 'must' || activeTab === 'resv' || activeTab === 'clusters') activeTab = 'all'; // 4.9.0 shortcuts; their screens left in 5.14.0
@@ -54,11 +56,11 @@ function _render() {
   if (activeTab === 'hidden') { renderHiddenScreen(); return; }
   if (activeTab === 'draft') { groupScreen('ai', 'renderDraftScreen'); return; }
   if (activeTab === 'claude') { groupScreen('ai', 'renderClaudeScreen'); return; }
-  if (activeTab === 'layers') { groupScreen('management', 'renderLayersScreen'); return; }
+  if (activeTab === 'layers') { groupScreen('editors', 'renderLayersScreen'); return; }
   if (activeTab === 'trips') { renderTripsScreen(); return; }
   if (activeTab === 'closing') { groupScreen('memories', 'renderClosingScreen'); return; } // 4.29.0
-  if (activeTab === 'proposal') { groupScreen('ai', 'renderProposalScreen'); return; } // 11.5.0 (schedule-proposal): the preview
-  if (activeTab === 'memory') { if (ARCHIVE_VIEW) exitArchiveView(true); groupScreen('memories', 'renderMemoryScreen'); return; } // 4.28.0
+  if (activeTab === 'proposal') { groupScreen('proposal', 'renderProposalScreen'); return; } // 11.5.0 (schedule-proposal): the preview
+  if (activeTab === 'memory') { groupScreen('memories', 'renderMemoryScreen'); return; } // 4.28.0; archive-redraw: the draw never ends an archive view (goTab does, when the screen is chosen)
   if (activeTab === 'itinerary') { renderItineraryTab(); return; }
   if (activeTab === 'all') { renderAllTab(); return; }
   renderLayerTab(activeTab);

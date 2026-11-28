@@ -12,8 +12,8 @@ function routeVisits() { // [{ n:[numbers], name, from, to, nights, hotels:[name
   const lod = (t.lodging || []).filter(l => l.checkIn && l.checkOut).slice().sort((a, b) => a.checkIn.localeCompare(b.checkIn));
   let out = [];
   if (lod.length) lod.forEach(l => { const p = l.placeId != null ? POINTS.find(q => q.id === l.placeId) : null;
-    out.push({ lodgingId: l.id, name: (p && regionName(p)) || (p && p.dest && tripDests(t).length > 1 ? destName(p.dest) : '') || l.name || (p && p.name) || 'לינה', from: l.checkIn, to: l.checkOut,
-      hotels: [l.name || (p && p.name) || ''].filter(Boolean), places: p ? [p] : [], dest: p ? p.dest : '', coord: routeCoordOf(p) }); });
+    out.push({ lodgingId: l.id, name: (p && regionName(p)) || (p && p.dest && tripDests(t).length > 1 ? destName(p.dest) : '') || l.name || (p && placeLabel(p)) || 'לינה', from: l.checkIn, to: l.checkOut,
+      hotels: [lodgingLabel(l, p, t)].filter(Boolean), places: p ? [p] : [], dest: p ? p.dest : '', coord: routeCoordOf(p) }); });
   else (t.segments || []).forEach(sg => { const d = DESTS[sg.dest]; if (!d) return;
     out.push({ name: d.meta.name, from: sg.from, to: sg.to, hotels: [], places: [], dest: d.id, coord: d.meta.center ? { lat: d.meta.center[0], lng: d.meta.center[1] } : null }); });
   // consecutive stays a few kilometers apart (two hotels in one city) are one stop
@@ -191,7 +191,7 @@ function renderRouteMap(containerId, pts) {
     vs.forEach(v => { if (!v.coord && v.places[0]) v.coord = routeCoordOf(v.places[0]); });
     const bounds = drawStops(); drawLegs();
     keyPts.forEach(p => { const c = routeCoordOf(p); if (!c) return;
-      const mk = L.marker([c.lat, c.lng], { icon: L.divIcon({ className: '', html: `<div class="rt-key" title="${escH(p.name)}">${SYM_KEY}</div>`, iconSize: [24, 24], iconAnchor: [12, 12] }), zIndexOffset: 1500 }).addTo(map);
+      const mk = L.marker([c.lat, c.lng], { icon: L.divIcon({ className: '', html: `<div class="rt-key" title="${escH(placeLabel(p))}">${SYM_KEY}</div>`, iconSize: [24, 24], iconAnchor: [12, 12] }), zIndexOffset: 1500 }).addTo(map);
       mk.on('click', () => pinTap(containerId, p.id) || showMapCard(containerId, null, p)); regMarker(containerId, p.id, mk); });
     { const fb = bounds.length ? bounds : vs.filter(v => v.coord).map(v => [v.coord.lat, v.coord.lng]); if (!restore && fb.length) map.fitBounds(fb, { padding: [50, 50], maxZoom: 12 }); }
     reveal();
@@ -265,9 +265,14 @@ function svStats(S, h) {
 }
 function svStatsOf(R) { const S = svSample(R), h = svHeights(S); return h ? svStats(S, h) : null; }
 function svSumHTML(st) { return `${msiT('north_east', fmtM(st.up))} ${msiT('south_east', fmtM(st.down))}`; }
-// the button of every place: the icon and its word in one chip (or a card's tag), which never breaks; the summary once the heights are kept
-function svBtnHTML(R, o) { if (!R || (!R.pending && !svSample(R))) return ''; SV.routes[R.key] = R; const st = R.pending ? null : svStatsOf(R); // o.tag: a card's tag (the card's tag size); otherwise a chip in its own row
-  return `<button type="button" class="${o && o.tag ? 'tl-tag' : 'chip'} sv-btn" data-act="side.open" data-v="${escH(R.key)}" aria-label="גובה לאורך הדרך${st ? `: עלייה ${st.up} מטר, ירידה ${st.down} מטר` : ''}">${o && o.tag ? tagIc('landscape') : msi('landscape', { size: 18 })}גובה${st ? `<span class="sv-sum">${svSumHTML(st)}</span>` : ''}</button>`; }
+// the button of every place: a card's tag (the icon and its word, which never break; the summary once the heights are kept), or - in a row of
+// its own (the day's plan and map, the memory's day) - step-bar item 5 (decisions 2026-11-26 · A day's controls in the plan, Q1 reopened - A): a
+// quiet full-width row in the menu rows' look with › at its end, "⛰ גובה ›" and once known "⛰ גובה · ↗ 2,727 מ׳ · ↘ 2,727 מ׳ ›" - each item
+// whole, the row breaking only between items
+function svBtnHTML(R, o) { if (!R || (!R.pending && !svSample(R))) return ''; SV.routes[R.key] = R; const st = R.pending ? null : svStatsOf(R); // o.tag: a card's tag (the card's tag size)
+  const lbl = `גובה לאורך הדרך${st ? `: עלייה ${st.up} מטר, ירידה ${st.down} מטר` : ''}`;
+  if (o && o.tag) return `<button type="button" class="tl-tag sv-btn" data-act="side.open" data-v="${escH(R.key)}" aria-label="${escH(lbl)}">${tagIc('landscape')}גובה${st ? `<span class="sv-sum">${svSumHTML(st)}</span>` : ''}</button>`;
+  return `<button type="button" class="sv-btn sv-line" data-act="side.open" data-v="${escH(R.key)}" aria-label="${escH(lbl)}">${msi('landscape', { size: 20, cls: 'sv-ic' })}<span class="sv-t"><span class="sv-i">גובה</span>${st ? `<span class="sv-i">${msiT('north_east', fmtM(st.up))}</span><span class="sv-i">${msiT('south_east', fmtM(st.down))}</span>` : ''}</span>${entGo({ size: 20 })}</button>`; }
 function svRefreshBtns(key) { document.querySelectorAll('[data-act="side.open"]').forEach(b => { if (b.dataset.v !== key || !SV.routes[key]) return; const t = document.createElement('div'); t.innerHTML = svBtnHTML(SV.routes[key], { tag: b.classList.contains('tl-tag') }); if (t.firstElementChild && t.firstElementChild.outerHTML !== b.outerHTML) b.replaceWith(t.firstElementChild); }); }
 // ---- the four places' routes ----
 // the day's plan and its day map: the day's walking and driving legs with a found path, in the day's order (last night's hotel first,

@@ -79,8 +79,6 @@ function bpCurSym(code) { if (!code) return ''; try { const p = new Intl.NumberF
 function bpCurText(code) { const n = curNameHe(code); return n ? `${n} (${code})` : code; }
 // a place's booking in words: "חובה להזמין · שבוע מראש באתר הרשמי" (o.need: the choice alone)
 function resvText(v, o) { const r = bpResv(v); return [RESV_LONG[r.need], !(o && o.need) && r.note].filter(Boolean).join(SEP); }
-// a field's value as one line of text, for the screens that list a field's old and new value (the draft's conflicts)
-function bpFieldText(f, v) { return f === 'reservation' ? resvText(v) : f === 'price' ? fmtPrice(v, { note: true }) : null; }
 // the note line of a card: one line, cut with "…" (Q4 addition 1); the window and the editor show it whole. A note that holds a digit
 // (an amount, an hour - "כ-3,000–6,000 HUF") wraps whole instead (11.44.1, price-level-note; decisions 2026-11-22 · Review of the
 // booking-price and info-complete summaries, Q2: a text cut with "…" never hides a digit)

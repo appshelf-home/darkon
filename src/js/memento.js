@@ -25,7 +25,7 @@ function kmBetween(a, b) { return distanceKm(a, b); }
 function mementoData(id) {
   const M = tripMemoryData(id); if (!M) return null; const t = M.t, snap = M.snap || {}, dmeta = d => (snap.dests && snap.dests[d]) || (DESTS[d] && { ...DESTS[d].meta, idBase: DESTS[d].idBase }) || {};
   // stops: a stop per lodging (in order), or a stop per destination segment when lodging has no point
-  let stops = M.stops.map(s => ({ name: (s.l.name || s.p.name || '').replace(/\s*\(.*$/, ''), city: '', c: snapCoord(s.p), nights: nightsBetween(s.l.checkIn, s.l.checkOut) || 1, from: s.l.checkIn, dest: s.p.dest }));
+  let stops = M.stops.map(s => ({ name: lodgingLabel(s.l, s.p, t).replace(/\s*\(.*$/, ''), city: '', c: snapCoord(s.p), nights: nightsBetween(s.l.checkIn, s.l.checkOut) || 1, from: s.l.checkIn, dest: s.p.dest }));
   if (!stops.length) stops = (t.segments || []).map(sg => { const m = dmeta(sg.dest); return m.center ? { name: m.name, c: { lat: m.center[0], lng: m.center[1] }, nights: Math.max(1, daysBetween(sg.from || t.start, sg.to || t.end)), from: sg.from, dest: sg.dest } : null; }).filter(Boolean);
   stops.forEach(s => { const m = dmeta(s.dest); s.city = m.name || ''; });
   const visited = M.visited.filter(p => snapCoord(p)), rate = M.td.rating || {};

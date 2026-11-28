@@ -37,7 +37,7 @@ function hiddenScheduleOf(iso) { return rawSchedule().filter(s => (schedEd(s.id)
 function entryTok(e) { return e.land ? 'land:' + e.land.id : e.sched ? 's:' + e.sched.id : String(e.p.id); } // travels-2-plan: a landing row is an entry of the day's chain
 function entryOfTok(tok) { if (String(tok).startsWith('s:')) { const s = rawSched(tok.slice(2)); return s ? { sched: schedEff(s) } : null; } const p = planItem(pid(tok)); return p ? { p } : null; }
 function isTravelItem(p) { return !!(p && isNote(p) && p.travel); } // 11.0.0 (Q16): a note's airport icon no longer makes it a travel
-function entryName(e) { return e.sched ? e.sched.title : (e.p && e.p.name) || ''; }
+function entryName(e) { return e.sched ? e.sched.title : placeLabel(e.p); }
 // 10.2.0 (design-2): no time column and no source symbols - the time is the first chip of the tags row: "14:30" (a tap changes
 // it), "קביעת שעה" when there is none, or "הוזמן · 16:00" when booked for that time (a tap opens the booking); a travel's time
 // is only shown (its editor, from the card's window, changes it); a group item says "קבוצתי" in its tags.
@@ -96,17 +96,21 @@ function travelActsRow(f, ro) { const nav = travelNavUrl(f), id = String(f.id); 
   return `<div class="tl-acts mc-acts">${nav ? linkBtn('tl-act a-nav', nav, actIc('navigation'), 'ניווט למיקום היציאה') : ''}${MAP_AVAILABLE ? `<button type="button" class="tl-act a-map" data-act="travel.dayMap" aria-label="על מפת היום" title="על מפת היום">${actIc('map')}</button>` : ''}${ro ? '' : `<button type="button" class="tl-act a-ed" data-act="trip.editTravel" data-v="${escH(id)}" aria-label="עריכת הנסיעה" title="עריכת הנסיעה">${actIc('edit')}</button>`}</div>`; }
 act('travel.dayMap', c => { const o = c.ref && c.ref.obj, k = o && o.day; if (!k) return; const tok = String(c.ref.id || '').split('|').slice(1).join('|'); // 11.3.0: that travel marked on the day map
   TV_MARK = tok ? { day: k, id: tok } : null; setViewMode('day_' + k, 'map'); openDays.add(k); revealLater(`#main [data-day-item="${k}"] .map-container`, false); return 'redraw'; });
+// destination-view (Q3): a hide touches no plan - a planned place that was hidden stays in its day with "מוסתר", and the way back from it
+function planHiddenTag(p) { if (!isGoneStatus(p.status)) return ''; const ro = document.body.classList.contains('read-only');
+  return ro ? `<span class="tl-tag must st-why">${tagIc('visibility_off')}מוסתר</span>` : `<button type="button" class="tl-tag must st-why" data-act="plan.unhide" data-v="${escH(String(p.id))}" aria-label="${escH('מוסתר - החזרה: ' + placeLabel(p))}">${tagIc('visibility_off')}מוסתר${SEP}החזרה</button>`; }
+act('plan.unhide', c => { hiddenPlacesBack([pid(c.v)]); });
 function itinCardHTML(day, slotKey, p, mapNum) { // my own item in the plan: a place, its copy, a note or a travel. A tap opens its window; a long press drags.
   const t = getTime(day, p.id), esc = escH, travel = isTravelItem(p), note = isNote(p);
   const baseId = p.dup ? copyRef(p.id) : p.id, base = !note ? POINTS.find(x => x.id === baseId) : null;
   const visited = STATE.visited.has(baseId);
   if (travel) { const f = tripFlights().find(x => String(x.id) === String(p.id)); if (f) return travelCardHTML(f, day, slotKey, mapNum, { p, t, visited }); }
-  const meta = note ? [TX.note] : [esc(layerTagLabel(p.layer)), ...(base ? placeMeta(base, () => true, () => pastRateMiniHTML(p)) : [])];
+  const meta = note ? [TX.note] : [esc(layerTagLabel(p.layer)), ...(base ? placeMeta(base, () => true, () => pastRateMiniHTML(p) + recMiniHTML(base)) : [])];
   const tags = [planTimeChip(day, { p }, t), cdMeta(meta), ...(base ? placeMarks(base, baseId) : []), base ? bpNoteTag(base) : '' /* 11.42.0: the price's note, one line */,
-    visited && (travel || (note && !p.address)) ? `<span class="tl-tag vis-on">${tagIc('check_circle')}${TX.visited}</span>` : ''];
+    visited && (travel || (note && !p.address)) ? `<span class="tl-tag vis-on">${tagIc('check_circle')}${TX.visited}</span>` : '', base ? planHiddenTag(base) : ''];
   return cdCard({ cls: `itin-card tl-entry g-swipe${t ? ' timed' : ''}${visited ? ' tl-visited' : ''}${travel ? ' tl-travel' : ''}`,
     attrs: ` data-iday="${day}" data-islot="${slotKey}" data-ipid="${p.id}" data-ref="plan:${day}|${p.id}"${t ? ` data-start="${esc(t.start)}" data-end="${esc(t.end || '')}"` : ''}`,
-    body: ' data-act="plan.open"', lead: planLead(p, mapNum), name: esc(p.name), tags,
+    body: ' data-act="plan.open"', lead: planLead(p, mapNum), name: esc(note ? p.name : placeLabel(base || p)), tags,
     vis: !travel && (!note || p.address) ? visBtnHTML(baseId, visited) : '',
     acts: travel ? travelEditBtn(p.id) : placeLinksRow('', base, () => document.body.classList.contains('read-only'), planRmBtn('הסרה מהיום')) });
 }
@@ -116,8 +120,8 @@ function schedCardHTML(sItem, day, slotKey, mapNum) { // a line of the organized
   const raw = rawSched(sItem.id), upd = schedSrcUpdates(raw).length, mine = schedEdChanged(raw), hl = _SCH_LINKS && _SCH_LINKS.hotelLine[sItem.id];
   const vis = !!pl && STATE.visited.has(pl.id); // 4.48.1: a visited line dims like my own cards
   const tags = [planTimeChip(day, { sched: sItem }, sItem.start ? { start: sItem.start, end: sItem.end } : null), grpTag(),
-    cdMeta([hl ? '' : pl ? msiT('location_on', esc(pl.name), { size: 16 }) : '', sItem.note ? esc(sItem.note) : '']),
-    hl ? `<button type="button" class="tl-tag night" data-act="lodging.go" data-v="${esc(hl.id)}">${tagIc('hotel')}<span class="t-ell">הלילה: ${esc(hl.name || '')} ›</span></button>` : '', // size-fixes (3): a long hotel name ends with "…" inside its tag (it overflowed the tag from "גדול")
+    cdMeta([hl ? '' : pl ? msiT('location_on', esc(placeLabel(pl)), { size: 16 }) : '', sItem.note ? esc(sItem.note) : '']),
+    hl ? `<button type="button" class="tl-tag night" data-act="lodging.go" data-v="${esc(hl.id)}">${tagIc('hotel')}<span class="t-ell">הלילה: ${esc(lodgingLabel(hl))} ›</span></button>` : '', // size-fixes (3): a long hotel name ends with "…" inside its tag (it overflowed the tag from "גדול")
     upd ? `<button type="button" class="tl-tag upd" data-act="sched.upd">${tagIc('update')}עודכן במקור</button>` : '',
     mine && !upd ? `<span class="tl-tag mine" title="${esc('שונה אצלי: ' + schedChangeText(raw))}">${tagIc('edit')}שלי</span>` : ''];
   return cdCard({ cls: `tl-sched itin-card tl-entry g-swipe${sItem.start ? ' timed' : ''}${sItem.kind === 'free' ? ' free' : ''}${vis ? ' tl-visited' : ''}`,

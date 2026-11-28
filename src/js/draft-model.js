@@ -11,10 +11,15 @@ let DRAFT = regRead(null, null, DRAFT_KEY);
 let draftView = { sel: null }; // 5.14.0: the draft's filter is FILTER.draft
 // 6.1.0: the draft is my data waiting for approval - a change is drawn
 function saveDraft() { dataChanged(); if (!DRAFT) { regRawDel(DRAFT_KEY); return; } if (!regWrite(null, DRAFT, DRAFT_KEY)) { showToast('הטיוטה גדולה מכדי להישמר בטלפון. אפשר לאשר אותה עכשיו'); } }
-// 11.17.0 (content-may-be-wrong, Q6): a file that came back from Claude - it carries kitVersion and was not written by an app (every file the
-// app sends carries kitVersion too, for Claude; an app's own file names its device and ends its signature with " · v<version>");
-// review of the night chain Q7 (11.21.0): the one "from Claude" test - the draft's note and the folded "how" steps of Claude's windows both use it
-function draftFromClaude(d) { return !!(d && d.kitVersion) && d.device === undefined && !/ · v\d+\.\d+\.\d+$/.test(String(d.signature || '')); }
+// 11.17.0 (content-may-be-wrong, Q6): a file that came back from an AI. ai-origin (decisions 2026-11-27 · Review of night chain steps 1-4
+// after 11.67.1, Q6): the one rule, read by every place that asks - it carries kitVersion (the kit makes an AI write it; every file the app
+// sends carries it too, for the AI) and its signature is not the app's: every file the app makes ends it with " · v<x.y.z>" (a trip's or a
+// destination's file - to a friend, "לטלפון אחר שלי", to an AI - a round, a proposal request, a memento), an AI's with its own name; a backup
+// has no kitVersion. Never `device`: an AI's update keeps the envelope it got, device too (Claude's Haifa return,
+// notes/phone-round-6/g113-claude-return.json - until ai-origin it read as not from an AI here, while the suggestions had their own rule).
+// Its readers: the door (openIncoming - previous recommendations dropped, the folded "how" steps, the kit seen), the suggestions (sgDoor,
+// tripMineKeep), the draft (the "AI can be wrong" line and the old kit's line, a base trip's marks - draftBaseOpen, draftBaseIn)
+function fileFromAI(d) { return !!(d && d.kitVersion) && !/ · v\d+\.\d+\.\d+$/.test(String(d.signature || '')); }
 function needsDraft(data) {
   if (!data || data.app !== BACKUP_APP) return false;
   if (data.kind === 'destination') return !!(data.destination && data.destination.id && !DESTS[data.destination.id]);
@@ -67,7 +72,6 @@ function draftSources(D) { const its = draftItems(D), has = id => its.some(x => 
   return s; }
 function draftCoord(p) { // 4.2.2: a fixed point, or one already found for its address
   const c = p.manualCoord || (p.address && GEOCODE_CACHE[p.address]); return c && isFinite(c.lat) && isFinite(c.lng) ? c : null; }
-function draftCenterOf(x) { const dp = x.dp || draftDestById(DRAFT, x.p.dest); return dp && dp.meta && dp.meta.center; }
 function infoSectionCount(html) { return htmlFrag(html || '').querySelectorAll('.accordion-item').length; }
 // 5.14.0: the draft's filter (FILTER.draft) - its layer chips, and what it shows; the screen and the filter window both use these
 function draftLayerChips(D, items) {

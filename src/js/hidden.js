@@ -21,10 +21,10 @@ function hiddenGroups() { // phone-round-2b-fixes P7 (G55, 11.23.2): one rule - 
 }
 function hiddenCount() { return hiddenGroups().reduce((n, g) => n + g.places.length + g.layers.length + (g.moved || []).length, 0); }
 function hiddenMovedRow(p) { const st = STATE.edits.status[p.id] || {}, t = STATE.trips[st.trip], L = layerDef(p.layer);
-  return `<div class="card hid-card"><div class="card-top"><div><h3><span class="dd-dot" style="background:${L.color || 'var(--outline-variant)'}"></span>${msi('hotel', { size: 18, cls: 'msi-in' })} ${escH(p.name)}</h3><div class="sub">${msi('luggage', { size: 16, cls: 'msi-in' })} עבר לטיול ${t ? escH(String(t.name).split(' · ')[0]) : ''} - מלון תמיד שייך לטיול</div></div></div></div>`; }
+  return `<div class="card hid-card"><div class="card-top"><div><h3><span class="dd-dot" style="background:${L.color || 'var(--outline-variant)'}"></span>${msi('hotel', { size: 18, cls: 'msi-in' })} ${escH(placeLabel(p))}</h3><div class="sub">${msi('luggage', { size: 16, cls: 'msi-in' })} עבר לטיול ${t ? escH(String(t.name).split(' · ')[0]) : ''} - מלון תמיד שייך לטיול</div></div></div></div>`; }
 function hiddenPlaceRow(p, trip) { const L = layerDef(p.layer), why = isGoneStatus(p.status) ? `<span class="badge st-why">${statusHTML(p.status, { size: 16 })}</span>` : '';
-  return `<div class="card hid-card"><div class="card-top"><div><h3><span class="dd-dot" style="background:${L.color || 'var(--outline-variant)'}"></span>${msiTie(typeIcon(p.icon || L.icon, { size: 18, cls: 'msi-in' }), escH(p.name))}</h3>
-    <div class="sub">${trip ? `<span class="badge st-why">${msi('thumb_down', { size: 16 })}מטיול קודם</span> ` : ''}${why}${p.statusNote ? escH(p.statusNote) : ''}</div></div></div>
+  return `<div class="card hid-card"><div class="card-top"><div><h3><span class="dd-dot" style="background:${L.color || 'var(--outline-variant)'}"></span>${msiTie(typeIcon(p.icon || L.icon, { size: 18, cls: 'msi-in' }), escH(placeLabel(p)))}</h3>
+    <div class="sub">${trip ? `<span class="badge st-why">${msi('thumb_down', { size: 16 })}מטיול קודם</span> ` : ''}${why}${p.statusNote ? escH(p.statusNote) : ''}${sgTagHTML(p)}</div></div></div>
     <div class="brow card-actions"><button class="btn-nav" data-act="hidden.back" data-v="p:${escH(p.id)}">${msi('visibility', { size: 18 })} החזרה</button></div></div>`; }
 function hiddenLayerRow(l) { const n = POINTS.filter(p => p.layer === l.id).length;
   return `<div class="card hid-card"><div class="card-top"><div><h3><span class="dd-dot" style="background:${l.color}"></span>שכבה: ${escH(l.name)}</h3><div class="sub">${n} מקומות</div></div></div>
@@ -44,6 +44,7 @@ function placeUnhide(p, td) { const who = STATE.settings.deviceName || '';
   if (p.tripOnly) { const t = activeTripObj(); t.places = (t.places || []).map(x => { if (x.id !== p.id) return x; const y = { ...x }; delete y.status; delete y.statusNote; return y; }); return; }
   const base = BASE_PLACES.find(b => b.id === p.id);
   if (base && isGoneStatus(base.status)) STATE.edits.status[p.id] = { s: 'active', at: Date.now(), who }; else delete STATE.edits.status[p.id];
+  sgHandDrop(p.id, ['status']); // ai-fix-mine (Q6): brought back by hand - a suggestion about its status is answered
 }
 function hiddenPlacesBack(ids) { const ps = ids.map(id => POINTS.find(q => q.id === id)).filter(Boolean); if (!ps.length || !hasTrip()) return;
   const tid = STATE.activeTrip, td = tdOf(tid);

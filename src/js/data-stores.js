@@ -169,9 +169,11 @@ function hotelRef(id) { if (typeof id !== 'number' || id >= 1e11) return String(
   for (const d of Object.values(DESTS)) { const loc = id - (d.idBase || 0); if (loc >= 0 && (d.places || []).some(p => p.id === loc)) return '@' + d.id + ':' + loc; }
   return String(id); }
 // startup: after the big stores are ready - the queued purges and the daily cleanup
+const REG_BEFORE_STORES = []; // diet-room: awaited before the 'stores' passes - a later part adds a wait it needs (this foundation part names no later part)
 async function regStartup(destsLoaded) {
   try { await Promise.all([MEMO_READY, destsLoaded]); } catch (e) {}
   try { await DEST_DB.tload(); } catch (e) {}
+  for (const f of REG_BEFORE_STORES) { try { await f(); } catch (e) {} } // diet-room: what a later part needs before the passes (the door group, when its pass is due - file-rules.js)
   migrate('stores'); // the register's passes once IndexedDB answered (roadDays, fileRules) - before the history's base
   hRebase(); // undo-history: the state the next row is measured against
   migrate('history'); // the register's passes the user sees, each its own undo row (addKey)

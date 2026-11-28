@@ -1,12 +1,15 @@
-.top-ic { width: 40px; height: 40px; border-radius: 50%; border: none; background: transparent; color: var(--on-surface-variant); cursor: pointer; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; padding: 0; -webkit-tap-highlight-color: transparent; }
+.top-ic { width: 40px; height: 40px; border-radius: 50%; border: none; background: transparent; color: var(--on-surface-variant); cursor: pointer; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
 .top-ic:active { background: var(--surface-container-high); }
-/* along-time-field item 5 (phone round 6, G104): no browser tap highlight (the blue flash) on the tappables added since 11.47.0, as .top-ic and
-   the bottom bar - each keeps its own press feedback (the logo's stamp: .pp-press). The property is inherited, so a container covers its
-   buttons: the logo's stamp; every countries and passport action (cv.*, pp.*: the "זיכרונות" lines, the world map and globe, the switch,
-   the rows, the book); the memory's ride tile and replay bar; a card's actions (card-actions); the side view's chip; the 3D compass;
-   walk-time's rows; the framed area's bar (off-frame); the offline areas' and storage rows; the survival words' rows; the new-kit card.
-   Guarded by t1212 (TAPPABLES_SINCE_11470), which reads this list. */
-:is(.ent-stamp, [data-act^="cv."], [data-act^="pp."], .cv-map, .pp-book, .mem-ride, .rp-bar, .card-acts, .sv-btn, .m3-north, .wk-rows, .fsp-bar, .off-row, .sw-row, .kit-card) { -webkit-tap-highlight-color: transparent; }
+/* ai-origin item 5 (phone round 10, G145 - the third gap of its kind after G77 and G104): no browser tap highlight (the blue flash) by one
+   rule instead of a growing list - every button and every element with data-act clears it, each keeping its own press feedback (the logo's
+   stamp: .pp-press). The property is inherited, so a target covers what is inside it. :where keeps it at no specificity. Two containers keep
+   their own line, as their tap targets are neither: the world map (.cv-map - its svg pans, zooms and taps by pointer listeners) and
+   walk-time's rows (.wk-rows - the rings' credit links). Replaced the along-time-field list (G104): the logo's stamp, every cv.* and pp.*
+   action, the passport book, the memory's ride tile, the replay bar, a card's actions, the side view's chip, the 3D compass, the framed
+   area's bar, the offline areas' and storage rows, the survival words' rows, the new-kit card - each a button or a data-act target, or a box
+   of them. Guarded by t1257 (on the built page) and t1212, which read these two rules. */
+:where(button, [data-act]) { -webkit-tap-highlight-color: transparent; }
+:is(.cv-map, .wk-rows) { -webkit-tap-highlight-color: transparent; }
 .chips-row { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin-top: 8px; padding-bottom: 2px; -webkit-overflow-scrolling: touch; }
 nav.chips-row:empty { display: none; }
 .chips-row::-webkit-scrollbar { display: none; }
@@ -166,6 +169,17 @@ html .brow > :is(button, a, label) { text-align: center; height: auto; min-heigh
 :is(.icon-btn, .net-badge, .le-ic):not(.t-wrap) { white-space: nowrap; }
 .brow.fill > :is(button, a, label) { flex: 1 0 auto; }
 .brow.fill > .tip-i, .brow > .tip-i { flex: 0 0 auto; align-self: center; } /* 9.6.0 (12ו): ⓘ beside a button never grows */
+/* step-bar (decisions 2026-11-26 · The next step always in reach, Q1-Q3; Darkon's approved exception): a step flow's back and next, one button row
+   pinned to the bottom of its full screen in the app's column (sticky - the page keeps its room at its end, so its last row is never under it);
+   "‹ הקודם" outlined, "הבא ›" filled and taking the rest - the whole width when alone (the first step) */
+/* step-bar item 5 (decisions 2026-11-26 · A day's controls in the plan, Q1 - A): an open day's "רשימה | מפה" alone on its row takes the whole width, two equal halves */
+.day-item .accordion-body > .view-toggle { display: grid; grid-template-columns: 1fr 1fr; width: 100%; box-sizing: border-box; } .day-item .accordion-body > .view-toggle > button { justify-content: center; min-width: 0; }
+.step-bar { position: sticky; bottom: 0; z-index: 5; flex-wrap: nowrap; align-items: center; margin: 12px -14px 0; padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px)); background: var(--surface-nav); }
+.step-bar > :is(.sb-prev, .sb-next) { height: 40px; min-height: 40px; border-radius: var(--r-pill); display: inline-flex; align-items: center; justify-content: center; gap: var(--icon-gap); margin: 0; font: 500 var(--fs-body) 'Rubik', system-ui, sans-serif; }
+.step-bar > .sb-prev { flex: 0 1 auto; padding: 0 18px; border: 1px solid var(--outline); background: transparent; color: var(--primary); }
+.step-bar > .sb-next { flex: 1 1 auto; min-width: 0; padding: 0 16px; }
+.screen-layer:has(.step-bar) { padding-bottom: 0; display: flex; flex-direction: column; } .screen-layer:has(.step-bar) > :is(.screen-head, .screen-main) { width: 100%; box-sizing: border-box; flex: none; } .screen-layer:has(.step-bar) > .screen-main { flex: 1 0 auto; }
+.screen-layer:has(.step-bar) > .screen-main:has(> .step-bar) { display: flex; flex-direction: column; } .screen-main:has(> .step-bar) > * { flex-shrink: 0; } .screen-main > .step-bar { margin-top: auto; } /* a short step: the bar still at the screen's bottom */ .screen-layer:has(.step-bar) > .scroll-top-btn { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
 /* card-actions (41b; decisions 2026-11-23 · A card's actions on a phone, Q1-Q3): a card's or a question's actions - cardActionsHTML. The one primary
    action at full width (the filled primary button, the trip's theme); under it the secondary actions as quiet text buttons (no frame, the accent
    colour) in equal parts of the line; one secondary alone takes the whole line; when any of them does not fit its part (cardActsFit measures, after

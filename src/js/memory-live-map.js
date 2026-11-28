@@ -11,8 +11,9 @@ function memMapBlockHTML(M) {
   const fn = MEM_F.rates.size + (MEM_F.hotels ? 0 : 1) + (MEM_UNVISITED ? 1 : 0) + (MEM_F.path || !tlPaths(M.t.id).length ? 0 : 1) + (DEV.memPhotosOff && memPhotoSpots(M).length ? 1 : 0); // 10.3.0 (design-3): one filter chip; its small sheet holds the ratings and the switches (tl-paths Q3: "המסלול שהלכנו")
   // 11.6.0 (the 11.4.0 review's Q5): a city trip's map says nothing about far places - the edge arrows show them (name, km, a tap fits)
   const hint = [MAP_AVAILABLE ? 'נגיעה במקום מראה את השם והדירוג.' : '', memKind(D) === 'city' ? '' : 'כל המסלול, והלינות לפי הסדר.'].filter(Boolean).join(' ');
-  // along-time-field item 10 (G123): the filter chip above the map, as the places screen's filter bar above its map (it sat under the legend, out of sight)
-  return `<div class="mem-block"><h3>${msi('map', { size: 20 })} איפה ${TX.visited}</h3>${MAP_AVAILABLE ? `<div class="fbar"><button type="button" class="fpick mem-fchip" id="memFilter" data-act="memory.mf" data-active="${fn > 0}">${FUNNEL_SVG}<span>סינון${SEP}${fn ? fn + ' פעילים' : 'הכל'}</span>${msi('arrow_drop_down', { size: 18, cls: 'fp-caret' })}</button></div>` : ''}${body}${memLegendHTML(MEM_UNVISITED && missed)}
+  // along-time-field item 10 (G123): the filter chip above the map (it sat under the legend, out of sight); nav-short-page (G138): in the block's
+  // title row, at its far end - as the trip picture's full-screen button sits in its title row
+  return `<div class="mem-block"><h3 class="mem-fhead">${msi('map', { size: 20 })} איפה ${TX.visited}${MAP_AVAILABLE ? `<button type="button" class="fpick mem-fchip" id="memFilter" data-act="memory.mf" data-active="${fn > 0}">${FUNNEL_SVG}<span>סינון${SEP}${fn ? fn + ' פעילים' : 'הכל'}</span>${msi('arrow_drop_down', { size: 18, cls: 'fp-caret' })}</button>` : ''}</h3>${body}${memLegendHTML(MEM_UNVISITED && missed)}
     ${hint ? `<small class="sh-hint">${hint}</small>` : ''}</div>`;
 }
 // 4.38.1: the travels between the stays of a remembered trip, drawn like the route map: a flight as an arc, a bus or car on
@@ -36,9 +37,9 @@ function memCard(x) {
   const p = x.p, esc = escH;
   const html = cdCard({ cls: 'mc-card mc-ro', lead: x.kind === 'hotel' ? leadHTML('place', msi('hotel', { size: 18 }), 'var(--primary)') : leadHTML(x.kind === 'missed' ? 'grey' : 'place', typeIcon(p.icon, { size: 18 }), x.color || p.color), name: esc(x.name),
     tags: [cdMeta(memSmall(x))], desc: p.description ? `<span class="mc-desc">${esc(p.description)}</span>` : '',
-    acts: `<div class="tl-acts mc-acts">${linkBtn('tl-act a-nav', memNav(x), actIc('navigation'), 'ניווט')}${linkBtn('tl-act a-g', googleInfoUrl(p.name, p.address), actIc('travel_explore'), 'חיפוש ב-Google')}</div>` });
-  openFloatCard('memMap', html, null, null, () => { closeFloatCard('memMap'); openCandWin({ lead: x.kind === 'hotel' ? leadHTML('place', msi('hotel', { size: 18 }), 'var(--primary)') : leadHTML('place', typeIcon(p.icon, { size: 18 }), x.color || p.color), name: x.name,
-    pick: { label: memSmall(x)[0], disabled: true }, small: memSmall(x).slice(1), nav: memNav(x), search: googleInfoUrl(p.name, p.address), searchLabel: 'שעות, אתר וביקורות ב-Google',
+    acts: `<div class="tl-acts mc-acts">${linkBtn('tl-act a-nav', memNav(x), actIc('navigation'), 'ניווט')}${linkBtn('tl-act a-g', googlePlaceUrl(p), actIc('travel_explore'), 'חיפוש ב-Google')}</div>` });
+  openFloatCard('memMap', html, null, null, () => { closeFloatCard('memMap'); openCandWin({ lead: x.kind === 'hotel' ? leadHTML('place', msi('hotel', { size: 18 }), 'var(--primary)') : leadHTML('place', typeIcon(p.icon, { size: 18 }), x.color || p.color), name: x.name, other: nameOther(p, x.name), // name-lead (Q8): the other name too
+    pick: { label: memSmall(x)[0], disabled: true }, small: memSmall(x).slice(1), nav: memNav(x), search: googlePlaceUrl(p), searchLabel: 'שעות, אתר וביקורות ב-Google',
     what: () => p.description ? `<p class="iw-desc open">${esc(p.description)}</p>` : '' }); });
 }
 function initMemMap(M) {
@@ -91,7 +92,7 @@ function initMemMap(M) {
 // them); a tap on one photo opens the one viewer. "תמונות" in the filter turns them off for every trip on this phone (DEV.memPhotosOff, kept).
 function memPhotoSpots(M) { const out = [], have = new Set(tripPhotoKeys(M.t.id));
   (M.td.highlights || []).forEach(h => { if (!h || !h.photo || !have.has(h.photo) || h.placeId == null) return; const p = M.pmap.get(h.placeId), c = p && snapCoord(p); if (!c) return;
-    let s = out.find(x => x.id === h.placeId); if (!s) { s = { id: h.placeId, c, name: String(p.name || '').replace(/\s*\(.*$/, ''), ks: [] }; out.push(s); } if (!s.ks.includes(h.photo)) s.ks.push(h.photo); });
+    let s = out.find(x => x.id === h.placeId); if (!s) { s = { id: h.placeId, c, name: placeLabel(p, M.t).replace(/\s*\(.*$/, ''), ks: [] }; out.push(s); } if (!s.ks.includes(h.photo)) s.ks.push(h.photo); });
   return out.map(s => ({ ...s, ks: s.ks.slice(0, MEMO_PHOTO_MAX) })); }
 function memTripHasPhotoSpots(id) { const M = tripMemoryData(id); return !!M && memPhotoSpots(M).length > 0; }
 function memPhotoIconHTML(k, u, n) { return `<span class="mem-ph${n > 1 ? ' mem-ph-st' : ''}"><span class="ph-cut">${photoImgHTML(k, u)}</span>${n > 1 ? `<b>${n}</b>` : ''}</span>`; }
@@ -146,7 +147,7 @@ function replayDays(M) {
     let paths = segs.filter(g => g.d === d.date).map(g => ({ m: g.m, p: g.p }));
     if (!paths.length) legs.forEach((l, i) => { if (st[i + 1] && st[i + 1].from === d.date) legLine(l).forEach(p => { if (p && p.length > 1) paths.push({ m: 'move', p }); }); });
     const stay = st.find(s => s.from <= d.date && d.date < s.to) || null, stayP = stay && M.stops.find(s => { const c = snapCoord(s.p); return c && distanceKm(c, stay.c) < 8; });
-    return { date: d.date, title: [tmFmt('day', d.date), stayP ? nm({ name: stayP.l.name || stayP.p.name }) : ''].filter(Boolean).join(SEP), places, paths, stay: stay ? stay.c : null };
+    return { date: d.date, title: [tmFmt('day', d.date), stayP ? nm({ name: lodgingLabel(stayP.l, stayP.p, M.t) }) : ''].filter(Boolean).join(SEP), places, paths, stay: stay ? stay.c : null };
   });
 }
 act('replay.start', c => { const M = tripMemoryData(c.v), R = MAPS.memMap; if (!M || !R) return 'quiet'; replayStop(true);

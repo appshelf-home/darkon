@@ -230,7 +230,7 @@ function tlTagHTML(x, day) { return `<span class="gl-tag">${msi('schedule', { si
 // 11.14.0 (phone-round-1-fixes P14, G16): an offer says its day as the found rows' day head does - "יום N · <date>" (only the date for a day outside the trip's dates)
 function tlDayTx(dl, d) { const i = (dl || []).indexOf(d); return (i >= 0 ? `יום ${i + 1}${SEP}` : '') + tmFmt('date', d); }
 function tlVisRowHTML(id, p, x) { const td = tdOf(id), on = (td.visited || []).includes(p.id), no = (td.notReached || []).includes(p.id);
-  return `<div class="cl-row gl-row g-swipe" data-ref="place:${p.id}"><span class="gl-rn"><span class="gl-nm">${typeIcon(p.icon, { size: 18, cls: 'msi-in' })} <b>${escH(p.name)}</b></span>${x ? tlTagHTML(x) : `<small class="gl-miss">לא זוהה בציר הזמן</small>`}</span>${fmMark({ act: 'tl.vis', on, no })}</div>`; }
+  return `<div class="cl-row gl-row g-swipe" data-ref="place:${p.id}"><span class="gl-rn"><span class="gl-nm">${typeIcon(p.icon, { size: 18, cls: 'msi-in' })} <b>${escH(placeLabel(p))}</b></span>${x ? tlTagHTML(x) : `<small class="gl-miss">לא זוהה בציר הזמן</small>`}</span>${fmMark({ act: 'tl.vis', on, no })}</div>`; }
 // the rows: every place the Timeline found, by day and hour; then the planned places it did not find (closing's "where" rows, the
 // window's - one review in both doors, C5); then the places not on the list, with the name the names service gave (Q2).
 // closing-where (Q3): V is the door's view, kept by it (CLOSING.tlV, TL_WIN_V) - "עוד לא סומנו" | "הכל"; the rows of "עוד לא סומנו" are fixed when

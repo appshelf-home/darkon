@@ -1,13 +1,13 @@
 // 4.1.0: the time at a destination - IANA zone if the destination has one (meta.timeZone), else its fixed UTC offset
 var _clockTimer = null; // 10.11.0: var - render() releases it when the info screen leaves (it used to wait for its next tick, up to 30 s)
 function renderInfoTab() {
-  const todayBanner = renderTodayHTML();
+  const todayBanner = DEST_VIEW ? '' : renderTodayHTML(); // destination-view (Q1): no trip - no today
   const t = activeTripObj(), multi = tripDests(t).length > 1, D = infoDest();
   const info = infoHtml(D.info); // 11.8.1: cleaned (cleanInfo) and its sections marked, by parsing // 10.8.0: the destination's own sections (content: their titles keep the file's emoji)
-  const esc = escH, miss = infoRowHTML(D); // 11.43.0 (info-complete, item 2): under the destination's info, only while a fixed section is missing
+  const esc = escH, miss = sgRowHTML() + infoRowHTML(D); // ai-fix-mine (item 5): "N הצעות לתיקון מה-AI", built like the "חסר מידע" row, while one waits // 11.43.0 (info-complete, item 2): under the destination's info, only while a fixed section is missing
   if (!multi) {
     document.getElementById('main').innerHTML = todayBanner + (info.includes('<!--TRIP_BLOCKS-->') ? info.replace('<!--TRIP_BLOCKS-->', tripBlocksHTML())
-      : `<div class="section-head"><h2>מידע כללי</h2><p><span data-pack="daysCount"></span> ימי טיול${SEP}לחצו על כותרת כדי לפתוח</p></div><div class="accordion" id="infoAccordion">${tripBlocksHTML()}${info}</div>`) + miss;
+      : `<div class="section-head"><h2>מידע כללי</h2><p>${DEST_VIEW ? withFlag(destFlagMeta(D.meta), `<bdi>${esc(D.meta.name)}</bdi>`) /* destination-view: the destination, no trip days */ : '<span data-pack="daysCount"></span> ימי טיול'}${SEP}לחצו על כותרת כדי לפתוח</p></div><div class="accordion" id="infoAccordion">${tripBlocksHTML()}${info}</div>`) + miss;
   } else {
     // trip on top (travels, lodging, organized schedule, countdown), then the one destination picked in the chips
     const route = tripDests(t).map(destName).join(' ← ');
@@ -18,7 +18,7 @@ function renderInfoTab() {
       + `<div class="accordion" id="tripAccordion">${tripBlocksHTML()}</div>`
       + `<div id="destInfo">${body}${miss}</div>`;
     const di = document.getElementById('destInfo'), sh = di.querySelector('.section-head'); if (sh) sh.remove();
-    di.insertAdjacentHTML('afterbegin', `<div class="section-head dest-info-head"><h2><button type="button" class="fpick dest-hbtn t-wrap" id="infoDestBtn" data-act="info.destPick"><span>${withFlag(destFlagMeta(D.meta), `<bdi>${esc(D.meta.name)}</bdi>`)}</span><span aria-hidden="true">▾</span></button></h2><p>${D.meta.description ? sepTie(esc(D.meta.description)) + SEP : ''}${dd.length ? `${dd.length} ימים בטיול (${dd[0].label}${dd.length > 1 ? '–' + dd[dd.length - 1].label : ''})` : 'עוד בלי תאריכים'}</p><p class="dest-clock" id="destClock">${sepTie(esc(tmClockLine(D)))}</p></div>`);
+    di.insertAdjacentHTML('afterbegin', `<div class="section-head dest-info-head"><h2><button type="button" class="fpick dest-hbtn t-wrap" id="infoDestBtn" data-act="info.destPick"><span>${withFlag(destFlagMeta(D.meta), `<bdi>${esc(D.meta.name)}</bdi>`)}</span><span aria-hidden="true">▾</span></button></h2><p>${D.meta.description ? sepTie(esc(D.meta.description)) + SEP : ''}${dd.length ? `${dd.length} ימים בטיול (${tmSpan(dd[0].label, dd.length > 1 ? dd[dd.length - 1].label : '')})` : 'עוד בלי תאריכים'}</p><p class="dest-clock" id="destClock">${sepTie(esc(tmClockLine(D)))}</p></div>`);
     if (_clockTimer) clearInterval(_clockTimer);
     _clockTimer = setInterval(() => { const c = document.getElementById('destClock'); if (!c) { clearInterval(_clockTimer); _clockTimer = null; return; } c.textContent = sepTie(tmClockLine(infoDest())); }, 30000);
   }

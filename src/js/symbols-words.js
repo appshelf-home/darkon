@@ -54,6 +54,7 @@ const TX = Object.freeze({
   lodging: 'לינה',                       // also an apartment; "מלון" only when it is a hotel
   travel: 'נסיעה', travels: 'נסיעות',    // a flight is a kind of travel
   visited: 'היינו',                      // the app speaks in plural; 10.2.0 (design-2): "היינו" replaces "ביקרנו" everywhere
+  prevRecs: 'המלצות קודמות', visitedN: 'ביקרו', // prev-recs (Q10): the anonymous summary of others' visits and ratings - "ביקרו N" (others, not us)
   actFailed: 'משהו השתבש בפעולה, נסו שוב',   // 6.1.0: an action that failed (the rest of the app goes on)
   tooOld: 'הקובץ מגרסה ישנה מדי ולא נפתח',
   storage: 'אחסון במכשיר',               // storage (decisions 2026-11-23 · Storage on the phone, Q4): the settings section - "device", not "phone"
@@ -62,27 +63,31 @@ const TX = Object.freeze({
   reload: 'נטענים שוב מהרשת כשצריך',   // what can be cleared (Q5)   // 9.0.0 (נ6 ג-ד): a backup or file of a format this version does not read
   // 8.0.0 (ק17, ה12, ה15, ה16): the texts of each Claude goal - the button, the line under a screen button, what Claude will do
   // (two lines, the first opens "בשיחה עם ה-AI"), what to write or attach, and where the file that comes back lands
+  pageWA: 'בוואטסאפ הדף נפתח במציג שלה, בלי מפה חיה. למפה חיה – לשלוח במייל.', // ai-names item 4a (decisions 2026-11-26 · A page for people on WhatsApp, Q1): the one line where a page for people is chosen
   aiTested: 'אפשר לעבוד עם כל צ\'אט ' + AI + '. האפליקציה נבדקה עם קלוד ועובדת איתו הכי טוב.', // 11.44.0 (any-ai, Q1): every AI window's explanation line (claudePartHTML) - with the guide's chapter, the only places that name Claude
   claude: {
     build: { btn: SY.claude + ' בניית טיול או יעד',
       will: ['בשיחה עם ה-' + AI + ': מספרים מה רוצים, וה-' + AI + ' שואל על הטעם ובונה טיול, טיול מאורגן מתוכנייה, או יעד.', 'ה-' + AI + ' מחזיר קובץ, והוא נפתח כאן כטיוטה חדשה לבדיקה ולאישור.'],
+      ex: 'למשל "טיול לדרכון, 5 ימים ברומא עם ילדים"', // ai-names (Q3): one example per door - a quiet line on the instructions screen, and inside the window's "what to write" line
       write: 'כותבים מה רוצים ומזכירים "דרכון" (למשל "טיול לדרכון, 5 ימים ברומא עם ילדים"), או מצרפים תוכנייה וכותבים "טיול מאורגן לדרכון".', lands: 'נפתח כטיוטה חדשה' },
-    round: { btn: SY.claude + ' סבב שיפורים עם ' + AI, // 10.9.0 (design-forms, gap 38): the assistant's word in the button and the window's title (11.44.0: "AI")
+    round: { btn: SY.claude + ' שיפור הטיוטה עם ' + AI, name: 'שיפור הטיוטה', inName: 'בשיפור הטיוטה', // 10.9.0 (design-forms, gap 38): the button and the window's title; ai-names (Q2): "a draft not yet approved" in the name (was "סבב שיפורים"); diet-room (decisions 2026-11-26 · Review of `ai-names`, Q2): the door's name alone and the form a sentence needs - the draft's callout, the round file's signature, "עוד בטיוטה"
       will: ['בשיחה עם ה-' + AI + ': יוצאת הטיוטה כמו שהיא, עם ההערות. מה שהורדתם לא ישתנה.', 'ה-' + AI + ' עונה על כל הערה ועושה רק מה שמסומן למטה.'],
-      write: 'מצרפים את הקובץ, לא צריך לכתוב כלום.', lands: 'חוזר לטיוטה הזו' },
-    improve: { btn: SY.claude + ' לשיפור', // 10 (ש2): one goal, two kinds of file - the texts by the kind
-      write: 'מצרפים את הקובץ, ואם רוצים כותבים מה לעשות. בלי בקשה ה-' + AI + ' משלים את מה שהוספתם ומתקן מקומות שלא על המפה.',
-      trip: { will: ['בשיחה עם ה-' + AI + ': יוצא הטיול עם היעדים, העריכות שלכם ומקומות שלא על המפה.', 'ה-' + AI + ' מעדכן לפי תוכנייה חדשה או בקשה, משלים מקומות שהוספתם ומתקן מיקומים, משלים מידע כללי שחסר ובודק שהקיים עדיין נכון - כל שינוי בו רק באישורכם.'], lands: 'מעדכן את הטיול הזה' },
-      dest: { will: ['בשיחה עם ה-' + AI + ': יוצא היעד עם העריכות שלכם ומקומות שלא על המפה.', 'ה-' + AI + ' משלים ומתקן לפי הבקשה, משלים מידע כללי שחסר ובודק שהקיים עדיין נכון - כל שינוי בו רק באישורכם.'], lands: 'מעדכן את היעד הזה' } }, // 11.43.0 (info-complete, Q2): the general info on every update
+      ex: 'לא צריך לכתוב כלום: ההערות כבר בקובץ', write: 'מצרפים את הקובץ, לא צריך לכתוב כלום.', lands: 'חוזר לטיוטה הזו' },
+    improve: { btn: SY.claude + ' עדכון עם ' + AI, short: SY.claude + ' עדכון', toName: 'לעדכון עם ' + AI, // 10 (ש2): one goal, two kinds of file - the texts by the kind; ai-names (Q2): "something already in the app" (was "לשיפור") - the short name in the share window's row and on the instructions screen, the long one (title) by what is sent; diet-room (Review of `ai-names`, Q2): toName - the form "to the update", the closing's "תיקונים ליעד" and the trips screen's share line
+      ex: 'למשל "להוסיף 3 מסעדות בסנטיאגו", או בלי בקשה - לתקן מה שלא נמצא',
+      write: 'מצרפים את הקובץ, ואפשר לבקש (למשל "להוסיף 3 מסעדות בסנטיאגו"). בלי בקשה ה-' + AI + ' משלים את מה שהוספתם ומתקן מקומות שלא על המפה.',
+      trip: { title: SY.claude + ' עדכון הטיול עם ' + AI, will: ['בשיחה עם ה-' + AI + ': יוצא הטיול עם היעדים, העריכות שלכם ומקומות שלא על המפה.', 'ה-' + AI + ' מעדכן לפי תוכנייה חדשה או בקשה, משלים מקומות שהוספתם ומתקן מיקומים, משלים מידע כללי שחסר ובודק שהקיים עדיין נכון - כל שינוי בו רק באישורכם.'], lands: 'מעדכן את הטיול הזה' },
+      dest: { title: SY.claude + ' עדכון היעד עם ' + AI, will: ['בשיחה עם ה-' + AI + ': יוצא היעד עם העריכות שלכם ומקומות שלא על המפה.', 'ה-' + AI + ' משלים ומתקן לפי הבקשה, משלים מידע כללי שחסר ובודק שהקיים עדיין נכון - כל שינוי בו רק באישורכם.'], lands: 'מעדכן את היעד הזה' } }, // 11.43.0 (info-complete, Q2): the general info on every update
     offMap: n => '+ ' + msi('location_on', { cls: 'msi-in' }) + ' ' + (n === 1 ? 'מקום אחד שלא על המפה (נכנס לבד)' : n + ' מקומות שלא על המפה (נכנסים לבד)'), // 10 (ה8, ה16)
     locate: n => msi('location_on', { cls: 'msi-in' }) + ' לתקן מקומות שלא על המפה (' + n + ')',
+    fix: 'לתקן עם ' + AI, // file-over-existing (Q3): the one quiet action where the app already says places were not found - it opens the door that fits (fixAiOpen)
     locateSub: 'ה-' + AI + ' מחפש לכל אחד מיקום מדויק ממקור שאפשר להצביע עליו, או מתקן את הכתובת. מה שלא נמצא - בתשובה, עם הסיבה.',
     schedule: { btn: SY.claude + ' לו״ז מה-' + AI, title: SY.claude + ' הצעת לו״ז מה-' + AI, // 11.5.0 (schedule-proposal, Q7)
       will: ['ישאל כמה שאלות קצרות, קודם כל מה אסור לפספס, ויבנה לכל יום סדר ושעות סביב ההזמנות והטיסות.', 'ההצעה תחכה לך בתכנון, והתוכנית שלך לא תשתנה עד שתחליט.'],
-      write: 'מצרפים את הקובץ, לא צריך לכתוב כלום.', lands: 'מחכה בראש התכנון כהצעה' },
+      ex: 'למשל "בבוקר לא לפני 9", או כלום: ה-' + AI + ' ישאל', write: 'מצרפים את הקובץ, ואפשר לבקש (למשל "בבוקר לא לפני 9"). בלי בקשה ה-' + AI + ' ישאל.', lands: 'מחכה בראש התכנון כהצעה' },
     memento: { btn: SY.claude + ' גרסה מאוירת',
       will: ['בשיחה עם ה-' + AI + ': יוצאת תמונת הטיול כפי שסידרתם, נעולה: מיקומים, גדלים, שמות ומסגרת.', 'ה-' + AI + ' מצייר אותה באיורים לפי הבקשה שלכם.'],
-      write: 'מצרפים את הקובץ, הבקשה כבר בתוכו.', lands: 'נכנסת לזיכרון, כגרסה המאוירת' },
+      ex: 'לא צריך לכתוב כלום: הבקשה כבר בקובץ', write: 'מצרפים את הקובץ, הבקשה כבר בתוכו.', lands: 'נכנסת לזיכרון, כגרסה המאוירת' },
   },
 });
 // 5.13.1 (cl-symbols-impl-plan stage 5): the page's own markup takes its symbols and words from the dictionaries too (the bottom bar)

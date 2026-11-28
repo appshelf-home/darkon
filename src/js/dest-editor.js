@@ -75,13 +75,25 @@ act('de.save', c => { const F = fmOf(c.el); if (!F) return; const { id, cur } = 
   { const z = deZone(F); delete meta.tzEst; delete meta.tzManual; // 7.0.0 (ז3, ז11): the zone is the one source
     if (z) { meta.timeZone = z.zone; if (!z.sure) meta.tzEst = 1; if (z.hand) meta.tzManual = 1; } else delete meta.timeZone; }
   c.el.disabled = true; c.el.textContent = 'שומר…';
-  if (cur) { DESTS[id] = { ...cur, meta }; saveDests(); closeSheet(); applyActiveTrip();
+  if (cur) { DESTS[id] = { ...cur, meta, at: Date.now() }; saveDests(); closeSheet(); applyActiveTrip(); // trip-cards: `at` - its row's "עודכן"
     showUndoToast('היעד עודכן: ' + name); return; }
   const nid = slugId(name), idBase = Math.max(0, ...Object.values(DESTS).map(d => d.idBase || 0)) + 1e6;
   meta.layers = Object.entries(BASE_TYPES).map(([k, b], i) => ({ id: i + 1, type: k, name: b.name, label: b.label, color: b.color, icon: b.icon }));
   meta.regions = []; meta.theme = { ...NO_DEST.meta.theme };
-  DESTS[nid] = { id: nid, version: 1, idBase, meta, places: [], info: '' }; saveDests(); closeSheet(); // undo-history Q6: one row
+  DESTS[nid] = { id: nid, version: 1, idBase, meta, places: [], info: '', at: Date.now() }; saveDests(); closeSheet(); // undo-history Q6: one row
   showUndoToast('נוצר יעד: ' + name + '. אפשר ליצור לו טיול');
 });
 // diet-groups (11.62.0): a Google Maps link back into the destination editor (place-search.js PS_FORMS.dest, after the group is in)
 function deBack(F) { deCountryText(F); deClock(F); deOffer(F); }
+// diet-room: the country and clock pickers moved here from chips.js - only this editor opens them (the editors group)
+// 5.12.0: the country of a destination - a long list with search (full screen over the editor); the currency's country first
+// 7.2.0: the country and the clock of a destination are lists of the one choice window (openFmChoice), not windows of their own
+function openCountryPicker(cur, sug, onPick) { const all = countryList(), row = (c, g) => ({ v: c.cc, group: g, text: c.n + ' ' + c.cc, html: withFlag(flagOfCountry(c.cc), escH(c.n)) });
+  const top = [cur && all.find(c => c.cc === cur), sug && sug !== cur && all.find(c => c.cc === sug)].filter(Boolean);
+  openFmChoice({ title: 'מדינה', hint: 'הדגל של היעד בא מהמדינה. בלי מדינה - מהמטבע (חוץ מיורו).', search: true, searchHint: 'חיפוש מדינה', value: cur,
+    options: [...top.map(c => row(c, c.cc === cur ? 'נבחרה' : 'לפי המטבע')), ...(cur ? [{ v: '', group: 'בלי מדינה', text: 'בלי מדינה', html: 'בלי מדינה (הדגל לפי המטבע)' }] : []), ...all.map(c => row(c, 'כל המדינות'))] }, onPick); }
+// 7.0.0 (ז11): a destination's clock, by hand: the zones of its country with the time now in each, and all zones (search)
+function openZonePicker(country, cur, onPick) { const mine = tmZonesOf(country).map(x => x.z), all = [...new Set(TM_ZONES.map(x => x.z))].filter(tmZoneOk);
+  const row = (z, g) => ({ v: z, group: g, text: z + ' ' + tmZoneName(z) + ' ' + tmCity(z), html: `<span class="fm-ch-t">${escH(tmZoneName(z))}<small dir="ltr">${escH(tmCity(z))}</small></span><span class="fm-ch-end"><bdi>${tmWall(z).hm}</bdi></span>` }); // 10.9.0 (design-forms, gap 39): the city as a supporting line, the time at the end
+  openFmChoice({ title: '🕐 השעון של היעד', hint: 'השעות בטיול נקראות בשעון של היעד. בדרך כלל הוא נקבע לבד מהמדינה וממרכז המפה.', search: true, searchHint: 'חיפוש אזור או עיר', value: cur,
+    options: [...mine.map(z => row(z, 'במדינה')), ...all.filter(z => !mine.includes(z)).map(z => row(z, 'כל האזורים'))] }, onPick); }

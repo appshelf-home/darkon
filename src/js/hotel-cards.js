@@ -24,7 +24,7 @@ function bookingLabel(id, plain) { const b = bookingOf(id); if (!b) return ''; r
 function openBookingSheet(p) { layerNote(openBookingSheet, arguments); // מ9: stays a bottom sheet - a short task about the place behind it
   const sheet = document.getElementById('sheet'), cur = bookingOf(p.id) || {}, F = fmNew({ p });
   const c = reservationClass(p.reservation), unk = bpResv(p.reservation).need === 'unknown'; // 11.42.0: "not needed" only when it was checked (Q2)
-  sheet.innerHTML = `${fmHead(`${SYM_BOOKED} הזמנה${SEP}${escH(p.name)}`)}
+  sheet.innerHTML = `${fmHead(`${SYM_BOOKED} הזמנה${SEP}${escH(placeLabel(p))}`)}
     <div class="sh-hint bk-short">${c === 'resv-must' ? msi('event', { cls: 'msi-in' }) + ' <b>חובה להזמין</b>' : c === 'resv-rec' ? msi('event_available', { cls: 'msi-in' }) + ' <b>מומלץ להזמין</b>' : unk ? 'לא ידוע אם צריך להזמין' : 'לא צריך להזמין מראש'}${SEP}כשהזמנתם - "הוזמן"</div>
     <div class="sh-why" hidden>${c === 'resv-must' ? msi('event', { cls: 'msi-in' }) + ' <b>חובה להזמין</b>: למקום הזה צריך להזמין מראש (כרטיסים, תור או שולחן).' : c === 'resv-rec' ? msi('event_available', { cls: 'msi-in' }) + ' <b>מומלץ להזמין</b>: אפשר בלי, אבל כדאי להזמין מראש.' : unk ? 'עוד לא ידוע אם צריך להזמין למקום הזה.' : 'למקום הזה לא צריך להזמין מראש.'}${bpResv(p.reservation).note ? ' ' + escH(bpResv(p.reservation).note) : ''}<br>כשהזמנתם - מסמנים כאן "הוזמן". עם יום המקום נכנס לתוכנית ביום הזה, ועם שעה - בשעה הזו; הוא יוצא מסינון ${msi('event_available', { cls: 'msi-in' })} ההזמנות הפתוחות.</div>
     ${fmChips(F, 'date', { label: 'יום', value: cur.date || '', options: [['', '— בלי יום'], ...TRIP_DAYS.map(d => [d.date, tmFmt('day', d.date)])] })}

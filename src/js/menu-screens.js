@@ -80,6 +80,7 @@ function settingsHTML() {
   // 4.3.4: device name comes first
   const gen = accHTML('set-device', '📱 שם המכשיר', `<p>מופיע ביומן השינויים ובקבצים שנשלחים</p><label class="sh-field fm-f">${fmLabel({ label: 'שם המכשיר' })}${fmInput({ id: 'setDeviceName', max: 30, placeholder: 'למשל: הטלפון שלי', value: STATE.settings.deviceName || '' })}</label>`, false, STATE.settings.deviceName || '') // 10.9.0 (design-forms, gaps 31, 33): the label on the border; the row's value line is the name
   + accHTML('set-tsize', '🔠 גודל טקסט', textSizeHTML(), false, textSizeVal()) // text-size (Q4): right after the device name
+  + accHTML('set-nlead', '🔤 שם המקומות', nameLeadHTML(), false, NAME_LEAD.find(x => x[0] === nameLeadSet())[1]) // name-lead (Q4): a display setting, beside the text size
   + accHTML('set-landing', '🚪 מסך הפתיחה', landingHTML(), false)
   + (appInstalled() ? accHTML('set-backexit', '🔙 יציאה מהאפליקציה', backExitHTML(), false, backExitVal()) : '') // back-exit (Q5): right after "מסך הפתיחה", the installed app only
   + accHTML('set-prefs', '🎛️ התאמה אישית ' + tipI('set.hidden', true), prefsHTML(), false)
@@ -159,4 +160,11 @@ act('set.deviceName', c => { const v = c.el.value.trim(); if (v === (STATE.setti
   STATE.settings = { ...STATE.settings, deviceName: v }; persist();
   const vl = c.el.closest('.acc-row') && c.el.closest('.acc-row').querySelector('.acc-val'); if (vl) { vl.textContent = sepTie(v); vl.hidden = !v; } // the row's value line follows
   showUndoToast('שם המכשיר: ' + (v || 'ללא')); return 'quiet'; });
-
+// diet-room: the weather's settings rows (moved from weather.js - only this screen draws them)
+function wxSettingsHTML() { const S = wxSet(), ch = (k, label, opts) => choiceHTML({ label, act: 'set.weather', cur: S[k], attrs: v => ` data-wxset="${k}" data-wxval="${v}"`, opts }); // 10.9.0 (design-forms, gap 32): segmented; "feels like" a switch
+  return `<p>התחזית לפי התחנה של כל יום, מהיום והלאה. ימים רחוקים מקבלים ממוצע עונתי.</p>
+    ${ch('view', 'תצוגת הימים', [['list', 'רשימה'], ['twodays', 'היום ומחר', 'היום ומחר, השאר מתקפלים'], ['picker', 'יום אחד', 'יום אחד בכל פעם']])}
+    ${ch('open', 'פתוח מראש', [['today', 'היום', 'הפירוט של היום'], ['none', 'כלום']])}
+    ${ch('extra', 'שורות למקומות מהתוכנית', [['rule', 'רחוקים', 'רחוקים (25 ק״מ) או גבוהים (500 מ׳)'], ['keys', 'נק׳ מפתח', 'רק נקודות מפתח ' + SYM_KEY], ['none', 'בלי']])}
+    ${ch('wind', 'רוח', [['kmh', 'קמ״ש'], ['ms', 'מטר לשנייה']])}
+    ${setSwitchHTML('set.weather', ` data-wxset="feels" data-wxval="${!S.feels}"`, !!S.feels, '"מרגיש כמו"', 'הטמפרטורה המורגשת ליד הטמפרטורה')}`; }

@@ -38,7 +38,7 @@ function closingSteps(C) {
   return CL_STEPS.filter(s => s.k === 'merge' ? !!String(C.t.travelers || '').trim() : s.k === 'tl' ? true : s.k === 'where' ? (C.where.length || C.pm.size) : s.k === 'rate' ? (C.visited.length || C.pm.size) : s.k === 'high' ? (C.visited.length || C.pm.size || (C.td.highlights || []).length) : s.k === 'fixes' ? C.fixes.length : true);
 }
 function openClosingFlow(id, datesSet) {
-  if (ARCHIVE_VIEW) exitArchiveView(true);
+  archiveViewEnd();
   const t = STATE.trips[id]; if (!t || t.archived) return; closeSheet(); // 11.37.0 (P2, G84): a memory is never closed again
   // timeline-followups-3 (decisions 2026-11-13 review of 11.11.0, item 1): a dateless trip that happened, whose dates were just set with
   // today as its last day, goes straight to the closing steps - the dates are the answer to "חזרתם מוקדם?"; it is archived as ended
@@ -87,27 +87,31 @@ function renderClosingScreen() {
     body = `<p>איך היה? כל המקומות ש${TX.visited} בהם - קודם אלה שעוד לא דורגו. הערה - רשות, ונשמרת עם הדירוג. נגיעה נוספת באותו סימן מבטלת.</p>
     ${rl.length ? '' : '<div class="callout">עוד לא סומן אף מקום. מסמנים בשלב "✓ איפה ' + TX.visited + '".</div>'}<div class="cl-list">${rl.map(p => { const comp = Object.entries(C.td.companions || {}).map(([n, x]) => (x.rating || {})[p.id] ? `${RATE[x.rating[p.id].r]} ${escH(n)}` : '').filter(Boolean).join(SEP);
       const cr = rt[p.id] || {}, wv = cr.w != null ? cr.w : (CLOSING.words[p.id] || '');
-      return `<div class="cl-row cl-rate" data-ref="place:${p.id}"><span>${msiTie(typeIcon(p.icon, { size: 18, cls: 'msi-in' }), escH(p.name))}${comp ? `<small>${comp}</small>` : ''}</span><span class="cl-rbtns">${Object.keys(RATE).map(k => `<button type="button" class="rate-btn" data-act="closing.clrate" data-clrate="${k}" aria-pressed="${cr.r === k}" title="${RATE_LABEL[k]}">${RATE[k]}</button>`).join('')}</span>${fmArea({ cls: 'cl-word', rows: 1, max: 400, placeholder: 'הערה (רשות)', value: wv })}</div>`; }).join('')}</div>`; }
+      return `<div class="cl-row cl-rate" data-ref="place:${p.id}"><span>${msiTie(typeIcon(p.icon, { size: 18, cls: 'msi-in' }), escH(placeLabel(p)))}${comp ? `<small>${comp}</small>` : ''}</span><span class="cl-rbtns">${Object.keys(RATE).map(k => `<button type="button" class="rate-btn" data-act="closing.clrate" data-clrate="${k}" aria-pressed="${cr.r === k}" title="${RATE_LABEL[k]}">${RATE[k]}</button>`).join('')}</span>${fmArea({ cls: 'cl-word', rows: 1, max: 400, placeholder: 'הערה (רשות)', value: wv })}</div>`; }).join('')}</div>`; }
   if (s.k === 'high') { const hs = C.td.highlights || [];
     body = `<p>עד 5 רגעים שהכי זכורים לכם. משפט קצר - רשות. הם יופיעו בזיכרון ובמזכרות.</p><div class="cl-list" id="clHigh">${hs.map((h, j) => highlightRowHTML(C, h, j)).join('')}</div>
       ${hs.length < 5 ? '<div class="brow export-actions"><button type="button" class="btn-sec" id="clHighAdd" data-act="closing.clHighAdd">＋ רגע שיא</button></div>' : ''}${typeof highlightExtrasHTML === 'function' ? highlightExtrasHTML(C) : ''}`; }
-  if (s.k === 'fixes') body = `<p>כל השינויים שלכם ביעדים של הטיול (${tripDests(C.t).map(d => escH(destName(d))).join(', ')}), מתי שנעשו. הם כבר אצלכם ויישארו גם בטיולים הבאים. כדי שגם אחרים יקבלו אותם - שולחים את קובץ הטיול למי שבנה את היעד, או לשיפור עם ${AI} כדי שיעדכן את קובץ היעד.</p>
+  if (s.k === 'fixes') body = `<p>כל השינויים שלכם ביעדים של הטיול (${tripDests(C.t).map(d => escH(destName(d))).join(', ')}), מתי שנעשו. הם כבר אצלכם ויישארו גם בטיולים הבאים. כדי שגם אחרים יקבלו אותם - שולחים את קובץ הטיול למי שבנה את היעד, או ${TX.claude.improve.toName} כדי שיעדכן את קובץ היעד.</p>
     <div class="cl-list">${C.fixes.map(f => `<div class="cl-row"><span>${escH(f.name)}${f.at ? ` <small>${tmFmt('date', f.at)}</small>` : ''}</span><small>${f.what}</small></div>`).join('')}</div>
-    <div class="brow export-actions"><button class="btn-nav" id="clSendFix" data-act="closing.clSendFix">${msi('description', { size: 18 })} קובץ הטיול ${claudeMark()} לשיפור</button></div>`;
+    <div class="brow export-actions"><button class="btn-nav" id="clSendFix" data-act="closing.clSendFix">${claudeH(TX.claude.improve.trip.title)}</button></div>`;
   if (s.k === 'done') { const r = Object.values(C.td.rating || {});
     body = `<p><b>מה נשמר:</b> ${C.visited.length} מקומות ש${TX.visited}${r.length ? `, ${r.length} דירוגים (${['love', 'like', 'dislike'].map(k => r.filter(x => x.r === k).length + ' ' + RATE[k]).join(' ')})` : ''}${(C.td.highlights || []).length ? `, ${C.td.highlights.length} רגעי שיא` : ''}, התוכנית כפי שהייתה, ותמונת מצב של כל המקומות שהטיול נגע בהם. הטיול עובר לזיכרונות, לקריאה בלבד, ונפתח במסך זיכרון; ${msi('undo', { cls: 'msi-in' })} פתיחה מחדש מחזירה אותו.</p>
       ${window.caches ? `<label class="bk-part">${fmCheck({ id: 'clFree', checked: true })} לפנות מהמכשיר אריחי מפה ותמונות "${msi('auto_stories', { cls: 'msi-in' })} מה יש כאן" ששמורים <small>נטענים שוב מהרשת כשצריך. הסימונים, התוכנית והזיכרון לא נמחקים.</small></label>` : ''}
       ${typeof OFF_PACKS !== 'undefined' && OFF_PACKS[C.t.id] ? `<label class="bk-part">${fmCheck({ id: 'clOffDel', checked: true })} למחוק את מפות הטיול מהטלפון (${offMBh(OFF_PACKS[C.t.id].have.bytes)}) <small>המפות שהורדו לשימוש בלי רשת. חלק שמשמש טיול אחר נשאר.</small></label>` : ''}
-      <div class="brow export-actions"><button class="btn-nav" id="clArchive" data-act="closing.clArchive">${msi('inventory_2', { size: 18 })} סגירת הטיול</button></div>`; }
+`; } // step-bar (Q2): its "סגירת הטיול" is the bar's next
   // 10.3.0 (design-3, look.md "Full screens, part 2"): a warm header and a vertical stepper showing every step - done ones green with
   // their summary, the current one open, the next ones with a line of what they hold; ✕ in the head = later; "לסגור עכשיו" at the foot
   const sum = x => { const td = C.td; return x.k === 'merge' ? (Object.keys(td.companions || {}).length ? 'צורפו: ' + Object.keys(td.companions).map(escH).join(', ') : 'דילגתם')
     : x.k === 'tl' ? (tlOf(C.t.id) ? `${tlOf(C.t.id).n} ימים${SEP}${fmtKm(tlKm(C.t.id))} ברגל` : 'דילגתם') : x.k === 'where' ? `${(td.visited || []).length} מקומות ש${TX.visited} בהם` : x.k === 'rate' ? `${Object.keys(td.rating || {}).length} דירוגים` : x.k === 'high' ? `${(td.highlights || []).length} רגעי שיא` : x.k === 'fixes' ? `${C.fixes.length} שינויים ביעדים` : ''; };
   const seen = x => CLOSING.seen.includes(x.k); // closing-where (Q7): ✓ = a step visited (not "everything marked")
   const step = (x, j) => `<div class="cl-vs" data-st="${j === i ? 'cur' : seen(x) ? 'done' : ''}"><button type="button" class="cl-vh" data-act="closing.clstep" data-clstep="${x.k}"><span class="sb-n">${j !== i && seen(x) ? msi('check', { size: 18 }) : j + 1}</span><span class="cl-vt"><b>${x.label}</b>${j === i ? '' : `<small>${seen(x) ? sum(x) : CL_LINE[x.k] || ''}</small>`}</span></button>${j === i ? `<div class="cl-step">${body}</div>` : ''}</div>`;
-  main.innerHTML = `<div class="section-head cl-head"><h2>סוגרים את הטיול ${tipI('trips.ended')}</h2><p>${escH(String(C.t.name).split(' · ')[0])}</p><p class="cl-sub">3–5 דקות${SEP}כל שלב רשות${SEP}✕ = ממשיכים אחר כך</p></div>
+  main.innerHTML = `<div class="section-head cl-head"><h2>סוגרים את הטיול ${tipI('trips.ended')}</h2><p>${escH(String(C.t.name).split(' · ')[0])}</p><p class="cl-sub">${tmSpan(3, 5)} דקות${SEP}כל שלב רשות${SEP}✕ = ממשיכים אחר כך</p></div>
     <div class="card cl-stepper">${steps.map(step).join('')}</div>
-    <div class="cl-nav"><button type="button" class="link-btn" id="clNow" data-act="closing.clNow">${msi('inventory_2', { size: 18 })} <span class="lk-tx">לסגור עכשיו, בלי שאר השלבים</span></button>${last ? '' : `<button class="btn-nav" id="clNext" data-act="closing.clNext">${s.k === 'merge' || (s.k === 'tl' && !tlOf(C.t.id)) ? 'דילוג' : 'הבא'} ${msi('chevron_right', { size: 18 })}</button>`}</div>`;
+    <div class="cl-nav"><button type="button" class="link-btn" id="clNow" data-act="closing.clNow">${msi('inventory_2', { size: 18 })} <span class="lk-tx">לסגור עכשיו, בלי שאר השלבים</span></button></div>
+    ${stepBarHTML(i ? { id: 'clPrev', act: 'closing.clPrev', label: msiT('chevron_left', 'הקודם', { size: 18 }) } : null, last ? { id: 'clArchive', act: 'closing.clArchive', label: `${msi('inventory_2', { size: 18 })}סגירת הטיול` }
+      : { id: 'clNext', act: 'closing.clNext', label: `${s.k === 'merge' || (s.k === 'tl' && !tlOf(C.t.id)) ? 'דילוג' : 'הבא'}${msi('chevron_right', { size: 18 })}` })}`;
+  // step-bar (decisions 2026-11-26 · The next step always in reach, Q2): back and next in the bar pinned to the bottom (stepBarHTML); "לסגור עכשיו"
+  // a quiet text action at the page's end, as before; ✕ at the top unchanged ("later")
   closingCtl(C, steps, i); ellFitSoon(); // card-actions: a step is drawn here, not through render() - its "…" boxes and card actions measured
 }
 // memory-photos (Q4): a highlight's place, said plainly - "איפה" with a pick from the trip's places; with a photo and no place, the line says the
@@ -125,6 +129,7 @@ function closingCtl(C, steps, i) { const ctl = ctlNS('closing');
   ctl.clView = b => { CLOSING.whereView = b.dataset.v; CLOSING.whereIds = null; return 'redraw'; }; // the other view: its rows fixed anew
   ctl.clstep = b => goStep(b.dataset.clstep);
   if (g('clNext')) ctl.clNext = () => goStep(steps[i + 1].k);
+  if (g('clPrev')) ctl.clPrev = () => goStep(steps[i - 1].k); // step-bar (Q2): the step before, as a tap on its row
   ctl.clNow = () => { CLOSING = null; archiveTrip(id, 'ended'); ppStampTrip(id); }; // passport-book (Q4): the book opens over the memory screen and the trip's new stamps land
   const mark = (pid, v, off) => { const td = tdOf(id);
     td.visited = (td.visited || []).filter(x => x !== pid); td.notReached = (td.notReached || []).filter(x => x !== pid); // 4.33.1: one state per row, a second tap clears it
@@ -157,17 +162,13 @@ function closingCtl(C, steps, i) { const ctl = ctlNS('closing');
       showUndoToast('רגע השיא הוסר'); }; }
   if (g('clHighAdd')) ctl.clHighAdd = () => { if (hl) saveHigh(); const td = tdOf(id); td.highlights = (td.highlights || []).concat({ id: 'h' + Date.now().toString(36), placeId: null, text: '' }); tdSave(id); showUndoToast('✨ נוסף רגע שיא'); }; // undo-history: a row (with what was typed before it)
   if (typeof hlExtrasCtl === 'function') hlExtrasCtl(C, id);
-  if (g('clSendFix')) ctl.clSendFix = () => viaGroup('management', 'openTripFile', id, 'improve'); // 8.0.0 (ק12, ה15): the trip file window, "✳ לשיפור" chosen
+  if (g('clSendFix')) ctl.clSendFix = () => viaGroup('management', 'openTripFile', id, 'improve'); // 8.0.0 (ק12, ה15): the trip file window, "✳ עדכון עם AI" chosen (ai-names: the button says "עדכון הטיול עם AI")
   if (g('clArchive')) ctl.clArchive = async () => { const free = g('clFree') && g('clFree').checked; g('clArchive').disabled = true; CLOSING = null;
     if (free) { await regCacheDrop('darkon-tiles'); await regCacheDrop(DISC_IMG_CACHE); DISC.imgs = []; discSave(); }
     if (g('clOffDel') && g('clOffDel').checked) { try { await offDeletePack(id, true); } catch (e) {} } // 4.39.0
     archiveTrip(id, 'ended'); ppStampTrip(id); }; // passport-book (Q4): right after "סגירה" - the stamps land on the trip's page
 }
-// 4.33.1 → 9.7.0 (Q9b): a swipe on a "where I was" row is a shortcut to its buttons (TOUCH 'swipe'): right = ✓ היינו, left = ✕ לא הגענו;
-// past the threshold that button looks pressed; toward the state already set nothing moves (clearing stays a tap on the button)
-const clSwipeBtn = (row, dir) => row.querySelector(`.cl-vbtn[data-clvis="${dir > 0 ? 1 : 0}"]`);
-gestureOn('swipe', '.cl-row.g-swipe', { can: (row, dir) => clSwipeBtn(row, dir).getAttribute('aria-pressed') !== 'true',
-  preview: (row, dir, on) => clSwipeBtn(row, dir).classList.toggle('g-prev', on), done: (row, dir) => clSwipeBtn(row, dir).click() });
+// the swipe on a "where I was" row (right = ✓ היינו, left = לא הגענו) is the mark's own, beside fmMark (js/forms.js)
 // phone-round-2b-fixes P4 (11.23.2): "איך היה" lists every place marked "היינו" whenever the step shows - the rows already shown keep their order (a row never jumps while typing, 4.33.1 / 4.34.2), places marked since come after them (the unrated first), places unmarked since leave
 function clRateIds(prev, C) { const un = new Set(C.unrated.map(p => p.id)), all = [...C.unrated, ...C.visited.filter(p => !un.has(p.id))].map(p => p.id), inAll = new Set(all), kept = (prev || []).filter(i => inAll.has(i)), had = new Set(kept);
   return kept.concat(all.filter(i => !had.has(i))); }
@@ -198,7 +199,7 @@ function openWhereMore(id, back) { const ctl = {}, sheet = document.getElementBy
   const outside = x => { const pid = tlTripPlace(id, { name: x.name || 'מקום על המפה', ll: { lat: +x.coord.lat, lng: +x.coord.lng }, gid: x.rec ? gidNew(x.rec, 'user') : null }); // a shared Google Maps link carries Google's id (as "מקום חדש" from a link)
     if (pid == null) { showToast('אין יעד לטיול'); return; } row(pid); mark(pid, x.name || 'מקום על המפה'); };
   const door = CLOSING && CLOSING.id === id && activeTab === 'closing' ? 'closing' : 'memory', wmRet = () => ({ k: 'where', id, door, keep: { q: q.value } }); // form-keep: the window comes back after a share from Google Maps
-  const ps = psHost({ box: () => $('#wmOut'), near: () => c0 || undefined, pick: outside, ret: wmRet, draw: H => { const b = $('#wmOut'); if (b && b.isConnected) b.innerHTML = H.st ? `<div class="gl-dh">${msi('travel_explore', { size: 16 })} מקומות אחרים</div>${psHTML(H)}` : ''; },
+  const ps = psHost({ box: () => $('#wmOut'), near: () => c0 || undefined, where: () => placeWhere({ dest: tripDests(t)[0], t }) /* big-dest-search: the trip's destination, then its country */, pick: outside, ret: wmRet, draw: H => { const b = $('#wmOut'); if (b && b.isConnected) b.innerHTML = H.st ? `<div class="gl-dh">${msi('travel_explore', { size: 16 })} מקומות אחרים</div>${psHTML(H)}` : ''; },
     map: () => { const H = PS_HOSTS[ps]; if (H) H.st = null; $('#wmOut').innerHTML = ''; const s0 = c0 || [32, 34.8]; openPick({ how: 'btn', has: false, start: s0, zoom: 13, ret: wmRet, onPick: r => outside({ name: q.value.trim() || r.name, coord: r.coord }) }); } });
   q.dataset.ps = ps;
   const draw = () => { const v = q.value.trim(), vs = new Set(tdOf(id).visited || []), hits = v ? pl.filter(p => searchHit(p, v)).slice(0, 8) : [];
@@ -214,7 +215,7 @@ function openWhereMore(id, back) { const ctl = {}, sheet = document.getElementBy
   else setTimeout(() => q.focus(), 60);
 }
 ctlActs('wmore', ['wmGo', 'pick']);
-ctlActs('closing', ['clvis', 'word', 'saveHigh', 'clAllVis', 'clArchive', 'clHighAdd', 'clNext', 'clNow', 'clSendFix', 'clView', 'clrate', 'clstep', 'hdel']);
+ctlActs('closing', ['clvis', 'word', 'saveHigh', 'clAllVis', 'clArchive', 'clHighAdd', 'clNext', 'clNow', 'clPrev', 'clSendFix', 'clView', 'clrate', 'clstep', 'hdel']);
 // the rows of the "🔧 תיקונים ליעד" step: one per place, with what changed and when; places removed in a draft are one line
 function destFixRows(destIds, pm) {
   const ds = new Set(destIds), rows = new Map(), skip = { n: 0, at: 0 }, E = STATE.edits;
@@ -234,10 +235,22 @@ function destFixRows(destIds, pm) {
   if (layers) out.push({ name: 'שכבות', what: fx('palette', `${layers} שינויים`), at: 0 });
   return out;
 }
-// 📥 a companion's trip file: visited merges, ratings stay by name, highlights join
+// dup-both-names (decisions 2026-11-27 · Duplicates by either of a place's names, Q2): a reference of the companion's file that names no
+// place of this trip here (a place they added on their phone, or one of a destination numbered otherwise) reaches my place whose name
+// is equal to the file's place (either name of either side), within SAME_NEAR_KM or when either has no point (placeNameJoin; chain-followups,
+// decisions 2026-11-28 · Review of day chain steps 3-5, Q1); otherwise it is read as before (deviceRef)
+function companionRef(id, data) {
+  const mine = withTrip(id, () => POINTS.filter(p => !p.planOnly)), known = new Set(mine.map(p => p.id)), dests = Array.isArray(data.destinations) ? data.destinations : [];
+  const filePlace = ref => { const m = typeof ref === 'string' && ref.match(/^@(.+):(\d+)$/), k = String(ref);
+    if (m) { const dp = dests.find(d => d && d.id === m[1]); return dp && Array.isArray(dp.places) ? dp.places.find(q => q && q.id === Number(m[2])) || null : null; }
+    if (typeof ref !== 'number') return null;
+    return ((data.trip && data.trip.places) || []).find(q => q && String(q.id) === k) || dests.map(d => { const e = d && d.edits && d.edits.places && d.edits.places[k]; return e && e.op === 'add' ? e.data : null; }).find(Boolean) || null; };
+  return ref => { const d = deviceRef(ref); if (d != null && known.has(d)) return d; const fp = filePlace(ref), q = fp && mine.find(p => placeNameJoin(fp, p)); return q ? q.id : d; };
+}
+// 📥 a companion's trip file: visited merges, ratings stay by the companion's name, highlights join
 function mergeCompanion(id, data, picks) {
   const t = STATE.trips[id]; picks = picks || ['visits'];
-  const inc = personalFromFile(data) || {}, rate = inc.rating || {}, hs = inc.highlights || [];
+  const inc = personalFromFile(data, companionRef(id, data)) || {}, rate = inc.rating || {}, hs = inc.highlights || [];
   const name = data.device || 'מי שטייל איתך', td = tdOf(id);
   if (picks.includes('visits')) {
     td.visited = [...new Set([...(td.visited || []), ...(inc.visited || [])])];
@@ -251,7 +264,7 @@ function mergeCompanion(id, data, picks) {
 // memory screen, part 2: what you loved and the highlights
 function memoryHighlightsHTML(M) {
   const td = M.td, hs = (td.highlights || []).filter(h => h.text || h.placeId != null || h.photo), rate = td.rating || {};
-  const nm = id => { const p = M.pmap.get(id); return p ? p.name : ''; };
+  const nm = id => { const p = M.pmap.get(id); return p ? placeLabel(p) : ''; }; // draw-no-write (5): the name the user sees
   let h = '';
   if (hs.length) h += `<div class="mem-block"><h3>${msi('kid_star', { size: 20 })} רגעי השיא</h3><div class="mem-high">${hs.map(x => `<div class="mh-item">${typeof memoryPhotoHTML === 'function' ? memoryPhotoHTML(x) : ''}<div><b>${escH(x.placeId != null ? nm(x.placeId) : (x.text || ''))}</b>${x.placeId != null && x.text ? `<small>${escH(x.text)}</small>` : ''}${x.by ? `<small>· ${escH(x.by)}</small>` : ''}</div></div>`).join('')}</div></div>`;
   const by = k => Object.entries(rate).filter(([, v]) => v.r === k).map(([id, v]) => ({ id: Number(id), w: v.w })).filter(x => nm(x.id));

@@ -29,10 +29,10 @@ function mapPersonalRefs(p, f) { // apply f to every place reference in personal
   if (p.times) { out.times = {}; Object.entries(p.times).forEach(([k, v]) => { const i = k.indexOf('|'); const raw = k.slice(i + 1); const r = f(/^\d+$/.test(raw) ? Number(raw) : raw); if (r != null) out.times[k.slice(0, i) + '|' + r] = v; }); }
   return out;
 }
-// personal data of a trip file (refs:'dest' - relative to its destinations) -> ids of this device
-function personalFromFile(data) {
+// personal data of a trip file (refs:'dest' - relative to its destinations) -> ids of this device (f: another reading of a reference)
+function personalFromFile(data, f) {
   const p = data.personal; if (!p) return null;
-  const o = mapPersonalRefs(planItemsUp(p), deviceRef); delete o.refs; return o;
+  const o = mapPersonalRefs(planItemsUp(p), f || deviceRef); delete o.refs; return o;
 }
 // add incoming personal data to a trip's data: adds what is missing, never removes anything
 function mergePersonal(td, inc) {

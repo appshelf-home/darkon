@@ -14,7 +14,7 @@ function kbArea(node) {
     const br = box.getBoundingClientRect(); top = Math.max(br.top, vTop); bot = Math.min(br.bottom, vBot);
     const isSheet = box.id === 'sheet', isScreen = box.classList.contains('screen-layer');
     const hd = isSheet ? box.querySelector('.sheet-head') : isScreen ? box.querySelector(':scope > .screen-head') : null;
-    const ft = isSheet ? box.querySelector('.sheet-save-bar') : isScreen ? box.querySelector('.dr-dock') : null;
+    const ft = isSheet ? box.querySelector('.sheet-save-bar') : isScreen ? box.querySelector('.dr-dock, .step-bar') : null;
     if (vis(hd) && !hd.contains(node)) top = Math.max(top, hd.getBoundingClientRect().bottom);
     if (vis(ft) && !ft.contains(node)) bot = Math.min(bot, ft.getBoundingClientRect().top);
     if (isScreen) box.querySelectorAll('.ro-bar, .arr-top, #draftFilter').forEach(s => { if (vis(s) && !s.contains(node)) { const r = s.getBoundingClientRect(); if (r.top <= top + 6 && r.bottom > top) top = r.bottom; } });

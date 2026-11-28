@@ -54,10 +54,11 @@ function fsNativeOnTouch(f) {
 }
 function exitFS(fromPop) {
   if (!FS) return;
+  const cr = MAPCR.host && WIN_STACK.some(e => e.key === 'mapcr') ? 1 : 0; if (MAPCR.host) mapCrClose(true); // map-credit-line: an open credit panel goes with full screen (its step back counted below)
   const f = FS; FS = null; if (M3.id === f.id) groupFn('special-maps', 'm3Close')(); // map-3d: leaving full screen leaves 3D too
   fsBody(); fsSync(f.id);
   if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
-  { const k = WIN_STACK.filter(e => e.key === 'fs').length; WIN_STACK = WIN_STACK.filter(e => e.key !== 'fs'); layerAppBack(fromPop ? k - 1 : k); } // 5.4.0
+  { const k = WIN_STACK.filter(e => e.key === 'fs').length; WIN_STACK = WIN_STACK.filter(e => e.key !== 'fs'); layerAppBack((fromPop ? k - 1 : k) + cr); } // 5.4.0
   if (f.id === 'mapView_screen' && activeTab === 'map') rerenderKeepingMap(); // the screen's map height was measured without the top bar
   else fsInvalidate(f.id);
 }
@@ -124,7 +125,7 @@ function openPick(o) {
   const go = (c, z) => { map.setView([c.lat, c.lng], Math.max(map.getZoom(), z || 17)); if (mode === 'tap') put([c.lat, c.lng]); };
   // 11.20.0 (place-search-upgrade): the one place search - typing pauses ask Photon, "חיפוש" / Enter both; a pick brings the place to the pin
   // 11.28.0 (area-search Q1): o.kind 'area' (from the destination's centre) - areas anywhere, no box and no bias; a picked area fits its extent
-  const ps = psHost({ box: () => $('#fspRes'), kind: o.kind, near: () => o.kind === 'area' ? false : map.getCenter(), ret: o.ret || null, map: () => { const H = PS_HOSTS[ps]; if (H) H.st = null; $('#fspRes').innerHTML = ''; showToast('מזיזים את המפה עד שהסיכה במקום'); },
+  const ps = psHost({ box: () => $('#fspRes'), kind: o.kind, near: () => o.kind === 'area' ? false : map.getCenter(), ret: o.ret || null, where: o.where || null /* big-dest-search */, map: () => { const H = PS_HOSTS[ps]; if (H) H.st = null; $('#fspRes').innerHTML = ''; showToast('מזיזים את המפה עד שהסיכה במקום'); },
     pick: x => { FS_PICK.found = x; const ez = x.area && x.ext ? psExtZoom(map, x.coord, x.ext) : null; if (ez != null) map.setView([x.coord.lat, x.coord.lng], ez); else go(x.coord); const a = $('#fspAddr'); a.textContent = [x.name, x.sub].filter(Boolean).join(', '); a.hidden = !a.textContent; } });
   $('#fspQ').dataset.ps = ps;
   const search = async () => {

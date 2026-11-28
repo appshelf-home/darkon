@@ -19,7 +19,7 @@ const GUIDE_ROW = { start: ['travel_explore', '#1E88E5', 'מחתימים דרכ�
   plan: ['calendar_month', '#F57C00', 'תכנון', 'ימים, שעות, הדרך בין המקומות'], info: ['dashboard', '#5E35B1', 'כללי', 'היום, מזג אוויר, המסלול'], trips: ['luggage', '#00897B', 'טיולים ויעדים', 'המסך הראשון, טיולים, יעדים וזיכרונות'],
   draft: ['inbox', '#6D4C41', 'טיוטה', 'קובץ שהגיע, לפני שהוא נכנס'], closing: ['flag', '#C62828', 'סגירת טיול', 'איפה היינו, איך היה, רגעי השיא'], memory: ['photo_album', '#D81B60', 'זיכרון ומזכרות', 'תמונת הטיול, סיכום, המלצות'],
   layers: ['layers', '#3949AB', 'שכבות', 'סדר, צבע וסמל'], hidden: ['visibility_off', '#757575', 'מוסתרים וסל', 'מה שהוסתר או נמחק, והדרך חזרה'], sync: ['cloud_upload', '#0277BD', 'גיבוי ושחזור', 'קובץ גיבוי, תזכורת, שחזור'],
-  claude: ['auto_awesome', '#B4532A', 'עבודה עם ' + AI, 'בנייה, סבב שיפורים, גרסה מאוירת'], settings: ['settings', '#546E7A', 'הגדרות', 'שם המכשיר, מסך הפתיחה, תצוגה'], menu: ['history', '#8E24AA', 'יומן, מדריך ומה חדש', 'מה השתנה, ואיך עושים'] };
+  claude: ['auto_awesome', '#B4532A', 'עבודה עם ' + AI, 'בנייה, שיפור ועדכון, גרסה מאוירת'], settings: ['settings', '#546E7A', 'הגדרות', 'שם המכשיר, מסך הפתיחה, תצוגה'], menu: ['history', '#8E24AA', 'יומן, מדריך ומה חדש', 'מה השתנה, ואיך עושים'] };
 function guideTitleHTML(g) { const r = GUIDE_ROW[g.id]; if (!r) return `<span>${g.title}</span>`;
   return `<span class="gd-row"><span class="gd-ic" style="--lc:${r[1]}">${msi(r[0], { size: 20 })}</span><span class="gd-t"><b>${r[2]}</b><small>${r[3]}</small></span></span>`; }
 function guideChaptersHTML() {

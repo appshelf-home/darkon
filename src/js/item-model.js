@@ -9,6 +9,37 @@
 // 'tv:<id>' (a travel by its id), 'l:<id>' (a hotel by its lodging id).
 // Data rules of the model: a note with an address is a place of the trip (noteToPlace); a hotel is a place of the trip only
 // (hotelsToTrip) - one copy per trip that sleeps there, the destination's place hidden (status "moved", reversible).
+// name-lead (decisions 2026-11-26 · Which of a place's two names leads): a place shows one name per line - `name` or `foreign`, by
+// my swap for this place (leadMine) -> the setting "שם המקומות" -> in automatic, the AI's mark (nameLead) -> with no mark, a hotel (a
+// place a lodging record points at) by its local name, every other place by `name`. Every display of a place's name reads placeLabel.
+function placeForeign(p) { const f = p && typeof p.foreign === 'string' ? p.foreign.trim() : ''; return f && f !== String(p.name || '').trim() ? f : ''; }
+function nameLeadSet() { const v = STATE.settings.nameLead; return v === 'he' || v === 'local' ? v : 'auto'; }
+function leadAuto(p, t) { const s = nameLeadSet(); if (s !== 'auto') return s === 'local' ? 'foreign' : 'name'; if (p.nameLead === 'foreign') return 'foreign';
+  t = t === undefined ? (STATE.trips && STATE.trips[STATE.activeTrip]) : t; return t && (t.lodging || []).some(l => l.placeId === p.id) ? 'foreign' : 'name'; }
+function placeLead(p, t) { return !placeForeign(p) ? 'name' : p.leadMine === 'foreign' || p.leadMine === 'name' ? p.leadMine : leadAuto(p, t); }
+function placeLabel(p, t) { return !p ? '' : placeLead(p, t) === 'foreign' ? placeForeign(p) : String(p.name || ''); }
+// a hotel's line: the lead name when its place has two names; else as before - the lodging record's name, or its place's
+function lodgingLabel(l, p, t) { p = p || (l && l.placeId != null ? POINTS.find(x => x.id === l.placeId) : null); return String((p && placeForeign(p) ? placeLabel(p, t) : (l && l.name) || (p && p.name)) || ''); }
+function nameOther(p, shown) { const f = placeForeign(p); return !f ? '' : shown === f ? String(p.name || '') : f; } // the name a line did not show
+// dup-both-names (decisions 2026-11-27 · Duplicates by either of a place's names, Q1-Q2): the one name comparison of "is this one of
+// mine?". A place's names are all of them (`name` and `foreign`); one normalising, nameCore (case, accents, a bracket's tail, punctuation,
+// spaces); two strengths - 'loose' (one name containing another, both 3 letters or more: the suggestions) and 'exact' (one name equal to
+// another: the automatic joins). Every check of a place by its name calls placeNameMatch; no other normaliser of names (t1258).
+const nameCore = x => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s*\(.*$/, '').replace(/[^\p{L}\p{N} ]+/gu, ' ').replace(/\s+/g, ' ').trim();
+// a place ({ name, foreign }), a name, or a list of them -> its names as written, the empty left out
+function placeNames(x) { return (Array.isArray(x) ? x : [x]).flatMap(v => v && typeof v === 'object' ? [v.name, v.foreign] : [v]).filter(v => typeof v === 'string' && v.trim()); }
+// a, b: as placeNames takes; how: 'loose' | 'exact' -> the name of b that matched one of a's (as written), or ''
+function placeNameMatch(a, b, how) { const as = placeNames(a).map(nameCore).filter(Boolean); if (!as.length) return '';
+  for (const raw of placeNames(b)) { const m = nameCore(raw); if (m && as.some(n => how === 'exact' ? n === m : n.length >= 3 && m.length >= 3 && (n.includes(m) || m.includes(n)))) return raw; }
+  return ''; }
+// chain-followups (decisions 2026-11-28 · Review of day chain steps 3-5, Q1): "the same thing, near" - one distance for every match of a
+// place by its name and its point: a discovery already mine (discExisting, discInDraft) and an automatic join by an equal name
+const SAME_NEAR_KM = 0.15;
+// an automatic join by name: an equal name (placeNameMatch 'exact') of two places within SAME_NEAR_KM, or when either has no point
+// (routeCoordOf); two places of one generic name apart ("חניה") stay two. Every automatic join by name calls it (addSame, companionRef)
+function placeNameJoin(a, b) { const m = placeNameMatch(a, b, 'exact'); if (!m) return '';
+  const ca = routeCoordOf(a), cb = routeCoordOf(b); return !ca || !cb || distanceKm(ca, cb) <= SAME_NEAR_KM ? m : ''; }
+function placeOther(p, t) { return !placeForeign(p) ? '' : placeLead(p, t) === 'foreign' ? String(p.name || '') : placeForeign(p); }
 function itemOf(ref) {
   if (ref == null || ref === '') return null;
   const s = String(ref), t = activeTripObj(), P = id => POINTS.find(p => p.id === id) || null;
@@ -16,18 +47,18 @@ function itemOf(ref) {
   const lodgingOf = id => (t.lodging || []).filter(l => l.placeId === id);
   if (s.startsWith('tv:')) { const f = (t.travels || []).find(x => String(x.id) === s.slice(3)); return f ? out('travel', { name: travelTitle(f), travel: f }) : null; }
   if (s.startsWith('l:')) { const l = (t.lodging || []).find(x => String(x.id) === s.slice(2)); if (!l) return null; const p = P(l.placeId);
-    return out('place', { name: (p && p.name) || l.name || '', place: p, lodging: [l], hotel: true }); }
+    return out('place', { name: (p && placeLabel(p, t)) || l.name || '', place: p, lodging: [l], hotel: true }); }
   if (s.startsWith('s:')) { const raw = rawSched(s.slice(2)); if (!raw) return null; const e = schedEff(raw);
     if (isTravelKind(e.kind)) { const f = grpTravelOf(raw, e, t); return out('travel', { name: travelTitle(f), travel: f, sched: e }); } // 11.0.0: a program line of a travel's kind is a travel
     const p = e.placeId != null ? P(e.placeId) : null;
-    if (p) return out('place', { name: e.title || p.name, place: p, sched: e, lodging: lodgingOf(p.id), hotel: e.kind === 'hotel' || lodgingOf(p.id).length > 0 });
+    if (p) return out('place', { name: e.title || placeLabel(p, t), place: p, sched: e, lodging: lodgingOf(p.id), hotel: e.kind === 'hotel' || lodgingOf(p.id).length > 0 });
     return out('note', { name: e.title || '', sched: e }); }
   const id = /^\d+$/.test(s) ? Number(s) : s;
-  if (typeof id === 'number') { const p = P(id); return p ? out('place', { name: p.name, place: p, lodging: lodgingOf(id), hotel: lodgingOf(id).length > 0 }) : null; }
+  if (typeof id === 'number') { const p = P(id); return p ? out('place', { name: placeLabel(p, t), place: p, lodging: lodgingOf(id), hotel: lodgingOf(id).length > 0 }) : null; }
   const f = STATE.planItems[id]; if (!f) return null;
   const tv = (t.travels || []).find(x => String(x.id) === s);
   if (tv || f.travel) return out('travel', { name: tv ? travelTitle(tv) : f.name, travel: tv || null, note: f });
-  if (f.ref != null) { const p = P(f.ref); if (p) return out('place', { name: p.name, place: p, note: f, copy: true, lodging: lodgingOf(p.id) }); }
+  if (f.ref != null) { const p = P(f.ref); if (p) return out('place', { name: placeLabel(p, t), place: p, note: f, copy: true, lodging: lodgingOf(p.id) }); }
   return out('note', { name: f.name || '', note: f });
 }
 
@@ -97,7 +128,7 @@ function persist(quiet) { // the small-storage rows are saved together; which fi
   stashActive(); if (STATE.activeTrip && !tripWritable(STATE.activeTrip)) loadPersonal(STATE.activeTrip); // item 9: a closed trip's mirror shows its data, never a mark that was not written
   const toSave = { format: REG_FORMAT, app: APP_VERSION }; // 10.1.1: the version that saved (the old-copy guard)
   [...REG, ...REG_STATES].forEach(r => (r.where.blob || []).forEach(f => { toSave[f] = STATE[f]; }));
-  toSave.activeTrip = ARCHIVE_VIEW ? ARCHIVE_VIEW.prev : STATE.activeTrip;
+  toSave.activeTrip = ARCHIVE_VIEW ? ARCHIVE_VIEW.prev : DEST_VIEW ? DEST_VIEW.prev : STATE.activeTrip; // destination-view: the start never restores a view
   if (!regWrite(null, toSave, STORE_KEY) && !regIsSpace(REG_SPACE.err)) showToast(TX.notSaved); // storage (Q6): a refusal for space already gave the one message
 }
 
@@ -110,7 +141,7 @@ function logEvent(text, notAChange, mark) { // notAChange: a row outside the und
   if (STATE.log.length > 400) STATE.log = STATE.log.slice(-400);
   persist();
 }
-function placeName(id) { const p = planItem(id); return p ? p.name.replace(/\s*\(.*$/, '') : ''; }
+function placeName(id) { const p = planItem(id); return p ? placeLabel(p).replace(/\s*\(.*$/, '') : ''; }
 
 const BACKUP_APP = PACK.filePrefix + '-trip';
 // 8.0.0 (ק4): the name and the short count of each part - the same names in backup, restore, sending and receiving
@@ -148,7 +179,7 @@ async function saveBackupFile(parts) {
 // brings are read-only (rowIn drops their undo marks) and stay after an undo of the restore
 function applyRestore(backup, parts) {
   stashActive(); // once: a row restored later must not be overwritten by the open trip's marks
-  parts.forEach(k => { const d = backup.parts[k]; if (!d || !PART_BY[k]) return; PART_BY[k].rows.forEach(r => rowIn(r, d[r])); });
+  parts.forEach(k => { const d = backup.parts[k]; if (!d || !PART_BY[k]) return; PART_BY[k].rows.forEach(r => rowIn(r, recRestoreIn(r, d[r]))); }); // prev-recs (Q11): the summaries joined, not replaced
   ensureEditsShape(); renderLegend();
   if (!STATE.trips[STATE.activeTrip] || STATE.trips[STATE.activeTrip].archived) STATE.activeTrip = pickRelevantTrip(null);
   loadPersonal(STATE.activeTrip); applyActiveTrip(); syncFlightsToPlan(); updateHeader();

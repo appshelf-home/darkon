@@ -36,7 +36,7 @@ html .msi.msi-in { font-size: 1.15em; vertical-align: -0.2em; } html .msi.warn-i
 .le-ic .msi { color: var(--on-surface-variant); } .le-ic[data-active="true"] .msi { color: var(--on-secondary-container); }
 /* 10.1.0 (design-1): Claude's mark (sparkles) in Claude's color, the size of the text beside it; one color in the ⋮ menu */
 .cl-mark { color: var(--on-claude); font-size: 1.2em; vertical-align: -.2em; }
-:is(.ta-item, .menu-item) > .msi.cl-mark { color: var(--on-claude); } :is(.btn-nav, .ta-main) .cl-mark { color: inherit; } /* final review 11: Claude's mark keeps Claude's color as a row's leading icon too (a row's icon color is a stronger rule); on a filled button it takes the button's ink */
+:is(.ta-item, .menu-item) > .msi.cl-mark { color: var(--on-claude); } .btn-nav .cl-mark { color: inherit; } /* final review 11: Claude's mark keeps Claude's color as a row's leading icon too (a row's icon color is a stronger rule); on a filled button it takes the button's ink */
 /* 10.1.0 (design-1): the logo (the oval stamp) in the primary color */
 .logo { display: inline-block; color: var(--primary); line-height: 0; } .logo svg { width: 100%; height: auto; display: block; overflow: visible; }
 .logo-l { width: 210px; } .logo-m { width: 110px; } .logo-s { width: 64px; }

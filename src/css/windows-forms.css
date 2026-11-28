@@ -29,8 +29,6 @@ html .ta-item:active { background: var(--surface-container-high); }
 html .ta-item > .ta-ic { flex: none; width: 24px; color: var(--on-surface-variant); }
 html .ta-item > .ta-t { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; } html .ta-item > .ta-t > small { color: var(--on-surface-variant); font-size: var(--fs-body-small); }
 html .ta-item.ta-del { color: var(--error); border-top: 1px solid var(--outline-variant); } html .ta-item.ta-del > .ta-ic { color: var(--error); } html .ta-item.ta-del + .ta-item.ta-del { border-top: none; }
-html .ta-item.ta-main { margin: 4px 16px 8px; min-height: 44px; border-radius: var(--r-pill); justify-content: center; background: var(--primary); color: var(--on-primary); }
-html .ta-item.ta-main > .ta-ic:empty { display: none; } html .ta-item.ta-main > .ta-t { flex: 0 1 auto; align-items: center; } html .ta-item.ta-main > .ta-t > small { color: inherit; } /* phone-round-1-fixes P19 (11.14.0): the main row's supporting line takes the row's ink (on-primary) - the list rows' grey (the rule above, heavier by its html prefix) outranked the main row's "color: inherit" (screens-plan.css), grey on blue */
 /* 5.12.0: the destination's country - a field-like picker button, and its list */
 
   
@@ -139,7 +137,7 @@ body > .sure-q { z-index: 3200; } /* 10.13.0 (gap 47): a confirmation sits over 
 }
 @keyframes selfPulse { 0% { transform: scale(0.4); opacity: 1; } 100% { transform: scale(1.6); opacity: 0; } }
 .locate-me-btn {
-  position: absolute; bottom: 24px; right: 10px; z-index: 500; width: 40px; height: 40px; border-radius: var(--r-tile); /* 4.13.0: right side - the ＋ is on the left */
+  position: absolute; bottom: calc(var(--map-cr-h) + 8px); right: 10px; z-index: 500; width: 40px; height: 40px; border-radius: var(--r-tile); /* 4.13.0: right side - the ＋ is on the left */
   border: none; background: var(--surface-container); color: var(--on-surface); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;
   box-shadow: var(--elev-2);
 }
@@ -165,7 +163,7 @@ body > .sure-q { z-index: 3200; } /* 10.13.0 (gap 47): a confirmation sits over 
 /* 5.2.0: the expanded window - one look for every item */
 .iw-status { display: flex; align-items: center; gap: var(--icon-gap); width: 100%; text-align: start; padding: 8px 12px; margin: 6px 0 4px; border: none; border-radius: var(--r-tile); background: var(--secondary-container); color: var(--on-secondary-container); font: 500 var(--fs-body) 'Rubik', system-ui, sans-serif; box-sizing: border-box; }
 .iw-status > span:not(.msi) { flex: 1; min-width: 0; } .iw-status .iw-go { flex: none; }
-button.iw-status { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+button.iw-status { cursor: pointer; }
 .iw-status.today { background: var(--today-container); color: var(--on-today); }
 .iw-small { margin: 0 0 4px; } /* 10.2.0 (design-2): the expanded card's tags row (.cd-tags) */
 .iw-acts { display: flex; gap: 4px; margin: 4px -8px 6px; padding-bottom: 6px; border-bottom: 1px solid var(--outline-variant); }
@@ -178,7 +176,7 @@ button.iw-status { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .iw-wrap { overflow-wrap: anywhere; } /* 11.42.0: a booking or price note in the window - whole, wrapped (a long word too) */
 .iw-row { display: flex; align-items: center; gap: 10px; margin: 0; padding: 5px 0; font-size: var(--fs-body); } .iw-row > .msi { flex: none; color: var(--on-surface-variant); } .iw-row > span:not(.msi) { flex: 1; min-width: 0; }
 .iw-tbtn { flex: none; border: none; background: none; padding: 4px; color: var(--primary); font: 500 var(--fs-body) 'Rubik', system-ui, sans-serif; cursor: pointer; }
-.iw-head { gap: 8px; justify-content: flex-start; border-bottom: none; } .iw-foreign { margin: 0 0 6px; padding-inline-start: 42px; color: var(--on-surface-variant); font-size: var(--fs-body-small); overflow-wrap: anywhere; } /* kit-fixes (item 4): the local name under the name, as far in as the name */ .iw-head > b { font-weight: 500; } .iw-head > .cd-lead { width: 34px; height: 34px; } .iw-head > .cd-lead .msi { font-size: var(--icon-20); } .iw-head > .tl-vis { margin: -4px 0 -6px; }
+.iw-head { gap: 8px; justify-content: flex-start; border-bottom: none; } .iw-foreign { margin: 0 0 6px; padding-inline-start: 42px; color: var(--on-surface-variant); font-size: var(--fs-body-small); overflow-wrap: anywhere; } /* kit-fixes (item 4): the local name under the name, as far in as the name */ button.iw-foreign { display: flex; align-items: center; gap: var(--icon-gap); width: 100%; min-height: var(--h-chip); border: none; background: none; font: inherit; font-size: var(--fs-body-small); color: var(--on-surface-variant); text-align: start; cursor: pointer; } /* name-lead (Q6): the quiet line is the swap - ⇄ at its end */ .iw-head > b { font-weight: 500; } .iw-head > .cd-lead { width: 34px; height: 34px; } .iw-head > .cd-lead .msi { font-size: var(--icon-20); } .iw-head > .tl-vis { margin: -4px 0 -6px; }
 .iw-desc { font-size: var(--fs-title-medium); display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; margin: 0 0 4px; }
 .iw-desc.open { display: block; -webkit-line-clamp: unset; }
 .iw-more { border: 0; background: none; padding: 0; color: var(--primary); font: inherit; font-size: var(--fs-body); cursor: pointer; }
@@ -192,7 +190,7 @@ button.iw-status { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .sheet-save-bar > * { pointer-events: auto; }
 .sheet-save-bar .sh-error { flex: 1 1 100%; margin: 0; background: var(--surface-container); border-radius: var(--r-chip); padding: 4px 8px; }
 .pe-map { position: relative; }
-.map-gesture { position: absolute; inset: auto 6px 6px auto; z-index: 1000; background: rgba(28,43,51,.82); color: #fff; font: 600 var(--fs-micro) 'Rubik', system-ui, sans-serif; padding: 3px 8px; border-radius: var(--r-pill); pointer-events: none; }
+.map-gesture { position: absolute; inset: auto 6px calc(var(--map-cr-h) + 6px) auto; z-index: 1000; background: rgba(28,43,51,.82); color: #fff; font: 600 var(--fs-micro) 'Rubik', system-ui, sans-serif; padding: 3px 8px; border-radius: var(--r-pill); pointer-events: none; }
 .map-gesture.big { inset: 0; display: flex; align-items: center; justify-content: center; border-radius: var(--r-tile); font-size: var(--fs-title-small); background: rgba(28,43,51,.6); }
 .fbar { display: flex; gap: 6px; margin-top: 8px; flex-wrap: nowrap; } /* 4.46.4: the pickers give way (…), ⭐ and 📅 stay in the row */
 .fpick { flex: 1 1 0; min-width: 0; display: flex; justify-content: space-between; align-items: center; gap: var(--icon-gap); padding: 0 6px 0 10px; height: var(--h-chip); box-sizing: border-box; border-radius: var(--r-chip); border: 1px solid var(--outline-variant); background: var(--surface-container); color: var(--on-surface); font-family: 'Rubik', system-ui, sans-serif; font-size: var(--fs-body-small); cursor: pointer; }
@@ -357,6 +355,7 @@ button.iw-status { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .fm-errline { flex: 1 1 100%; } .fm-errline[hidden], .fm-f[hidden], .fm-togrow[hidden] { display: none; }
 .fm-toerr { border: none; background: none; color: inherit; font: inherit; padding: 0; cursor: pointer; text-align: start; }
 .fm-chips { flex-wrap: wrap; overflow: visible; margin-top: 2px; } .fm-chips.fm-measure { flex-wrap: nowrap; overflow: hidden; } .fm-chips[hidden], .fm-pickbtn[hidden] { display: none; }
+.fm-chips:not(.fm-short) .ch-s, .fm-chips.fm-short .ch-l { display: none; } /* ai-names (Q2): a chip's short name, shown before the row folds (fmFit) */
 .fm-pickbtn { align-self: stretch; display: flex; align-items: center; gap: var(--icon-gap); min-height: 40px; padding: 6px 12px; border-radius: var(--r-chip); border: 1px solid var(--outline); background: var(--surface); color: var(--on-surface); font: 500 var(--fs-title-small) 'Rubik', system-ui, sans-serif; text-align: start; cursor: pointer; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .fm-pickbtn .dd-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
 .fm-togrow { display: flex; flex-direction: column; margin: 4px 0; }

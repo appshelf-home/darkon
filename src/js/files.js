@@ -17,20 +17,23 @@ function incomingAI(d) { return d.kind === 'proposal' || !!d.round || !!d.propos
 function openIncoming(data, door, ctx) {
   ctx = ctx || {};
   if (!data || data.app !== BACKUP_APP) { showToast('זה לא קובץ של ' + APP.appTitle); return false; }
+  if (!groupHas('door')) { groupWait('door', () => openIncoming(data, door, ctx)); return true; } // diet-room: the door's cleaning is its own group - before anything reads the file
   if (incomingAI(data) && !groupHas('ai')) { groupWait('ai', () => openIncoming(data, door, ctx)); return true; } // diet-mechanism: a file for the AI group (a draft, a round, a proposal) waits for its group, then goes this way
-  FILE_DROPPED = 0; fileIdsFix(data, idsTaken()); // 11.21.4 (backup-ids, Q1): an id or key not of the form is converted, not refused - the user sees nothing
-  if (!fileIdsOk(data)) { showToast('בקובץ יש מזהה לא תקין, ולכן הוא לא נפתח. כדאי לבקש מה-' + AI + ' לבנות אותו שוב'); return true; } // 11.8.1: ids go into attributes as they are (after the conversion: never expected)
-  fileClean(data); fileRefsClean(data); tvStopsClean(data); // final-review-followups (miss b): before anything reads the file; 11.12.0: references; along-drive: a drive's stops
+  FILE_DROPPED = 0; groupFn('door', 'fileIdsFix')(data, groupFn('door', 'idsTaken')()); // 11.21.4 (backup-ids, Q1): an id or key not of the form is converted, not refused - the user sees nothing
+  if (!groupFn('door', 'fileIdsOk')(data)) { showToast('בקובץ יש מזהה לא תקין, ולכן הוא לא נפתח. כדאי לבקש מה-' + AI + ' לבנות אותו שוב'); return true; } // 11.8.1: ids go into attributes as they are (after the conversion: never expected)
+  groupFn('door', 'fileClean')(data); groupFn('door', 'fileRefsClean')(data); groupFn('door', 'tvStopsClean')(data); // final-review-followups (miss b): before anything reads the file; 11.12.0: references; along-drive: a drive's stops
+  sgDoor(data); // ai-fix-mine (item 3): an AI's suggestions are read only from an AI's file; an AI never writes the ones kept on the phone
+  if (fileFromAI(data) || data.round || data.kind === 'proposal') recDropAll(data); // prev-recs (Q12): an AI never writes previous recommendations - what it wrote is never read
   if (FILE_DROPPED) data._dropped = FILE_DROPPED; else delete data._dropped; // A6: what the closed sets dropped - the summary's line
   if (data && data.trip && typeof data.trip === 'object') travelsMerge(data.trip); // 11.0.0 (travels-1-model, Q16): a program line that is one of the travels is one record (the draft lists it once)
   if (data.minAppVersion && versionLess(APP_VERSION, data.minAppVersion)) { showToast(`הקובץ מגרסה חדשה יותר (${data.minAppVersion}). מעדכנים קודם את האפליקציה`); return true; }
   if (fileTooOld(data)) { showToast(TX.tooOld); return true; }
   fileUp(data);
-  if (draftFromClaude(data)) hintMark('claude.back'); // 9.6.0 (12ו, batch 13.2): a file came back from Claude - the "איך" steps fold from now on; 11.21.0 (review of the night chain Q7): the one "from Claude" test, so a friend's file or a backup does not fold them
-  if (draftFromClaude(data)) kitSeenFile(data.kitVersion); // skill-install (Q4): the newest kitVersion an AI wrote, kept on this device
+  if (fileFromAI(data)) hintMark('claude.back'); // 9.6.0 (12ו, batch 13.2): a file came back from Claude - the "איך" steps fold from now on; 11.21.0 (review of the night chain Q7): the one "from Claude" test, so a friend's file or a backup does not fold them
+  if (fileFromAI(data)) kitSeenFile(data.kitVersion); // skill-install (Q4): the newest kitVersion an AI wrote, kept on this device
   // item 7 (review of 11.11.0): a file with no summary window reports what was dropped in its own message (fileDroppedNote, data._dropped)
   if (data.kind === 'memento-art') { viaGroup('memories', 'receiveMementoArt', data); return true; } // 4.30.0: to the memory screen
-  if (data.kind === 'proposal') { viaGroup('ai', 'receiveProposal', data); return true; } // 11.5.0 (schedule-proposal): to the top of its trip's plan
+  if (data.kind === 'proposal') { viaGroup('proposal', 'receiveProposal', data); return true; } // 11.5.0 (schedule-proposal): to the top of its trip's plan
   if (data.round && viaGroup('ai', 'roundMatchesDraft', data)) { viaGroup('ai', 'mergeRound', data); return true; } // 4.27.0: a round comes back to its draft
   if (data.round) { const r = data; setTimeout(() => viaGroup('ai', 'showRoundReplies', r), 1200); data = viaGroup('ai', 'stripRoundFile', data); }
   if (door === 'closing' && data.kind === 'trip' && ctx.tripId && companionFits(data, ctx.tripId)) { openReceive(data, { tripId: ctx.tripId, only: ['visits', 'favorites'], companion: true }); return true; }
@@ -99,48 +102,87 @@ function editsConflicts(data) {
   const inc = { places: {}, status: {}, layers: {}, layerOrder: {} }; dps.forEach(dp => mergeDestEdits(dp, inc));
   const rows = editRows({ edits: inc }); return { n: rows.length, conf: rows.filter(r => r.conflict), rows, inc };
 }
+// file-over-existing (decisions 2026-11-26 · An updated trip file for a trip already on the phone, Q2, Q4, Q5): a trip is on the phone by
+// its id, a destination by its id (needsDraft's rule - a new id is a new trip or destination, through the draft). Every full file of one
+// already here comes in as an update - the receive window's "לעדכן אותו" applies it the way an answer to "עדכון עם AI" is applied
+// (receiveApply → importTripNow / receiveDestination: the new content in, everything done on the phone kept); "להחליף לגמרי" is a quiet
+// link under it, behind the delete's question. Only a file that would change nothing here says "כבר בטלפון" (fileSame).
+function fileSame(data, here) { if (!here) return false;
+  if (data.kind !== 'trip') return installDestinationSame(data.destination);
+  const t = data.trip, key = p => JSON.stringify(p && typeof p === 'object' ? [p.id, p.name, p.manualCoord || null, p.address || '', p.description || ''] : p);
+  if ((t.version || 1) !== (here.version || 1) || JSON.stringify(here.segments) !== JSON.stringify(t.segments) || !fileParts(data).every(k => k === 'trip' || k === 'dests')) return false;
+  if (!(data.destinations || []).every(dp => dp && DESTS[dp.id] && (DESTS[dp.id].builtin || installDestinationSame(dp)))) return false;
+  const a = (t.places || []).map(key), b = new Set((here.places || []).map(key)); return a.length === b.size && a.every(x => b.has(x)); }
 function openReceive(data, o) { layerNote(openReceive, arguments); o = o || {};
   const isTrip = data.kind === 'trip', thing = isTrip ? data.trip : data.destination, tid = o.tripId || (isTrip ? thing.id : null);
   const here = isTrip ? STATE.trips[tid] : DESTS[thing.id], name = isTrip ? String((here || thing).name).split(' · ')[0] : (thing.meta || {}).name;
   let parts = (o.only || fileParts(data)).filter(k => !o.only || fileParts(data).includes(k));
-  const same = isTrip && here && !o.companion && (thing.version || 1) === (here.version || 1) && parts.every(k => k === 'trip' || k === 'dests') && (!isTrip || JSON.stringify(here.segments) === JSON.stringify(thing.segments));
-  if (same || (!isTrip && installDestinationSame(thing))) { // kit-fixes (A2.3): a destination is the same by its content, not by its kept version
-    showToast(`${isTrip ? 'הטיול' : 'היעד'} ${name} כבר בטלפון`); return; }
+  if (!o.companion && fileSame(data, here)) { showToast(`${isTrip ? 'הטיול' : 'היעד'} ${name} כבר בטלפון`); return; } // kit-fixes (A2.3): a destination is the same by its content; file-over-existing: a trip too, never by its version alone
   if (!parts.length) { showToast('אין בקובץ מה שמתאים כאן'); return; }
   const F = fmNew({ data, o }), ctl = { take: o.take || new Set() };
   const who = [data.device ? 'מ' + escH(data.device) : '', data.createdAt ? tmFmt('date', data.createdAt) : '', thing.version ? 'גרסה ' + thing.version : ''].filter(Boolean).join(SEP);
   const conf = parts.includes('edits') ? editsConflicts(data) : null;
   const body = [fmChecks(F, 'parts', { label: o.companion ? 'מה לצרף' : 'מה לקחת מהקובץ', items: partItems(parts, k => filePartCount(data, k)), value: parts }),
     fileDroppedHTML(data._dropped), // A6: the receive summary's one line
+    o.companion ? '' : sgRecvHTML(data), // ai-fix-mine (item 4): what the AI suggests to correct in what you set - decided here, applied with "לעדכן אותו"
     conf && conf.conf.length ? `<div class="sh-hint pw-conf">${conf.conf.length} מהעריכות נערכו גם אצלכם, ושלכם נשאר${ctl.take.size ? ` (חוץ מ-${ctl.take.size} שבחרתם מהקובץ)` : ''}. <button type="button" class="pw-link" data-act="recv.review">לבחור אחד-אחד</button></div>` : ''];
-  partsWin(F, { key: 'openReceive', title: `📥 קובץ התקבל${SEP}${escH(name)}${thing.version ? SEP + 'גרסה ' + thing.version : ''}`, intro: `${o.door === 'bundle' ? 'יש גרסה חדשה של הטיול באתר.' : (o.companion ? 'הסימונים של מי שטייל איתכם.' : (isTrip ? 'הטיול' : 'היעד') + ' כבר בטלפון.')}${who ? ' ' + who + '.' : ''}<br>מה שמסומן מתווסף בלי למחוק; מה שלא מסומן לא משתנה.`,
-    body, send: { act: 'recv.go', label: o.companion ? '📥 צירוף הסימונים' : 'עדכון' }, more: isTrip && !o.companion ? [{ act: 'recv.copy', label: 'עותק נפרד' }] : [], ctl });
+  const line = o.door === 'bundle' ? 'יש גרסה חדשה של הטיול באתר.' : o.companion ? 'הסימונים של מי שטייל איתכם.' : `${isTrip ? 'הטיול' : 'היעד'} הזה כבר בטלפון.`; // file-over-existing (Q4): the one line
+  partsWin(F, { key: 'openReceive', title: `📥 קובץ התקבל${SEP}${escH(name)}${thing.version ? SEP + 'גרסה ' + thing.version : ''}`, intro: `${line}${who ? ' ' + who + '.' : ''}<br>${o.companion ? 'מה שמסומן מתווסף בלי למחוק; מה שלא מסומן לא משתנה.' : 'התוכן מהקובץ נכנס, ומה שעשיתם בטלפון נשאר.'}`,
+    body, send: { act: 'recv.go', label: o.companion ? '📥 צירוף הסימונים' : 'לעדכן אותו' }, more: o.companion ? [] : [{ act: 'recv.replace', label: 'להחליף לגמרי' }].concat(isTrip ? [{ act: 'recv.copy', label: 'עותק נפרד' }] : []), ctl });
   ctl.conf = conf;
 }
 function installDestinationSame(dp) { const ex = DESTS[dp.id]; return !!(ex && !dp.edits && JSON.stringify(ex.places) === JSON.stringify(dp.places) && JSON.stringify(ex.meta) === JSON.stringify(dp.meta) && (ex.info || '') === (dp.info || '')); }
+// file-over-existing (Q4): the places a file changed here - a trip's own and its destinations' - by their content (placeFields, without the
+// summary of visits); taken before the file is applied, counted after it: "עודכנו N מקומות"
+function placesSnap(data) { const m = new Map(), t = data.kind === 'trip' ? STATE.trips[data.trip.id] : null, put = (k, p) => { if (!p || typeof p !== 'object') return; const f = placeFields(p); delete f.recs; m.set(k + ':' + p.id, JSON.stringify(f)); };
+  ((t && t.places) || []).forEach(p => put('t', p));
+  (data.kind === 'trip' ? data.destinations || [] : [data.destination]).forEach(dp => { const d = dp && DESTS[dp.id]; ((d && d.places) || []).forEach(p => put(d.id, p)); });
+  return m; }
+function placesUpdatedText(snap, data) { if (!snap) return ''; let n = 0; placesSnap(data).forEach((v, k) => { if (snap.get(k) !== v) n++; });
+  return !n ? '' : n === 1 ? `${SEP}עודכן מקום אחד` : `${SEP}עודכנו ${n} מקומות`; }
+// file-over-existing (Q4): "להחליף לגמרי" throws away what was done here - for a destination its edits, hides and the places added to it
+// (the rows destPayload sends with it)
+function destEditsDrop(id) { const d = DESTS[id]; if (!d) return; const E = STATE.edits, b = d.idBase || 0, pl = new Set((d.places || []).map(p => b + p.id)), ly = new Set(((d.meta || {}).layers || []).map(l => b + l.id));
+  const mine = x => !!(x && x.op === 'add' && x.data && x.data.dest === id);
+  Object.keys(E.places).forEach(k => { if (pl.has(Number(k)) || mine(E.places[k])) { delete E.places[k]; delete E.status[k]; } });
+  Object.keys(E.status).forEach(k => { if (pl.has(Number(k))) delete E.status[k]; });
+  Object.keys(E.layers || {}).forEach(k => { if (ly.has(Number(k)) || mine(E.layers[k])) delete E.layers[k]; });
+  if (E.layerOrder && E.layerOrder[id]) { E.layerOrder = { ...E.layerOrder }; delete E.layerOrder[id]; } }
 act('recv.review', c => { const t = layerTop(), ctl = t && t.ctl; if (!ctl || !ctl.conf) return 'quiet'; const conf = ctl.conf;
   openEditsReview({ edits: conf.inc }, 'הקובץ', { only: conf.conf, take: ctl.take, onPick: set => { ctl.take = set; } }); return 'quiet'; });
-act('recv.go', c => receiveApply(c, 'update'));
-act('recv.copy', c => receiveApply(c, 'copy'));
-function receiveApply(c, mode) {
-  const F = fmOf(c.el), t = layerTop(); if (!F || !t) return; const { data, o } = F.opts, picks = fmGet(F, 'parts') || [], take = (t.ctl && t.ctl.take) || new Set();
+act('recv.go', c => receiveApply(fmOf(c.el), layerTop(), 'update'));
+act('recv.copy', c => receiveApply(fmOf(c.el), layerTop(), 'copy'));
+// file-over-existing (Q4): "להחליף לגמרי" - the delete's question first; a trip goes to the trash (30 days) and the file's comes in as new,
+// a destination loses its edits and takes the file's content as it is; one undo row for all of it
+act('recv.replace', c => { const F = fmOf(c.el), t = layerTop(); if (!F || !t) return 'quiet'; const d = F.opts.data, isTrip = d.kind === 'trip';
+  const name = isTrip ? String((STATE.trips[d.trip.id] || d.trip).name).split(' · ')[0] : ((d.destination.meta || {}).name || '');
+  return askSure({ ic: 'delete', title: `להחליף לגמרי את ${escH(name)}?`, text: isTrip ? 'הטיול שבטלפון עובר לסל (אפשר לשחזר אותו 30 יום), ובמקומו נכנס הטיול מהקובץ - בלי התוכנית, הסימונים והמקומות שהוספתם בו.' : 'העריכות, ההסתרות והמקומות שהוספתם ליעד יימחקו, ובמקומם נכנס היעד מהקובץ כמו שהוא.', ok: 'להחליף' }, () => receiveApply(F, t, 'replace')); });
+function receiveApply(F, t, mode) {
+  if (!F || !t) return; const { data, o } = F.opts, take = (t.ctl && t.ctl.take) || new Set(); let picks = fmGet(F, 'parts') || [];
+  if (mode === 'replace') picks = fileParts(data).filter(k => k === 'trip' || k === 'dests' || picks.includes(k)); // the trip and its destinations always: they are what is replaced
   if (!picks.length) return fmFailLine(F, 'בחרו לפחות חלק אחד');
   closeSheet();
   if (o.companion) { viaGroup('memories', 'mergeCompanion', o.tripId, data, picks); return; }
-  if (data.kind === 'trip') { importTripNow(data, mode, null, '', { picks, take }); if (o.door === 'bundle') { STATE.bundleSeen[data.trip.id] = data.trip.version || 1; persist(); } return; }
-  receiveDestination(data, picks, take);
+  const sg = mode === 'update' && SG_L.recv ? SG_L.recv.rows : null; // ai-fix-mine: the window's suggestions with their marks (a replace or a copy has nothing of mine to correct)
+  if (data.kind === 'trip') { if (mode === 'replace') undoHold(() => deleteTripToTrash(data.trip.id)); importTripNow(data, mode, null, '', { picks, take, sg }); if (o.door === 'bundle') { STATE.bundleSeen[data.trip.id] = data.trip.version || 1; persist(); } return; }
+  if (mode === 'replace') destEditsDrop(data.destination.id);
+  receiveDestination(data, picks, mode === 'replace' ? new Set() : take, mode, sg);
 }
-function receiveDestination(data, picks, take) {
+function receiveDestination(data, picks, take, mode, sg) {
+  sgStrip(data); // ai-fix-mine: the file's suggestions are the window's rows now - never stored as they came
+  const snap = placesSnap(data); // file-over-existing (Q4): the places it changed, counted in the message
   const dp = data.destination, nj = picks.includes('dests') ? addJoinFile(data, true) : 0; // add-key (Q3): a place an AI completed for one I added joins mine
   if (picks.includes('dests')) installDestination(dp);
-  let n = 0; if (picks.includes('edits') && dp.edits) { const e = JSON.parse(JSON.stringify(STATE.edits)); n = mergeDestEdits(dp, e, take); STATE.edits = e; ensureEditsShape(); refreshLayers(); }
-  persist(); showUndoToast(`היעד ${dp.meta.name} עודכן מקובץ${n ? ` (+${n} עריכות)` : ''}${addJoinedText(nj)}`); // undo-history Q6: one row
+  let n = 0; if (picks.includes('edits') && dp.edits) { const e = JSON.parse(JSON.stringify(STATE.edits)); n = mergeDestEdits(dp, e, take); STATE.edits = e; ensureEditsShape(); }
+  sgApply(sg); // ai-fix-mine (items 4-5): each suggestion on its place, with the window's mark
+  refreshLayers(); // prev-recs: the destination's new places (and their summary) on the open trip's screens at once - it was only after the edits
+  persist(); showUndoToast(`היעד ${dp.meta.name} ${mode === 'replace' ? 'הוחלף' : 'עודכן'} מקובץ${mode === 'replace' ? '' : placesUpdatedText(snap, data)}${n ? ` (+${n} עריכות)` : ''}${addJoinedText(nj)}`); // undo-history Q6: one row
 }
 // ---- the edits of someone else, one by one (ק22; was a box in the backup screen): what was edited here too is shown with
 // my version and stays mine unless checked ----
 // 10.9.0 (design-forms, gap 45, design-gaps Q9): a row per edited thing (taken whole); its title says what and which fields, its line the change
 // when one field changed, a new place's layer and region; no emoji
-const EDIT_FIELD_HE = { name: 'שם', layer: 'שכבה', address: 'כתובת', description: 'תיאור', transit: 'איך מגיעים', reservation: 'הזמנה', price: 'מחיר', manualCoord: 'מיקום', mapsUrl: 'קישור', icon: 'סמל', region: 'אזור', key: 'נקודת מפתח', color: 'צבע', emoji: 'סמל', order: 'סדר' };
+const EDIT_FIELD_HE = { name: 'שם', leadMine: 'השם המוביל', layer: 'שכבה', address: 'כתובת', description: 'תיאור', transit: 'איך מגיעים', reservation: 'הזמנה', price: 'מחיר', manualCoord: 'מיקום', mapsUrl: 'קישור', icon: 'סמל', region: 'אזור', key: 'נקודת מפתח', color: 'צבע', emoji: 'סמל', order: 'סדר' };
 const statusWord = s => STATUS_LABEL[s] || 'פעיל';
 function editRows(inc) {
   const e = (inc && inc.edits) || { places: {}, status: {} }, rows = [], esc = escH;

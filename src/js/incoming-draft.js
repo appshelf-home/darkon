@@ -33,10 +33,11 @@ function renderDraftScreen() {
       ${od.length ? `<p class="sh-hint">כבר בטלפון ולא מוחלפים: ${od.map(dp => esc(DESTS[dp.id].meta.name)).join(SEP)}</p>` : ''}
       ${d.personal ? `<label class="bk-part">${fmCheck({ id: 'drPersonal', act: 'draft.drPersonal', checked: D.personal })} לצרף גם: ${[d.personal.itinerary ? 'תוכנית' : '', d.personal.favorites ? 'מועדפים' : '', d.personal.visited ? 'ביקורים' : ''].filter(Boolean).join(', ')}</label>` : ''}`;
   }
+  if (d.kind === 'trip') sum = `<div class="ta-list dr-base-l"><button type="button" class="ta-item t-wrap dr-base" id="drBase" data-act="draft.drBase" data-framed="1">${msi('content_copy', { cls: 'ta-ic' })}<span class="ta-t">לבנות ממנו טיול חדש שלי<small>היעדים והלו״ז, בלי הזיכרונות שלו</small></span></button></div>` + sum; // trip-base-plus (Q17): under the stat tiles; the pinned bar stays as it is
   if (draftAdds(D).length) sum += `<p class="dr-line">${msi('library_add', { size: 18 })} ${draftAdds(D).length} נוספו על ידיך</p>`; // 4.26.0
   sum += draftRoundHTML(D); // 4.27.0
   let html = `<div class="section-head dr-head"><h2>טיוטה${SEP}${esc(draftTitle(D))}</h2></div><div class="dr-hero"><p class="dr-src">${msi('download', { size: 16 })}${SOURCE_LABEL[D.source] || ''}${d.signature ? SEP + esc(d.signature) : ''}</p>${fileDroppedHTML(d._dropped)}${hero}</div>
-    <div class="card draft-sum"><div class="dr-tiles">${tiles}</div>${draftFromClaude(d) ? `<p class="sh-hint dr-wrong">${tipText('wrong.draft')}</p>${kitBehind(d.kitVersion) ? `<p class="sh-hint dr-oldkit">הקובץ נכתב לפי הוראות ישנות. כדאי לעדכן את הסקיל. <button type="button" class="pw-link" data-act="kit.install">לעדכון</button></p>` : ''}` : ''}${draftPropHTML(D)}${sum}</div>`;
+    <div class="card draft-sum"><div class="dr-tiles">${tiles}</div>${fileFromAI(d) ? `<p class="sh-hint dr-wrong">${tipText('wrong.draft')}</p>${kitBehind(d.kitVersion) ? `<p class="sh-hint dr-oldkit">הקובץ נכתב לפי הוראות ישנות. כדאי לעדכן את הסקיל. <button type="button" class="pw-link" data-act="kit.install">לעדכון</button></p>` : ''}` : ''}${draftPropHTML(D)}${sum}</div>`;
   if (all.length) {
     // 5.14.0 (ד7): the same header as the places - the layers in one row, then [source ▾] [funnel · N] … "N מקומות · ✕"
     html += '<div id="draftFilter">';
@@ -55,7 +56,7 @@ function renderDraftScreen() {
     }
   } else html += `<div class="callout">אין בקובץ מקומות חדשים לבדוק${d.kind === 'trip' ? ' (היעדים של הטיול כבר בטלפון)' : ''}.</div>`;
   { const more = draftMoreHTML(D); if (more) html += `<div class="accordion" style="margin-top:10px">${more}</div>`; } // 4.27.0
-  if (D.round) html += `<div class="callout" id="drRoundAsk" hidden><b>יש סבב שיפורים אצל ה-${AI} (סבב ${D.round.n}).</b> לאשר עכשיו ולקלוט את השיפורים כעדכון כשיחזרו, או לחכות?<br><small>אם מאשרים עכשיו: הקובץ שיחזור ייקלט כעדכון רגיל של ${d.kind === 'trip' ? 'הטיול' : 'היעד'}, התשובות להערות והמלצות ההורדה יוצגו בחלון כשהוא נקלט, ומה שאישרתם (הורדות ותיקונים) לא יידרס.</small>${cardActionsHTML({ id: 'drOkAnyway', act: 'draft.drOkAnyway', label: '✓ לאשר עכשיו' }, [{ id: 'drWait', act: 'draft.drWait', label: `${msi('hourglass_top', { size: 18 })} לחכות לסבב` }])}</div>`;
+  if (D.round) html += `<div class="callout" id="drRoundAsk" hidden><b>${TX.claude.round.name} אצל ה-${AI} (סבב ${D.round.n}).</b> לאשר עכשיו ולקלוט את השיפורים כעדכון כשיחזרו, או לחכות?<br><small>אם מאשרים עכשיו: הקובץ שיחזור ייקלט כעדכון רגיל של ${d.kind === 'trip' ? 'הטיול' : 'היעד'}, התשובות להערות והמלצות ההורדה יוצגו בחלון כשהוא נקלט, ומה שאישרתם (הורדות ותיקונים) לא יידרס.</small>${cardActionsHTML({ id: 'drOkAnyway', act: 'draft.drOkAnyway', label: '✓ לאשר עכשיו' }, [{ id: 'drWait', act: 'draft.drWait', label: `${msi('hourglass_top', { size: 18 })} לחכות לסבב` }])}</div>`;
   html += `<div class="brow draft-actions"><button type="button" class="btn-sec" id="drDrop" data-act="draft.drDrop">${msi('delete', { size: 18 })} לוותר על הייבוא</button></div>`;
   html += `<div class="dr-dock">${MAP_AVAILABLE && all.length ? `<div class="view-toggle seg" role="group">${[['list', 'view_agenda', 'רשימה'], ['map', 'map', 'מפה']].map(([v, ic, w]) => `<button type="button" data-act="draft.drView" data-v="${v}" data-active="${v === dMode}" aria-pressed="${v === dMode}" aria-label="${w}">${msi(ic, { size: 18 })}<span class="vt-l">${w}</span></button>`).join('')}</div>` : ''}<button class="btn-nav draft-ok" id="drOk" data-act="draft.drOk">${msi('done_all', { size: 18 })}${draftOkLabel(onAll, all.length)}</button></div>`; // the pinned bottom bar (no floating list ⇄ map button)
   main.innerHTML = html;
@@ -75,7 +76,7 @@ function draftTags(x) { const p = x.p, t = (ic, s, c) => `<span class="tl-tag${c
 function draftCardHTML(x, D, list) {
   const esc = escH, p = x.p, on = !D.off[x.key];
   return cdCard({ cls: list ? 'mc-card draft-row' : '', attrs: list ? ` data-off="${!on}"` : '', body: list ? ` data-act="draft.drinfo" data-drinfo="${esc(x.key)}"` : '',
-    lead: leadHTML('place', typeIcon(p.icon || x.L.icon, { size: 18 }), x.L.color), name: esc(p.name), tags: [cdMeta([esc(x.L.label || x.L.name || ''), draftNotes(x, list)]), ...draftTags(x)],
+    lead: leadHTML('place', typeIcon(p.icon || x.L.icon, { size: 18 }), x.L.color), name: esc(placeLabel(p, (D.data && D.data.trip) || null)), tags: [cdMeta([esc(x.L.label || x.L.name || ''), draftNotes(x, list)]), ...draftTags(x)],
     desc: `${p.description ? `<span class="mc-desc">${esc(String(p.description))}</span>` : ''}${list ? roundMarksHTML(D, x) + notePreviewHTML(itemTarget(x)) : ''}`,
     vis: `<label class="tl-keep">${fmCheck({ act: 'draft.drk', data: `data-drk="${esc(x.key)}"`, checked: on, disabled: x.locked })}${msi('check_circle', { size: 22 })}<span>להשאיר</span></label>`,
     acts: list ? '' : `<div class="tl-acts mc-acts"><button type="button" class="tl-act" data-act="draft.drfix" data-drfix="${esc(x.key)}" title="תיקון" aria-label="תיקון">${actIc('edit')}</button>${noteBtnHTML(itemTarget(x), p.name).replace('class="note-btn', 'class="tl-act note-btn')}</div>` });
@@ -101,6 +102,7 @@ function draftScreenCtl(shown, layerChips) { const ctl = ctlNS('draft');
     b.disabled = true; b.textContent = 'שומר…'; approveDraft(); };
   ctl.drView = b => { const v = b.dataset.v, L = (screenTop() || {}).el; if (v === getViewMode('draft')) return 'quiet'; if (v === 'map' && L) _listY.draft = L.scrollTop; setViewMode('draft', v); try { delete draftView.view; } catch (e) {}
     if (v === 'list' && _listY.draft && L) setTimeout(() => { L.scrollTop = _listY.draft; }, 0); return 'redraw'; }; // the list comes back where it was left // 10.3.0: the segmented control replaces #viewFab
+  ctl.drBase = () => draftBaseOpen(); // trip-base-plus (Q2, Q17)
   ctl.drOkAnyway = b => { b.disabled = true; b.textContent = 'שומר…'; approveDraft('בזמן סבב פתוח'); }; // undo-history: one row - the approval's
   if (g('drWait')) ctl.drWait = () => { g('drRoundAsk').hidden = true; };
   if (g('drRound')) ctl.drRound = () => openRoundSheet();
@@ -111,7 +113,7 @@ function draftScreenCtl(shown, layerChips) { const ctl = ctlNS('draft');
     showUndoToast(SY.del + ' הטיוטה נזרקה, שום דבר לא נכנס'); // undo-history: one row (the log names the draft: "בטיוטה של …")
   });
 }
-ctlActs('draft', ['drinfo', 'drPersonal', 'drOk', 'drOkAnyway', 'drDrop', 'drAllOff', 'drAllOn', 'drView', 'drRound', 'drRoundStop', 'drWait', 'drfix', 'drk']);
+ctlActs('draft', ['drBase', 'drinfo', 'drPersonal', 'drOk', 'drOkAnyway', 'drDrop', 'drAllOff', 'drAllOn', 'drView', 'drRound', 'drRoundStop', 'drWait', 'drfix', 'drk']);
 const draftOkLabel = (on, n) => on === n ? `אישור הכל${SEP}${n}` : `אישור${SEP}${on} מתוך ${n}`;
 function renderDraftCounts() { // keeps the scroll position: counts and the approve label only
   const all = draftItems(DRAFT), on = all.filter(x => !DRAFT.off[x.key]).length, ok = document.getElementById('drOk');
@@ -140,10 +142,11 @@ function renderDraftMap(shown) { const ctl = ctlNS('draftMap');
     if ((!pending && !missing) || (!pending && st === 'hidden')) { status.hidden = true; status.innerHTML = ''; return; }
     status.hidden = false; status.dataset.folded = 'false';
     status.innerHTML = pending ? svcLine('draftSt', 'geocode', onMap, shown.length, null, { gaveUp: svcGaveUpCount('geocode') })
-      : `<span>${msi('map', { size: 16, cls: 'msi-in' })} <bdi>${onMap}</bdi> מתוך <bdi>${shown.length}</bdi> על המפה${SEP}<bdi>${missing}</bdi> בלי מיקום (${msi('edit', { size: 16, cls: 'msi-in' })} לתיקון)</span><button type="button" class="dms-x" data-act="draftMap.statusX" aria-label="הסתרה">✕</button>`;
+      : `<span>${msi('map', { size: 16, cls: 'msi-in' })} <bdi>${onMap}</bdi> מתוך <bdi>${shown.length}</bdi> על המפה${SEP}<bdi>${missing}</bdi> בלי מיקום (${msi('edit', { size: 16, cls: 'msi-in' })} לתיקון)${SEP}<button type="button" class="pw-link dms-ai" data-act="draftMap.fixAI">${TX.claude.fix}</button></span><button type="button" class="dms-x" data-act="draftMap.statusX" aria-label="הסתרה">✕</button>`;
   };
   if (status.closest('.leaflet-container')) mapCtl(status);
   ctl.statusX = () => { draftView.status = 'hidden'; showStatus(); return 'quiet'; };
+  ctl.fixAI = () => { openRoundSheet(); return 'quiet'; }; // file-over-existing (Q3): a draft's door is its round - the not-found option is checked by itself
   const hs = hotelSettings();
   const openCard = x => { draftView.sel = x.key; openFloatCard('draftMap', draftCardHTML(x, DRAFT, false), null, () => { draftView.sel = null; markSelected('draftMap', null); }, () => openDraftPlaceSheet(x.key)); markSelected('draftMap', x.key); };
   draftView.openCard = openCard; // 4.26.0: "✓ בטיוטה" in the 📚 list opens the draft's own card
@@ -157,14 +160,14 @@ function renderDraftMap(shown) { const ctl = ctlNS('draftMap');
     if (!x.p.address || x.p.address in GEOCODE_CACHE) return; pending++;
     queueGeocode(x.p.address, coord => { if (x.p.address in GEOCODE_CACHE) pending--; else unanswered++; if (!document.getElementById('draftMap-leaflet') || el.dataset.gen !== gen) return; // 7.1.0: no answer stays waiting
       if (coord) { addPin(x, coord); if (!keepView && (!fitted || bounds.length < 4)) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 }); }
-      showStatus(); }, draftCenterOf(x), x.p.name); });
+      showStatus(); }, () => draftWhereOf(x), x.p.name); }); // big-dest-search (Q2): the chain of the draft's place
   const gen = el.dataset.gen = String(Date.now());
   if (keepView) { fitted = true; // 4.38.1: a kept view where none of the shown points is visible (moved away, zoomed in elsewhere) fits them again
     try { const vb = map.getBounds(); if (bounds.length && !bounds.some(b => vb.contains(b))) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 }); } catch (e) {} }
   else if (bounds.length) { map.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 }); fitted = true; }
   showStatus();
 }
-ctlActs('draftMap', ['statusX']);
+ctlActs('draftMap', ['statusX', 'fixAI']);
 // the full draft place: everything that came with it, with the same keep and fix actions
 // 5.7.0 (stage 4): a place in the draft opens the one details window, as a candidate - "✓ להשאיר" instead of the scheduling
 // line; ✏️ (תיקון לפני אישור, full screen), 🧭, 🔍 and 💬 a note for Claude; removing a place you added is the red row at the end
@@ -172,15 +175,15 @@ function openDraftPlaceSheet(key) {
   const x0 = draftItems(DRAFT).find(i => i.key === key); if (!x0) return;
   const esc = escH, row = (k, v) => v ? `<div class="iw-row"><b>${k}</b> ${v}</div>` : '';
   openCandWin({ key: 'draft:' + key, get x() { return draftItems(DRAFT).find(i => i.key === key) || x0; },
-    get lead() { const x = this.x; return leadHTML('place', typeIcon(x.p.icon || x.L.icon, { size: 18 }), x.L.color); }, get name() { return this.x.p.name; },
+    get lead() { const x = this.x; return leadHTML('place', typeIcon(x.p.icon || x.L.icon, { size: 18 }), x.L.color); }, get name() { return placeLabel(this.x.p, (DRAFT.data && DRAFT.data.trip) || null); }, get other() { return placeOther(this.x.p, (DRAFT.data && DRAFT.data.trip) || null); },
     get pick() { const x = this.x, on = !DRAFT.off[x.key]; return { label: on ? '✓ נשאר בטיוטה' : '＋ להשאיר', active: on, disabled: !!x.locked, on: () => { draftToggle([x.key], !!DRAFT.off[x.key]); winRedraw(); } }; },
     get small() { const x = this.x, p = x.p, reg = x.dp && p.region ? ((x.dp.meta.regions || []).find(r => r.id === p.region) || {}).name : '';
       return [`<span class="layer-tag" style="--lc:${x.L.color}">${esc(x.L.name)}</span>`, reg ? esc(reg) : '', ...draftTags(x)]; },
     get nav() { const c = draftCoord(this.x.p); return c ? navUrl(c.lat + ',' + c.lng) : (this.x.p.address ? navUrl(this.x.p.address) : ''); },
-    get search() { const p = this.x.p; return googleInfoUrl(p.name, p.address); }, searchLabel: 'שעות, אתר וביקורות ב-Google',
+    get search() { const p = this.x.p; return googlePlaceUrl(p); }, searchLabel: 'שעות, אתר וביקורות ב-Google',
     edit: () => openPlaceEditor({ draftKey: key }), get note() { const x = this.x; return noteBtnHTML(itemTarget(x), x.p.name); },
     what() { const x = this.x, p = x.p; return `${p.description ? `<p class="iw-desc open">${esc(p.description)}</p>` : ''}${roundMarksHTML(DRAFT, x)}${notePreviewHTML(itemTarget(x))}${row('כתובת:', esc(p.address))}${row('איך מגיעים:', esc(p.transit))}${row('הזמנה:', esc(resvText(p.reservation)))}${row('מחיר:', esc(fmtPrice(p.price, { note: true })))}${row('מקור:', esc(p.source))}${x.added && p.src && p.src.url ? row('מקור:', `<a href="${esc(p.src.url)}" target="_blank" rel="noopener">${srcLinkText(p.src)}</a>`) : ''}${(() => { const g = geoLocState(p, !!draftCoord(p)); if (g.k === 'search') geoLocHook(this, p); return g.k ? row('מיקום:', g.html) : ''; })()}`; }, // 11.14.0 (P4): searching / no network / not found, told apart
-    get geoCenter() { return draftCenterOf(this.x); },
+    get geoCenter() { return draftWhereOf(this.x); }, // big-dest-search: the chain of the draft's place
     get del() { return this.x.added ? { label: 'מחיקה מהטיוטה', on: () => { closeSheet(); removeDraftAdd(key); } } : null; } });
 }
 // 6.1.0: the card's ✓ and ✏️ are the draft screen's own actions (draft.drk, draft.drfix)
@@ -190,6 +193,7 @@ function applyDraftToDest(D, dp) {
   const d = DESTS[dp.id]; if (!d) return 0; const who = STATE.settings.deviceName || '', at = Date.now(); let n = 0;
   (dp.places || []).forEach(p => { const key = dp.id + ':' + p.id, gid = d.idBase + p.id;
     if (D.off[key]) { STATE.edits.status[gid] = { s: 'skip', note: 'הורד בטיוטה', at, who }; n++; return; }
+    const fx = sgDraftCarry(D, key), dpl = fx && d.places.find(q => q.id === p.id); if (dpl) { dpl.aiFix = fx; saveDests(); } // ai-fix-mine (Q5): what is still open waits on the place
     const f = D.fix[key]; if (!f) return; const data = {};
     Object.entries(f).forEach(([k, v]) => { if (!EDIT_FIELDS.includes(k) && k !== 'coordSource') return; data[k] = k === 'layer' ? d.idBase + Number(v) : (v === null ? undefined : v); });
     if (Object.keys(data).length) { STATE.edits.places[gid] = { op: 'edit', data, at, who }; n++; } });
@@ -207,7 +211,7 @@ function applyDraftAdds(D, destId) {
   mine.forEach(a => {
     const layer = String(a.layer).startsWith('nl:') ? lmap[a.layer] : (a.inst ? Number(a.layer) : d.idBase + Number(a.layer)); if (layer == null || isNaN(layer)) return;
     const data = { name: a.name, layer, dest: destId, icon: a.icon || 'tourist_attraction', description: a.description || '', transit: a.transit || '', reservation: a.reservation || '', price: a.price || '' };
-    ['foreign', 'address', 'manualCoord', 'coordSource', 'region', 'src'].forEach(k => { if (a[k] != null && a[k] !== '') data[k] = JSON.parse(JSON.stringify(a[k])); });
+    ['foreign', 'nameLead', 'address', 'manualCoord', 'coordSource', 'region', 'src'].forEach(k => { if (a[k] != null && a[k] !== '') data[k] = JSON.parse(JSON.stringify(a[k])); });
     if (!data.address && data.manualCoord) data.address = `${data.manualCoord.lat.toFixed(6)},${data.manualCoord.lng.toFixed(6)}`;
     let pid = at + 1000; while (STATE.edits.places[pid]) pid++;
     STATE.edits.places[pid] = { op: 'add', data, at, who }; n++; });
@@ -219,7 +223,8 @@ function applyDraftAdds(D, destId) {
 function draftedTrip(D) { // the trip as approved: trip places taken out or fixed, references to removed places cleared
   const t = JSON.parse(JSON.stringify(D.data.trip)), gone = new Set(), same = new Map();
   t.places = (t.places || []).filter(p => { if (D.off['trip:' + p.id]) { gone.add(p.id); const x = draftGidDup(t, p); if (x) same.set(p.id, x.id); return false; } return true; })
-    .map(p => { const f = D.fix['trip:' + p.id]; if (!f) return p; const q = { ...p, ...f }; if (f.manualCoord === null) delete q.manualCoord; return q; });
+    .map(p => { const fx = sgDraftCarry(D, 'trip:' + p.id), p1 = fx ? { ...p, aiFix: fx } : p; // ai-fix-mine (Q5): what is still open waits on the place
+      const f = D.fix['trip:' + p.id]; if (!f) return p1; const q = { ...p1, ...f }; if (f.manualCoord === null) delete q.manualCoord; return q; });
   t.schedule = (t.schedule || []).map(s => same.has(s.placeId) ? { ...s, placeId: same.get(s.placeId) } : gone.has(s.placeId) ? { ...s, placeId: undefined } : s);
   return t;
 }
@@ -244,16 +249,41 @@ function approveDraft(note) {
     const dp = d.destination;
     const r = M('installDestination')(dp); if (r === 'same') { draftPut(null); saveDraft(); goTab('trips'); showUndoToast(`היעד ${dp.meta.name} כבר בטלפון${SEP}הטיוטה נסגרה`); return; } // undo-history: the draft closed is a row
     applyDraftToDest(D, dp); const hn = hotelsToTrips(Object.values(STATE.trips).filter(t => !t.archived && (t.segments || []).some(g => g.dest === dp.id))); // 9.3.0 (ס11)
-    draftPut(null); saveDraft(); persist(); applyActiveTrip(); activeTab = hasTrip() ? 'trips' : 'info'; render();
+    draftPut(null); saveDraft(); persist(); archiveViewEnd(); applyActiveTrip(); activeTab = hasTrip() ? 'trips' : 'info'; render(); // archive-redraw: the approval leads to the trips screen - it ends an archive view itself (the draw no longer does)
     showUndoToast(`נוסף יעד: ${dp.meta.name}${tail ? ' (' + tail + ')' : ''}${hotelsMovedText(hn)}`);
     // 4.47.2: a destination no trip goes to yet - ask right away whether to make one (a file can bring a destination without a trip)
     if (!Object.values(STATE.trips).some(t => (t.segments || []).some(g => g.dest === dp.id))) setTimeout(() => askTripForDest(dp.id), 350);
     return;
   }
-  const data = { ...d, trip: draftedTrip(D), personal: D.personal ? d.personal : null };
-  const newDests = draftNewDests(D), oldIds = draftOldDests(D).map(dp => dp.id);
-  draftPut(null); saveDraft(); activeTab = 'info';
-  M('importTripNow')(data, 'new', () => { newDests.forEach(dp => applyDraftToDest(D, dp)); oldIds.forEach(id => applyDraftAdds(D, id)); }, tail, { propGone: draftPropGone(D) });
+  activeTab = 'info'; draftTripIn(D, D.personal ? d.personal : null, tail, { propGone: draftPropGone(D) });
 }
+// a trip draft goes in (its approval, or as the base of a new trip - trip-base-plus): the trip as approved, the destinations with the draft's
+// fixes and additions, the draft closed
+function draftTripIn(D, personal, tail, opt) { const data = { ...D.data, trip: draftedTrip(D), personal };
+  const newDests = draftNewDests(D), oldIds = draftOldDests(D).map(dp => dp.id);
+  draftPut(null); saveDraft();
+  groupFn('management', 'importTripNow')(data, 'new', () => { newDests.forEach(dp => applyDraftToDest(D, dp)); oldIds.forEach(id => applyDraftAdds(D, id)); }, tail, opt); }
+// trip-base-plus (decisions 2026-11-24 · A new trip based on another trip, Q2, Q9, Q17, Q18): "⧉ לבנות ממנו טיול חדש שלי" opens the one trip editor
+// with the draft as its base - the trip as approved (draftedTrip: places taken out or fixed), on its own days (daysFromFileFields), received closed
+// as on its approval (archived.recv); the draft's destinations are offered to the rows before they are on the phone. Nothing is installed until the
+// trip is created (draftBaseIn); closing the editor leaves the draft as it was.
+function draftBaseOpen() { const D = DRAFT; if (!D || D.data.kind !== 'trip') return; const d = D.data, t = draftedTrip(D); daysFromFileFields(t);
+  if (t.archived) t.archived = { ...t.archived, recv: 1 };
+  const dests = {}; (d.destinations || []).forEach(dp => { if (dp && dp.id && dp.meta) dests[dp.id] = dp; });
+  openTripEditor(null, { draft: { at: D.at, trip: t, td: d.personal || {}, dests, ai: !!fileFromAI(d) } }); }
+// created: the draft's destinations install as on "אישור הכל" (new, or an update by the existing rules, with their previous recommendations, the
+// draft's fixes and additions), its trip comes in this phone's form only to be the base (importTripNow asBase) and is not kept; the draft closes.
+// make(bt, btd, ai, tail) - the trip editor's maker
+function draftBaseIn(at, make) {
+  if (!groupHas('management')) { groupWait('management', () => draftBaseIn(at, make)); return; } // installing is the files' (management)
+  const D = DRAFT; if (!D || D.at !== at) { showToast('הטיוטה כבר לא פתוחה'); return; } const d = D.data, ai = !!fileFromAI(d);
+  const off = draftItems(D).filter(x => D.off[x.key] && !x.added).length;
+  // the plan comes whatever "לצרף גם" says - the new trip takes the plan, never the marks (teCopyBase)
+  draftTripIn(D, d.personal || null, off ? `${off} הורדו` : '', { asBase: (bt, btd, tail) => make(bt, btd, ai, tail) });
+}
+// ---- the draft's row: a proposal that came with a new trip (Q9) - information only, with its ⓘ (diet-room: moved from proposal.js, the draft draws it) ----
+function draftPropN(D) { const d = D && D.data, fp = d && d.kind === 'trip' && d.proposal; if (!fp || fp.status !== 'answered' || !Array.isArray(fp.plan)) return 0;
+  const seen = new Set(); fp.plan.forEach(x => { const k = propDayKey(d.trip, x); if (k && x && Array.isArray(x.items) && x.items.length) seen.add(k); }); return seen.size; }
+function draftPropHTML(D) { const n = draftPropN(D); return n ? `<div class="dr-prop" id="drProp">${claudeMark({ size: 22 })}<b>הצעת לו״ז${SEP}${propN(n)}</b>${tipI('draft.proposal')}</div>` : ''; }
+function draftPropGone(D) { return r => typeof r === 'string' && r[0] === '@' ? !!D.off[r.slice(1)] : !!D.off['trip:' + r]; } // a place dropped in the draft leaves the proposal
 // files shared into the installed app (Android share sheet, share_target POST), opened with it (file_handlers), or text shared as JSON
-

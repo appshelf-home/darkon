@@ -116,7 +116,7 @@
    {
     "path": "generated/ms-font-page.js",
     "about": "FMAP_FONT: the small Material Symbols subset of the live map inside pages and files sent to people, with its licence notice - written by tests/msfont.py",
-    "side": "main"
+    "side": "pages"
    },
    {
     "path": "generated/closed-lists.js",
@@ -256,7 +256,7 @@
    {
     "path": "js/layer-edits.js",
     "about": "LAYER EDITS - the layers screen and the layer editor",
-    "side": "management"
+    "side": "editors"
    },
    {
     "path": "js/item-model.js",
@@ -294,6 +294,11 @@
     "side": "main"
    },
    {
+    "path": "js/relief.js",
+    "about": "RELIEF DRAWN ON THE PHONE, the drawing: the core in a worker (reliefCore, reliefStart), the shaded tile (reliefShade), the layer (reliefLayer), the relief in a picture (reliefInto) - split from map-tools.js in diet-room, where the state RELIEF, the asker and the status line stay",
+    "side": "special-maps"
+   },
+   {
     "path": "js/legs.js",
     "about": "Real time and distance between the plan's stops (routing), estimates, the leg window",
     "side": "main"
@@ -322,6 +327,11 @@
     "path": "js/map-component.js",
     "about": "ONE MAP COMPONENT - every map, its pins, the floating card, its lifecycle",
     "side": "main"
+   },
+   {
+    "path": "js/map-pack.js",
+    "about": "The map of a page for people, packed from the map component: fileMapView, fmapPack, fmapSer, fmapCSS and the page's host and stubs (FMAP_*) - split from map-component.js in diet-room",
+    "side": "pages"
    },
    {
     "path": "js/layer-manager.js",
@@ -374,6 +384,11 @@
     "side": "main"
    },
    {
+    "path": "js/place-where.js",
+    "about": "WHERE THE TRAVELLERS ARE (11.67.0, big-dest-search): one chain of clues for every search with a context - that night's lodging, the region's centre, the destination's centre, the whole country (placeWhere, whBox, the country step's fit); the one-time second lookup of places not found (geoAgain)",
+    "side": "main"
+   },
+   {
     "path": "js/trip-switch.js",
     "about": "The open trip: a destination's name, switching trips (switchTrip), the region filter chosen again after an undo that changes the open trip (split from the trips screen in 11.38.1)",
     "side": "main"
@@ -406,7 +421,7 @@
    {
     "path": "js/dest-editor.js",
     "about": "The destination editor: a destination made in the app - name, description, the map's centre, country, currency and clock (split from the trips screen in 11.37.0 by size)",
-    "side": "management"
+    "side": "editors"
    },
    {
     "path": "js/hidden.js",
@@ -441,7 +456,7 @@
    {
     "path": "js/discoveries.js",
     "about": "📚 Discoveries - what is around here (Wikipedia, OSM)",
-    "side": "special-maps"
+    "side": "discoveries"
    },
    {
     "path": "js/route-map.js",
@@ -536,7 +551,7 @@
    {
     "path": "js/proposal.js",
     "about": "SCHEDULE PROPOSAL FROM CLAUDE (the AI group): the request file and its window, a proposal received, the preview and applying it",
-    "side": "ai"
+    "side": "proposal"
    },
    {
     "path": "js/today-card.js",
@@ -579,6 +594,16 @@
     "side": "main"
    },
    {
+    "path": "js/file-door.js",
+    "about": "THE FILE DOOR'S CLEANING: an incoming file's ids converted and checked (fileIdsFix, fileIdsOk), its closed values (FILE_SETS), references and a drive's stops (fileRefsClean, tvStopsClean, fileClean); the same once over the stored data (fileCleanStored, idsFixStored, idsStoredBad) - split from file-rules.js and file-ids.js in diet-room",
+    "side": "door"
+   },
+   {
+    "path": "generated/closed-zones.js",
+    "about": "The closed list of time zones (CLOSED_LISTS.timeZones), added when the door group comes in - written by tests/kit.py from claude/scripts/closed_lists.json (diet-room: only the file door reads it)",
+    "side": "door"
+   },
+   {
     "path": "js/draft-model.js",
     "about": "INCOMING CONTENT: the draft model every screen reads - its store, items, layers, coordinates, the filter's chips and counts, notes and round marks, the banner on top of every screen",
     "side": "main"
@@ -606,6 +631,16 @@
    {
     "path": "js/ratings.js",
     "about": "What a trip day shows of closing: a trip's personal data by id (tdOf / tdSave), the ratings ❤️ 👍 👎 on a place and a past trip's rating on its card, the welcome-back card on the general screen, the past ratings a new trip imports, which destination an edit belongs to - split from closing.js in diet-groups; the Timeline lines a trip day shows (tlOf, tlCancelled, the before-trip row, the late line)",
+    "side": "main"
+   },
+   {
+    "path": "js/prev-recs.js",
+    "about": "PREVIOUS RECOMMENDATIONS - a place's anonymous summary of visits and ratings (recs): its closed form, the merge by contribution id, my contribution at sending (recOut), the details window's row and the card's mark (prev-recs)",
+    "side": "main"
+   },
+   {
+    "path": "js/ai-suggest.js",
+    "about": "An AI's correction of what the user set (ai-fix-mine): the door's closed sets of a file's suggestions, the rows of an update, a round and what was left open, their decisions and the one list (fmMark / fmMarkView), the place's mark and the \"כללי\" row",
     "side": "main"
    },
    {
@@ -709,9 +744,14 @@
     "side": "memories"
    },
    {
+    "path": "js/passport-book.js",
+    "about": "\"הדרכון שלי\" - the passport book: the stamp's drawing, the book's pages, the page turn and its gesture, a stamp's card, the page shared as an image (page-look: split from memory-screen.js)",
+    "side": "memories"
+   },
+   {
     "path": "js/recommendations.js",
     "about": "Recommendations for friends: a message, or a page with a map",
-    "side": "memories"
+    "side": "pages"
    },
    {
     "path": "js/trip-picture.js",
@@ -776,10 +816,15 @@
   ]
  },
  "groups": {
-  "ai": "The instructions for AI, their screen, the improvement round, the schedule proposal, the incoming draft (decisions 2026-11-23 · A diet for the main script, Q4)",
+  "ai": "The instructions for AI, their screen, the improvement round, the incoming draft (decisions 2026-11-23 · A diet for the main script, Q4); the schedule proposal is its own group since diet-room",
   "memories": "Closing, the memory screen and its maps, the trip picture, mementos, the Timeline, recommendations, pages for people, the countries and the passport book (Q4; moved by diet-groups)",
-  "special-maps": "The offline maps' download screen, 3D, \"מפה בעברית\", \"מה יש כאן\" and \"לאורך הדרך\", the route's side view (Q4; moved by diet-groups)",
-  "management": "Files, import and sharing, backup, reports, settings and the ⋮ screens, the guide, the tour, the text of \"מה חדש\", the layer and destination editors (Q4; moved by diet-groups)"
+  "special-maps": "The offline maps' download screen, 3D, \"מפה בעברית\", the route's side view (Q4; moved by diet-groups); \"מפה עם תבליט\"'s drawing since diet-room; \"מה יש כאן\" left for its own group",
+  "management": "Files, import and sharing, backup, reports, settings and the ⋮ screens, the guide, the tour, the text of \"מה חדש\" (Q4; moved by diet-groups; the editors left for their own group in diet-room)",
+  "proposal": "The schedule proposal's window, preview and apply (split from the AI group in diet-room - decisions 2026-11-26 · Review of `big-dest-search`, Q1)",
+  "discoveries": "\"מה יש כאן\" and \"לאורך הדרך\": the search, the pins, the cards, the list (split from special-maps in diet-room, Q1 there)",
+  "pages": "Pages for people: the packed map (map-pack.js) and its icon subset, the recommendations' page and the summary's window (diet-room, Q1 there: from the main script and memories)",
+  "editors": "The layer and destination editors and the destination's country and clock pickers (split from management in diet-room, Q1 there)",
+  "door": "The file door's cleaning: ids, closed values with the time zones' list, references - at every file that comes in and once over the stored data when its rules change (diet-room: from the main script)"
  },
  "generated": "generated",
  "generators": {
@@ -788,7 +833,8 @@
   "generated/ms-font-page.js": "tests/msfont.py",
   "generated/kit.js": "tests/kit.py",
   "generated/closed-lists.js": "tests/kit.py",
-  "generated/text-fonts.css": "tests/textfonts.py"
+  "generated/text-fonts.css": "tests/textfonts.py",
+  "generated/closed-zones.js": "tests/kit.py"
  },
  "outside": [
   "sw.js",

@@ -60,7 +60,7 @@ function mcTags(it, o) {
   const esc = escH, p = it.place, meta = [], t = [];
   if (it.sched) t.push(grpTag());
   if (it.kind === 'travel') meta.push(TX.travel); else if (it.kind === 'note') meta.push(it.sched ? '' : TX.note); else if (p) meta.push(esc(it.hotel ? TX.lodging : layerTagLabel(p.layer)));
-  if (p) meta.push(...placeMeta(p, () => true, pastRateMiniHTML));
+  if (p) meta.push(...placeMeta(p, () => true, pastMiniRecHTML));
   if (o.extra) meta.push(`<b class="cd-dist">${o.extra}</b>`);
   t.push(cdMeta(meta));
   if (p) t.push(...placeMarks(p), bpNoteTag(p)); // 11.42.0 (Q4 addition 1): the price's note - one line with "…" on the card

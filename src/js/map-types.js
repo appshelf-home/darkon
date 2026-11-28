@@ -10,21 +10,21 @@
 // (PROVIDERS.esri.noCache); a static picture with the credit is allowed (3.2(b)). The secret scanner lists this exact value (shared/docs/secrets.json).
 const ESRI_SITE_KEY = 'AAPTa6YUhfnI-Oxx6Gz9J59etvA..K5Za8hwZdHU6lV5IsrD-xUB7X4mCW4W-tXeeKceoF8yed8uReNwfM4jg-a_Y98vQ9qmvOvtpxyiKSelyQz7ss--bXBmhqLcVhDaGHg06oIaNKyDFfwBwrNW-ZaaXhhFE4vyP1mzKGXLlr55v4R1IbySUskQYMW6nM5BJllmCBM-4a-6pq2rO7q_IewWy8nxr0rdExCHFhpcqs3tXK_9mlnR76nGpdPQfSvrbvH9Vb6p7iBVSXx-6H9JW_OLG9w..AT1_09Iyg0Hu';
 function esriKey() { const own = DEV.esriKeyOk === false ? '' : String(DEV.esriKey || '').trim(); return own || ESRI_SITE_KEY; } // 4.16.1: a key that failed its check is not used
-const ESRI_ATTR = svcCredit('esri'); // 7.1.0: from the provider's row
 // the satellite picture under 🛰️ (with names on top of it) - not a map type of its own since 5.9.0 (מ5)
-const SAT_IMAGERY = k => [['https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}?token=' + encodeURIComponent(k || ESRI_SITE_KEY), { attribution: ESRI_ATTR, cr: svcCreditText('esri'), maxZoom: 19, maxNativeZoom: 18 }]];
-// legal-credits: each layer carries its screen credit (attribution, with links) and its picture credit (cr: plain text, the address to print) - both from the provider's row
+const SAT_IMAGERY = k => [['https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}?token=' + encodeURIComponent(k || ESRI_SITE_KEY), { crd: ['esri'], cr: svcCreditText('esri'), maxZoom: 19, maxNativeZoom: 18 }]];
+// legal-credits: each layer carries its screen credit and its picture credit (cr: plain text, the address to print) - both from the provider's row; map-credit-line: the screen
+// credit is crd, [provider, options of svcCredit], read by the map's credit line (mapCrOf) - Leaflet's own attribution corner is off on every map
 // (S10) the live map inside a file sent to friends has no page address, so its "מפה" is OpenFreeMap's vector tiles (fmapVecLayer), never OSM's tiles
 const OFM_VEC = 'ofm:vector';
 const RELIEF_LYR = 'mapterhorn:relief'; // relief-phone: the relief layer drawn on the phone (reliefLayer)
 const BASE_MAPS = {
-  osm: { label: 'מפה', sub: 'רחובות, מקומות ושמות', layers: () => typeof FMAP_PAGE !== 'undefined' ? [[OFM_VEC, { attribution: svcCredit('openfreemap'), cr: svcCreditText('openfreemap', { print: true }), maxZoom: 19 }]]
-    : [[svcTileUrl('osm'), { attribution: svcCredit('osm', { fix: true }), cr: svcCreditText('osm', { print: true }), maxZoom: 19 }]] }, // 7.1.0: the exact address and attribution from the provider's row; legal-credits: with "לתקן את המפה" (S11)
+  osm: { label: 'מפה', sub: 'רחובות, מקומות ושמות', layers: () => typeof FMAP_PAGE !== 'undefined' ? [[OFM_VEC, { crd: ['openfreemap'], cr: svcCreditText('openfreemap', { print: true }), maxZoom: 19 }]]
+    : [[svcTileUrl('osm'), { crd: ['osm', { fix: true }], cr: svcCreditText('osm', { print: true }), maxZoom: 19 }]] }, // 7.1.0: the exact address and attribution from the provider's row; legal-credits: with "לתקן את המפה" (S11)
   // hebrew-map (decisions 2026-11-21 · Review of the map upgrades, Q7): the app's own drawing of OpenFreeMap's vector tiles, names in Hebrew where the map has them (js/hebrew-map.js)
-  he: { label: 'מפה בעברית', sub: 'שמות בעברית איפה שיש להם שם בעברית', layers: () => [[HE_VEC, { attribution: svcCredit('openfreemap'), cr: svcCreditText('openfreemap', { print: true }), maxZoom: 19 }], [HE_LBL, {}]] },
-  relief: { label: 'מפה עם תבליט', sub: 'המפה הרגילה עם נפח של הרים ועמקים', layers: () => BASE_MAPS.osm.layers().concat([[RELIEF_LYR, { attribution: svcCredit('mapterhorn'), cr: svcCreditText('mapterhorn', { print: true }), maxZoom: 19 }]]) }, // 4.31.0; relief-phone: drawn on the phone (reliefLayer), credit "© Mapterhorn" from its row
-  hybrid: { label: 'לוויין', sub: 'צילום אוויר עם רחובות ושמות', layers: k => SAT_IMAGERY(k).concat([['https://static-map-tiles-api.arcgis.com/arcgis/rest/services/static-basemap-tiles-service/v1/arcgis/imagery/labels/static/tile/{z}/{y}/{x}?token=' + encodeURIComponent(k || ESRI_SITE_KEY), { attribution: svcCredit('esri', { as: 'labels' }), cr: svcCreditText('esri', { as: 'labels' }), maxZoom: 19, maxNativeZoom: 18 }]]) }, // legal-credits-2 (S1): the labels layer names its own providers
-  topo: { label: 'טופוגרפית', sub: 'קווי גובה, פסגות וגובהן, לטבע ולהרים', layers: () => [[svcTileUrl('opentopomap'), { attribution: svcCredit('opentopomap', { give: true }), cr: svcCreditText('opentopomap', { print: true }), abc: svcTileHost, maxZoom: 19, maxNativeZoom: 17 }]] }, // 7.1.0: from the provider's row (with the donation link); legal-credits: its published letter hosts ({abc})
+  he: { label: 'מפה בעברית', sub: 'שמות בעברית איפה שיש להם שם בעברית', layers: () => [[HE_VEC, { crd: ['openfreemap'], cr: svcCreditText('openfreemap', { print: true }), maxZoom: 19 }], [HE_LBL, {}]] },
+  relief: { label: 'מפה עם תבליט', sub: 'המפה הרגילה עם נפח של הרים ועמקים', layers: () => BASE_MAPS.osm.layers().concat([[RELIEF_LYR, { crd: ['mapterhorn'], cr: svcCreditText('mapterhorn', { print: true }), maxZoom: 19 }]]) }, // 4.31.0; relief-phone: drawn on the phone (reliefLayer), credit "© Mapterhorn" from its row
+  hybrid: { label: 'לוויין', sub: 'צילום אוויר עם רחובות ושמות', layers: k => SAT_IMAGERY(k).concat([['https://static-map-tiles-api.arcgis.com/arcgis/rest/services/static-basemap-tiles-service/v1/arcgis/imagery/labels/static/tile/{z}/{y}/{x}?token=' + encodeURIComponent(k || ESRI_SITE_KEY), { crd: ['esri', { as: 'labels' }], cr: svcCreditText('esri', { as: 'labels' }), maxZoom: 19, maxNativeZoom: 18 }]]) }, // legal-credits-2 (S1): the labels layer names its own providers
+  topo: { label: 'טופוגרפית', sub: 'קווי גובה, פסגות וגובהן, לטבע ולהרים', layers: () => [[svcTileUrl('opentopomap'), { crd: ['opentopomap', { give: true }], cr: svcCreditText('opentopomap', { print: true }), abc: svcTileHost, maxZoom: 19, maxNativeZoom: 17 }]] }, // 7.1.0: from the provider's row (with the donation link); legal-credits: its published letter hosts ({abc})
 };
 const BASE_MAP_MS = { osm: 'map', he: 'translate', relief: 'landscape', hybrid: 'satellite_alt', topo: 'terrain' };
 const LIVE_MAPS = new Set();
@@ -47,22 +47,22 @@ sysOn(document, 'visibilitychange', () => { if (document.visibilityState === 'vi
 // the provider's top zoom drawn from its parent; the tiles come through the page's one loader (svcPageVecTile)
 function fmapVecLayer(o) { return vecGridLayer(o, svcPageVecTile, (ctx, T, ox, oy, ds, z, r) => { ctx.fillStyle = OFF_STYLE.land; ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height); offDrawLayers(ctx, T.L, ox, oy, ds, z, r); }); }
 // hebrew-map: the one vector grid layer - get(z, x, y) gives the vector tile holding a screen tile ({ z, x, y, L }, maybe its parent, or null),
-// paint(ctx, T, ox, oy, ds, z, r) draws it into the tile's canvas; a failure goes to the layer's own retry (tileerror, addBaseTiles)
+// paint(ctx, T, ox, oy, ds, z, r) draws it into the tile's canvas (marked tile-drawn: a page's live map shows once one is - page-look); a failure goes to the layer's own retry (tileerror, addBaseTiles)
 function emptyLayer(o) { return L.tileLayer('', o || {}); } // a library with no grid layers (the tests' stub): an empty layer
 function vecGridLayer(o, get, paint) { if (!L.GridLayer) return emptyLayer(o);
   const Lyr = L.GridLayer.extend({ createTile(co, done) { const c = document.createElement('canvas'), r = Math.min(2, window.devicePixelRatio || 1), size = 256 * r; c.width = c.height = size; c.style.width = c.style.height = '256px';
-    get(co.z, co.x, co.y).then(T => { if (T && T.stale) mapTilesBad(this); if (T && T.L) { const sc = 2 ** (co.z - T.z); paint(c.getContext('2d'), T, -(co.x - T.x * sc) * size, -(co.y - T.y * sc) * size, size * sc, co.z, r); } done(null, c); }, e => done(e || new Error('tile'), c)); return c; } });
-  return new Lyr({ attribution: o.attribution, maxZoom: o.maxZoom || 19, className: o.className || '' }); }
+    get(co.z, co.x, co.y).then(T => { if (T && T.stale) mapTilesBad(this); if (T && T.L) { const sc = 2 ** (co.z - T.z); paint(c.getContext('2d'), T, -(co.x - T.x * sc) * size, -(co.y - T.y * sc) * size, size * sc, co.z, r); c.classList.add('tile-drawn'); } done(null, c); }, e => done(e || new Error('tile'), c)); return c; } });
+  return new Lyr({ crd: o.crd, maxZoom: o.maxZoom || 19, className: o.className || '' }); }
 const HE_VEC = 'ofm:hebrew', HE_LBL = 'ofm:hebrew-labels'; // hebrew-map: the type's two layers, drawn by the special-maps group (diet-groups)
 function baseMapId() { const v = DEV.baseMap; return BASE_MAPS[v] ? v : 'osm'; }
 // hebrew-map: addBaseTiles puts the map's type on its box (data-base: the dark filter of "מפה" in dark mode, css/maps.css) and the phone's choice to keep it light
 // (mapLightSync); the type menu leaves "מפה בעברית" out of a page sent to friends (FMAP_PAGE)
 function addBaseTiles(map) {
   (map._baseLayers || []).forEach(l => { try { map.removeLayer(l); } catch (e) {} });
-  const k = esriKey(), id0 = baseMapId(), id = id0 === 'he' && !groupHas('special-maps') ? 'osm' : id0; // 4.16.1: a key that failed its check is not used (legal-server: then the app's own key)
-  map._baseLayers = BASE_MAPS[id].layers(k).map(([u, o]) => (u === OFM_VEC ? fmapVecLayer(o) : u === HE_VEC ? groupFn('special-maps', 'heMapLayer')(o) : u === HE_LBL ? groupFn('special-maps', 'heLabelLayer')() : u === RELIEF_LYR ? (L.GridLayer ? reliefLayer(o) : emptyLayer(o)) : L.tileLayer(u, o)).addTo(map)); map._baseId = id;
+  const k = esriKey(), id0 = baseMapId(), id = (id0 === 'he' || id0 === 'relief') && !groupHas('special-maps') ? 'osm' : id0; // 4.16.1: a key that failed its check is not used (legal-server: then the app's own key)
+  map._baseLayers = BASE_MAPS[id].layers(k).map(([u, o]) => (u === OFM_VEC ? fmapVecLayer(o) : u === HE_VEC ? groupFn('special-maps', 'heMapLayer')(o) : u === HE_LBL ? groupFn('special-maps', 'heLabelLayer')() : u === RELIEF_LYR ? (L.GridLayer ? groupFn('special-maps', 'reliefLayer')(o) : emptyLayer(o)) : L.tileLayer(u, o)).addTo(map)); map._baseId = id;
   try { map.getContainer().dataset.base = id; } catch (e) {} mapLightSync();
-  if (id !== id0) needGroup('special-maps').then(ok => { if (ok) refreshBaseMaps(); }); // diet-groups: "מפה בעברית" is drawn by its group - until it is in, the map (startup waits for it when it is the stored type)
+  if (id !== id0) needGroup('special-maps').then(ok => { if (ok) refreshBaseMaps(); }); // diet-groups: "מפה בעברית" (and since diet-room "מפה עם תבליט") is drawn by its group - until it is in, the map (startup waits for it when it is the stored type)
   LIVE_MAPS.add(map); try { reliefLine(map); } catch (e) {} // relief-phone: the line "התבליט לא זמין כרגע" follows the map type
   try { offLayerFor(map); } catch (e) {} // 4.39.0: the downloaded map, under the tiles, when there is no network
   // 4.38.1: tiles that failed (a network that is still waking up after the app was away) are tried again, up to 3 times;
@@ -93,7 +93,8 @@ function checkEsriKey() {
 }
 function setBaseMap(id, silent) {
   if (baseMapId() === id) return; // undo-history: the map shown already is not a change (no empty row)
-  if (id === 'he' && !groupHas('special-maps')) { groupWait('special-maps', () => setBaseMap(id, silent)); return; } // diet-groups: its group first
+  if ((id === 'he' || id === 'relief') && !groupHas('special-maps')) { groupWait('special-maps', () => setBaseMap(id, silent)); return; } // diet-groups: its group first (diet-room: the relief too)
+  if (typeof FMAP_PAGE !== 'undefined') { DEV.baseMap = id; LIVE_MAPS.forEach(addBaseTiles); return; } // friend-page-map (G129): a page saves nothing (devSet, refreshBaseMaps answer nothing there) - the type goes straight to its map
   devSet({ baseMap: id }); refreshBaseMaps();
   if (!silent) showUndoToast(BASE_MAPS[id].label);
 }
@@ -120,7 +121,7 @@ act('map.typeMenu', c => { const b = c.el, host = b.parentElement;
   const old = host.querySelector(':scope > .ly-menu'); if (old) { old.remove(); return 'quiet'; }
   const m = document.createElement('div'); m.className = 'ly-menu'; m.setAttribute('role', 'menu');
   // 10.5.0 (design-4 part 2, look.md "Maps"): a Material menu - each type its line icon, the name and its line, the current one checked
-  const shown = Object.entries(BASE_MAPS).filter(([k]) => typeof FMAP_PAGE === 'undefined' || (k !== 'he' && k !== 'relief')); // a page for people: no "מפה בעברית" (hebrew-map), no relief (relief-phone)
+  const shown = Object.entries(BASE_MAPS).filter(([k]) => typeof FMAP_PAGE === 'undefined' || (k !== 'he' && k !== 'relief' && k !== 'hybrid')); // a page for people: no "מפה בעברית" (hebrew-map), no relief (relief-phone), no satellite (friend-page-map, G129: Esri's key answers only the site's two addresses - a file has none)
   // 3d-find: "תלת־ממד" the last row on the maps that have it (m3Row, js/map-full-screen.js); while it is shown it is the one checked
   const r3 = m3Row(host.id) || '', cur = /data-active="true"/.test(r3) ? '3d' : baseMapId();
   m.innerHTML = shown.map(([k, v]) => `<button type="button" role="menuitemradio" aria-checked="${k === cur}" data-act="map.type" data-v="${k}" data-active="${k === cur}">${msi(BASE_MAP_MS[k] || 'map', { cls: 'ly-ic' })}<span class="ly-t"><b>${v.label}</b><small>${v.sub || ''}</small></span>${k === cur ? msi('check', { cls: 'ly-ck' }) : ''}</button>`).join('') + r3;

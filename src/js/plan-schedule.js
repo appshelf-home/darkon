@@ -23,7 +23,7 @@ function openTimeSheet(day, tok, draft) {
   ctl.save = () => { const a = st.value; if (!a) { const er = $('#ttErr'); er.textContent = 'בחרו שעת התחלה'; er.hidden = false; return; }
     if (en.value && en.value <= a) { const er = $('#ttErr'); er.textContent = 'הסיום לפני ההתחלה'; er.hidden = false; return; }
     if (draft) { timeDraftBack(draft, a, en.value || ''); return; }
-    planChange(`🕐 ${entryName(e)}: ${a}${en.value ? '–' + en.value : ''}${raw ? ' (רק אצלך)' : ''}`, () => { if (!e.sched && !findSlot(day, e.p.id)) ensureDay(day).unassigned.push(e.p.id); setEntryTime(day, tok, a, en.value || ''); dropAnchor(); }); winDone(); };
+    planChange(`🕐 ${entryName(e)}: ${tmSpan(a, en.value)}${raw ? ' (רק אצלך)' : ''}`, () => { if (!e.sched && !findSlot(day, e.p.id)) ensureDay(day).unassigned.push(e.p.id); setEntryTime(day, tok, a, en.value || ''); dropAnchor(); }); winDone(); };
   ctl.del = () => { if (draft) { timeDraftBack(draft, '', ''); return; } planChange(`🕐 השעה הוסרה: ${entryName(e)}`, () => setEntryTime(day, tok, '', '')); winDone(); };
   };
   winOpen('openTimeSheet', 'שעה', draw); layerTop().ctl = ctl; // 5.1.0
@@ -76,7 +76,7 @@ function hideSched(sid) {
 }
 function openSchedSheet(sid) { layerNote(openSchedSheet, arguments);
   const s = rawSched(sid); if (!s) return; const e = schedEff(s), changed = schedEdChanged(s), sheet = document.getElementById('sheet'), F = fmNew({ s });
-  const src = [s.start ? escH(s.start + (s.end ? '–' + s.end : '')) : 'בלי שעה', schedKindIc(s.kind, escH(s.title)), s.note && escH(s.note)].filter(Boolean).join(SEP); // HTML
+  const src = [s.start ? escH(tmSpan(s.start, s.end)) : 'בלי שעה', schedKindIc(s.kind, escH(s.title)), s.note && escH(s.note)].filter(Boolean).join(SEP); // HTML
   sheet.innerHTML = `${fmHead('✏️ ' + nameB(e.title) + ' ' + tipI('sched.edit'))}
     ${fmText(F, 'title', { label: 'כותרת', req: true, value: e.title })}
     ${fmChips(F, 'kind', { label: 'סוג', value: e.kind, options: Object.keys(SCHED_KIND_NAME).map(k => [k, schedKindIc(k, SCHED_KIND_NAME[k])]) })}
@@ -119,7 +119,7 @@ ctlActs('schedUpd', ['suKeep', 'suTake']);
 function openRestoreSheet(dayKey) { const ctl = {}; layerNote(openRestoreSheet, arguments);
   const d = dayByKey(dayKey); if (!d) return; const list = hiddenScheduleOf(d.date), mine = removedOf(dayKey), esc = escH, sheet = document.getElementById('sheet');
   if (!list.length && !mine.length) { closeSheet(); return; }
-  const nameOf = r => { const p = r.item ? { ...r.item } : planItem(r.id); return p ? (r.item ? msi(r.item.ref != null ? 'content_copy' : 'sticky_note_2', { cls: 'msi-in' }) + ' ' + esc(p.name || '') : msiTie(itemIcon(p, { cls: 'msi-in' }), esc(p.name || ''))) : ''; };
+  const nameOf = r => { const p = r.item ? { ...r.item } : planItem(r.id); return p ? (r.item ? msi(r.item.ref != null ? 'content_copy' : 'sticky_note_2', { cls: 'msi-in' }) + ' ' + esc(p.name || '') : msiTie(itemIcon(p, { cls: 'msi-in' }), esc(placeLabel(p)))) : ''; };
   sheet.innerHTML = `${fmHead(`↩️ מה שהוסר${SEP}${d.label}`, 'srClose')}
     ${mine.map((r, k) => `<div class="ps-row"><b>${r.time ? `<bdi dir="ltr">${esc(r.time.start)}</bdi> ` : ''}${nameOf(r)} <small>· ${r.item && r.item.ref == null ? 'הערה, הוסרה מהיום' : 'הוסר מהיום'}</small></b><button type="button" class="chip" data-act="restoreDay.rmback" data-rmback="${k}">${msi('undo', { size: 18 })} החזרה</button></div>`).join('')}
     ${list.map(s => `<div class="ps-row"><b>${s.start ? `${schedKindIc(s.kind, `<bdi dir="ltr">${esc(s.start)}</bdi>`)} ${esc(s.title)}` : schedKindIc(s.kind, esc(s.title))} <small>· מהלו״ז${schedSrcUpdates(s).length ? `${SEP}${msi('edit_note', { size: 16, cls: 'msi-in' })} עודכן במקור` : ''}</small></b><button type="button" class="chip" data-act="restoreDay.srback" data-srback="${esc(s.id)}">${msi('undo', { size: 18 })} החזרה</button></div>`).join('')}`;

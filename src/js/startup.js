@@ -99,9 +99,13 @@ act('nav.section', c => {
   if (!((from === 'points' || from === 'map') && (sec === 'points' || sec === 'map'))) { FP.q = ''; document.getElementById('search').value = ''; }
   goTab(sectionOf(activeTab) === sec ? (SECTIONS[sec].items[0] ? SECTIONS[sec].items[0].id : sec) : lastTabOf[sec]);
 });
-(function () { // bottom nav hides on scroll down, returns on scroll up
-  let lastY = window.scrollY; const nav = document.getElementById('bottomNav');
-  sysOn(window, 'scroll', () => { const y = window.scrollY; if (Math.abs(y - lastY) < 6) return; if (Date.now() - _revealAt < 900) { lastY = y; return; } /* 10.6.0: a scroll by reveal() is not the person's - the navigation stays */ nav.classList.toggle('hide', y > lastY && y > 120); document.body.classList.toggle('nav-hidden', nav.classList.contains('hide')); lastY = y; }, { passive: true });
+(function () { // bottom nav hides on scroll down, returns on scroll up - and whenever the page cannot scroll or is at its top (nav-short-page, G135)
+  let lastY = window.scrollY; const nav = document.getElementById('bottomNav'), main = document.getElementById('main');
+  const navHide = h => { nav.classList.toggle('hide', h); document.body.classList.toggle('nav-hidden', h); };
+  // the one rule: hidden only below the page's first 120 px, so a page that cannot scroll (a fold, a filter or a delete made it shorter than the screen) or at its top shows the bar - checked on every scroll and whenever the page's height changes
+  const navFit = () => { if (nav.classList.contains('hide') && !document.documentElement.classList.contains('sheet-open') && window.scrollY <= 120) navHide(false); };
+  sysOn(window, 'scroll', () => { const y = window.scrollY; navFit(); if (Math.abs(y - lastY) < 6) return; if (Date.now() - _revealAt < 900) { lastY = y; return; } /* 10.6.0: a scroll by reveal() is not the person's - the navigation stays */ navHide(y > lastY && y > 120); lastY = y; }, { passive: true });
+  if (window.ResizeObserver && main) new ResizeObserver(() => { navFit(); lastY = window.scrollY; }).observe(main); // the page's height changed: a page shorter than the screen fires no scroll up
 })();
 act('theme.next', () => {
   const order = ['auto','light','dark'];
@@ -150,15 +154,15 @@ seedFlights();
 
 FP.regions = defaultRegions();
 if (STATE._tripUpdated) { const n = STATE._tripUpdated; delete STATE._tripUpdated; logEvent('הטיול עודכן מהאתר: ' + n, true, { b: 1 }); setTimeout(() => showToast('פרטי הטיול עודכנו (' + n + '). הסימונים והתוכנית נשמרו'), 800); }
-(function applyLanding() { // 4.6.0: the opening screen, during a trip and outside it (⚙️ הגדרות ← 🚪 מסך הפתיחה)
-  if (!hasTrip()) return;
+function landingTab() { // 4.6.0: the opening screen, during a trip and outside it (⚙️ הגדרות ← 🚪 מסך הפתיחה) - its tab, with today's days filter and open day
   const day = TRIP_DAYS.find(d => d.date === todayStr()), L = landingSettings(), v = day ? L.trip : L.away;
   const go = { points: 'all', map: 'map', plan: 'itinerary', info: 'info', trips: 'trips' };
   const [scr, today] = v.split('-');
-  activeTab = go[scr] || 'info';
   if (day && today === 'today') FP.days = { from: day.key, to: day.key };
   if (day && scr === 'plan') openDays = new Set([day.key]);
-})();
+  return go[scr] || 'info'; }
+if (hasTrip()) activeTab = landingTab(); // applyLanding
+const tripLanding = () => { const v = landingTab(); return v === 'trips' ? 'info' : v; }; // trip-cards (Q5): a trip card's tap lands by the same rule; "טיולים" there would leave the tap on the screen it came from - "מידע" instead
 
 applyPrefs(); // 4.12.0
 FP.sort = prefs().sort;
@@ -171,6 +175,6 @@ function startDraw() {
   gidLookSoon(GID_START_MS); // 11.23.0 (place-gid-2, Q4): the pass over stored places, in the background after the first screen
   try { propExpire(); } catch (e) { errNote('proposal', e); } // 11.5.0 (schedule-proposal, Q6): a trip that ended drops its unapplied proposal quietly
 }
-if (DEV.baseMap === 'he') START_GROUPS.add('special-maps'); // diet-groups (Q4): a stored map type that lives in a group - "מפה בעברית" before the first screen
+if (DEV.baseMap === 'he' || DEV.baseMap === 'relief') START_GROUPS.add('special-maps'); // diet-groups (Q4): a stored map type that lives in a group - "מפה בעברית" (diet-room: and "מפה עם תבליט") before the first screen
 if (tourOwed()) START_GROUPS.add('management'); // diet-groups (Q4): the first opening of a new user - the opening tour's group before the first screen
 if (START_GROUPS.size) { render.held = true; const go = () => { render.held = false; startDraw(); }; Promise.all([...START_GROUPS].map(needGroup)).then(go, go); } else startDraw();

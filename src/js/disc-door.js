@@ -1,4 +1,4 @@
-// ================= 📚 "מה יש כאן" - the door every map carries (split from discoveries.js in diet-groups, 11.62.0; the search, the pins, the cards, the list and "לאורך הדרך" stay there, in the special-maps group) =================
+// ================= 📚 "מה יש כאן" - the door every map carries (split from discoveries.js in diet-groups, 11.62.0; the search, the pins, the cards, the list and "לאורך הדרך" stay there, in the discoveries group - diet-room) =================
 const DISC = { items: {}, searches: [], imgs: [], loaded: false };
 const DISC_CACHE = REG_BY.disc.where.cache[0], DISC_IMG_CACHE = REG_BY.disc.where.cache[1], DISC_DOC = 'https://darkon.local/disc-v1.json', DISC_IMG_MAX = 20e6, DISC_ITEMS_MAX = 6000;
 const DISC_MAPS = {}; // containerId -> { map, ctx, markers, last: {lat,lng,r}, busy }
@@ -15,11 +15,11 @@ function discSave() { clearTimeout(_discSaveT); _discSaveT = setTimeout(async ()
   const ks = Object.keys(DISC.items); if (ks.length > DISC_ITEMS_MAX) ks.sort((a, b) => DISC.items[a].at - DISC.items[b].at).slice(0, ks.length - DISC_ITEMS_MAX).forEach(k => delete DISC.items[k]);
   DISC.searches = DISC.searches.slice(-400);
   try { const c = await regCache(DISC_CACHE); await regCachePut(c, DISC_DOC, new Response(JSON.stringify({ items: DISC.items, searches: DISC.searches, imgs: DISC.imgs }), { headers: { 'Content-Type': 'application/json' } })); } catch (e) {} }, 400); }
-function discNorm(t) { return String(t || '').toLowerCase().replace(/\s*\(.*$/, '').replace(/[״"'׳,.\-–]/g, ' ').replace(/\s+/g, ' ').trim(); }
+// a discovery's names: its title, and the English title Wikipedia gave with it (dup-both-names: matched against both names of a place)
+const discNames = it => [it.title, it.enTitle];
 function discExisting(it) { // one of my places (any destination of this trip, or a trip place) is the same thing
-  const n = discNorm(it.title);
   return POINTS.find(p => { if (p.src && p.src.url && it.url && p.src.url === it.url) return true; if (p.src && p.src.key === it.k) return true;
-    const c = routeCoordOf(p); if (!c || distanceKm(c, it) > 0.15) return false; const m = discNorm(p.name); return m.length > 2 && n.length > 2 && (m.includes(n) || n.includes(m)); }) || null;
+    const c = routeCoordOf(p); if (!c || distanceKm(c, it) > SAME_NEAR_KM) return false; return !!placeNameMatch(discNames(it), p, 'loose'); }) || null;
 }
 function discWikiUrlFor(p) { if (p.src && p.src.url) return p.src.url; const it = Object.values(DISC.items).find(x => x.url && discExisting(x) === p); return it ? it.url : ''; }
 function discAttach(hostId, map, ctx, hostEl) {
@@ -33,10 +33,10 @@ function discAttach(hostId, map, ctx, hostEl) {
   map.on('moveend', () => { if (DISC_MAPS[hostId] && DISC_MAPS[hostId].map === map) discDrawG(hostId); });
   if (!DISC.loaded) discLoad(); else discDrawG(hostId);
 }
-// diet-groups: the pins are drawn by the special-maps group - at once when it is in, else only when the switch is on (the group comes quietly,
+// diet-groups: the pins are drawn by the discoveries group (diet-room: split from special-maps) - at once when it is in, else only when the switch is on (the group comes quietly,
 // from the phone; nothing to draw while it is off); a drive's search asked for this map (ALONG_GO) exists only once the group is in
-function discDrawG(hostId) { if (groupHas('special-maps')) groupFn('special-maps', 'discDraw')(hostId); else if (discOn()) needGroup('special-maps').then(ok => { if (ok) groupFn('special-maps', 'discDraw')(hostId); }); }
-function discAlongGo(hostId) { if (groupHas('special-maps')) groupFn('special-maps', 'alongGo')(hostId); }
+function discDrawG(hostId) { if (groupHas('discoveries')) groupFn('discoveries', 'discDraw')(hostId); else if (discOn()) needGroup('discoveries').then(ok => { if (ok) groupFn('discoveries', 'discDraw')(hostId); }); }
+function discAlongGo(hostId) { if (groupHas('discoveries')) groupFn('discoveries', 'alongGo')(hostId); }
 function draftClearLayer(D, destId, ty) {
   const ls = draftDestLayers(D, destId), same = ty ? ls.filter(l => l.type === ty) : [];
   if (same.length === 1) return { clear: same[0], maybe: [] };

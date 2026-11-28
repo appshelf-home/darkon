@@ -67,7 +67,7 @@ function psAreaLine(x) { return [x.area, (x.cc && countryName(x.cc)) || x.countr
 function psPhoton(q, c, box, lim, kind, lang) { const area = kind === 'area';
   return 'https://photon.komoot.io/api/?lang=' + (lang || (c && inIsrael({ lat: c[0], lng: c[1] }) ? 'default' : 'en')) + '&limit=' + lim + (c ? '&lat=' + c[0] + '&lon=' + c[1] + (area ? '&zoom=7&location_bias_scale=0.2' : '&zoom=12&location_bias_scale=0.1') : '')
   + (box && !area ? '&bbox=' + [box.w, box.s, box.e, box.n].map(v => v.toFixed(4)).join(',') : '') + (area ? PS_AREA_TAGS.map(t => '&osm_tag=' + t).join('') : '') + '&q=' + encodeURIComponent(q); }
-function psNominatim(q, box, lim) { return 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&namedetails=1&limit=' + lim
+function psNominatim(q, box, lim, cc) { return 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&namedetails=1&limit=' + lim + (cc ? '&countrycodes=' + cc.toLowerCase() : '')
   + (box ? '&viewbox=' + [box.w, box.n, box.e, box.s].map(v => v.toFixed(4)).join(',') + '&bounded=1' : '') + '&q=' + encodeURIComponent(q); }
 function psFromPhoton(f, q) { const pr = f.properties || {};
   return { name: pr.name || q, names: [pr.name], sub: [pr.street && (pr.street + (pr.housenumber ? ' ' + pr.housenumber : '')), pr.district, pr.city].filter(Boolean).join(', '), city: pr.city || '', state: pr.state || '', country: pr.country || '',
@@ -96,13 +96,14 @@ async function placeSearch(q, near, o) {
   const area = o.kind === 'area', c = psCenterOf(near), box = o.box || (o.anywhere || area ? null : psBox(c)) /* place-find: o.box - a box given (a city's, for a link) */, lim = Math.min(50, (o.limit || PS_PAGE) * ((o.page || 0) + 1)), nlim = Math.min(40, lim);
   const ask = (prov, url, parse) => svcAsk('placeSearch', { order: [prov], prio: o.prio, build: p => p === prov ? { url, init: prov === 'nominatim' ? { headers: { 'Accept-Language': 'en' } } : undefined } : null, parse });
   const rs = await Promise.all([ask('photon', psPhoton(q, c, box, lim, o.kind, o.lang), d => { if (!d || !Array.isArray(d.features)) throw new Error('answer'); return d.features.map(f => psFromPhoton(f, q)); }),
-    o.explicit ? ask('nominatim', psNominatim(q, box, nlim), d => { if (!Array.isArray(d)) throw new Error('answer'); return d.map(r => psFromNominatim(r, q)); }) : null]);
+    o.explicit ? ask('nominatim', psNominatim(q, box, nlim, o.cc), d => { if (!Array.isArray(d)) throw new Error('answer'); return d.map(r => psFromNominatim(r, q)); }) : null]);
   const ok = rs.filter(r => r && r.kind === 'ok');
   if (!ok.length) { const off = rs.some(r => r && r.kind === 'offline'); PS_LAST = off ? 'offline' : 'busy'; PLACE_SEARCH_WHY = off ? SVC_MSG.offline : SVC_MSG.busy; return null; }
   PS_LAST = '';
-  const p = rs[0] && rs[0].kind === 'ok' ? rs[0].value : [], n = rs[1] && rs[1].kind === 'ok' ? rs[1].value : [], ctr = box ? box.c : c;
+  const p = rs[0] && rs[0].kind === 'ok' ? rs[0].value : [], n = rs[1] && rs[1].kind === 'ok' ? rs[1].value : [], ctr = o.from || (box ? box.c : c); // big-dest-search: o.from - the distance from the chain's first clue
   const m0 = psMerge(p, n), m = area ? psAreaDedup(m0.filter(x => x.area)) : m0; // Nominatim has no filter for the natural areas: its answer is filtered here
-  let list = m.map(x => ({ ...x, km: ctr ? distanceKm({ lat: ctr[0], lng: ctr[1] }, x.coord) : null })).slice(0, lim);
+  let list = m.filter(x => !o.cc || x.cc === o.cc).map(x => ({ ...x, km: ctr ? distanceKm({ lat: ctr[0], lng: ctr[1] }, x.coord) : null })).slice(0, lim); // big-dest-search: o.cc - the whole country only
+  if (o.byKm && ctr) list.sort((a, b) => a.km - b.km); // (Q3) a search with a context: the nearest to its first clue first
   if (!area && !o.noHe && HEB_CH.test(q) && ctr && !inIsrael({ lat: ctr[0], lng: ctr[1] })) list = await psPlaceHe(q, near, o, list); // place-find (Q2): Hebrew abroad through Wikidata - the one change the measurement kept
   if (!area && !o.stops) list = psStopsDown(q, list); // size-fixes (A): a transit stop below the places of a fitting name
   list.more = p.length >= lim && lim < 50 || n.length >= nlim && nlim < 40; list.boxed = !!box; list.kind = area ? 'area' : 'place'; return list;
@@ -182,10 +183,19 @@ async function psRun(id, q, how) { const H = PS_HOSTS[id]; if (!H) return; q = S
   const st = { q, explicit: how === 'explicit' || how === 'places' || (same && s0.explicit && how !== 'typing'), anywhere: how === 'any' || how === 'places' || hk === 'area' || (same && how === 'more' && s0.anywhere),
     page: how === 'more' && same ? s0.page + 1 : 0, list: s0 && s0.list, more: false, kind: '', busy: true, area: hk === 'area' && !places, places, hk };
   const seq = ++H.seq; H.st = st; psDraw(H);
-  const fl = H.flight = placeSearch(q, H.near ? H.near() : undefined, { explicit: st.explicit, anywhere: st.anywhere, page: st.page, limit: PS_PAGE, kind: st.area ? 'area' : 'place' });
+  const fl = H.flight = psStages(H, st, s0 && same ? s0 : null);
   const r = await fl; if (H.flight === fl) H.flight = null;
   if (seq === H.seq) { st.busy = false; if (r === null) { st.kind = PS_LAST || 'busy'; st.list = s0 && same ? s0.list : null; } else { st.list = r; st.more = !!r.more; st.kind = r.length ? '' : (st.anywhere ? 'none' : 'area'); } psDraw(H); }
   if (H.next) { const n = H.next; H.next = null; if (n !== q) psRun(id, n, 'typing'); } }
+// big-dest-search (Q3): a host with a context (H.where - placeWhere) searches in the box of the chain's first clue, nearest first; nothing
+// there - the whole destination, then the whole country (st.wide: the quiet line); "עוד תוצאות" goes on where it found; "לחפש בכל מקום" as before
+async function psStages(H, st, s0) { const o = { explicit: st.explicit, anywhere: st.anywhere, page: st.page, limit: PS_PAGE, kind: st.area ? 'area' : 'place' };
+  const W = !st.area && !st.anywhere && H.where ? whOf(H.where()) : null, cl = whFirst(W); if (!cl) return placeSearch(st.q, H.near ? H.near() : undefined, o);
+  const stages = [{ k: cl.k, box: whBox(cl) }].concat(cl.k !== 'dest' && W.dc ? [{ k: 'dest', box: psBox(W.dc) }] : [], W.cc ? [{ k: 'country', cc: W.cc }] : []);
+  let i = st.page && s0 && s0.stage != null ? s0.stage : 0, r = null;
+  for (; i < stages.length; i++) { const g = stages[i]; r = await placeSearch(st.q, cl.c, { ...o, box: g.box || undefined, anywhere: g.k === 'country', cc: g.cc, from: cl.c, byKm: true });
+    if (r === null || r.length || st.page) break; }
+  st.stage = Math.min(i, stages.length - 1); st.wide = r && r.length && i > 0 ? WH_WIDE[stages[st.stage].k] || '' : ''; return r; }
 function psDraw(H) { if (H.draw) return H.draw(H); const b = H.box && H.box(); if (b && b.isConnected) b.innerHTML = psHTML(H); }
 function psRowsHTML(H) { const st = H.st; return (st && st.list || []).map((x, i) => `<button type="button" class="pe-res ps-row" data-act="ps.res" data-v="${H.id}:${i}">${msi(x.ic || 'location_on', { size: 20 })}<span class="ps-t"><b>${escH(x.name)}</b><small>${escH([st.area && x.area ? psAreaLine(x) : x.sub || [x.city, x.country].filter(Boolean).join(', '), x.km != null ? fmtKm(x.km) : ''].filter(Boolean).join(SEP))}</small></span></button>`).join(''); }
 function psGmUrl(q) { return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q); }
@@ -212,7 +222,7 @@ function psOtherHTML(H) { const st = H.st, L = [];
   if (H.map) L.push(`<button type="button" class="link-btn" data-act="ps.map" data-v="${H.id}">לבחור על המפה</button>`);
   return L.length ? `<p class="ps-other">לא מה שחיפשתם? ${L.join(SEP)}</p>` : ''; }
 function psEndHTML(H) { const st = H.st; return st && !st.busy && st.list && st.list.length && !st.kind ? psBtns(H, [st.more && 'more', !st.anywhere && 'any', 'places'].filter(Boolean)) + psOtherHTML(H) : ''; }
-function psHTML(H) { const st = H.st; if (!st) return ''; const top = st.busy ? psFootHTML(H) : '', rows = psRowsHTML(H);
+function psHTML(H) { const st = H.st; if (!st) return ''; const top = st.busy ? psFootHTML(H) : st.wide && !st.kind ? `<small class="ps-line ps-wide">${st.wide}</small>` : '', rows = psRowsHTML(H); // big-dest-search (Q3): where a widened search found
   return `${top}${rows ? `<div class="ps-rows">${rows}</div>` : ''}${st.busy ? '' : psFootHTML(H)}${psEndHTML(H)}`; }
 act('ps.res', c => { const [id, i] = String(c.v).split(':'), H = PS_HOSTS[id], x = H && H.st && H.st.list && H.st.list[+i]; if (!x) return 'quiet'; H.st = null; psDraw(H); H.pick(x); return 'quiet'; });
 act('ps.more', c => { const H = PS_HOSTS[c.v]; if (H && H.st) psRun(c.v, H.st.q, 'more'); return 'quiet'; });
@@ -243,7 +253,7 @@ async function psExpand(url) { if (!MAP_AVAILABLE) return null;
 async function psReadLink(text, o) { const r = parseMapsLink(text); if (!r) return null; o = o || {};
   if (!r.coord && r.short && r.url) { const long = await psExpand(r.url); if (long) { const r2 = parseMapsLink(long); if (r2) { r.coord = r2.coord; r.name = r.name || r2.name; r.long = long; } } else r.unread = true; }
   if (!r.coord && o.known) { const rec = gidFromUrl(r.long || r.url); if (rec && o.known(rec)) { r.rec = rec; r.gid = psGid(r.long || r.url); r.url = r.url ? psKeepUrl({ ...r, url: r.long || r.url }) : ''; return r; } } // 11.46.0 (P3): Google's id of a place already in the trip - no search by name
-  if (!r.coord) { const tx = psLinkText(r.long || r.url); if (tx) { if (!o.idOnly && o.stage) o.stage('find'); const f = o.idOnly ? null : await psFindByText(tx); // 11.46.0 (P3): o.stage - the wait's next stage // 11.21.6 (P2); place-find (Q1): (a) the name in the address's city, (b) the building, (c) a view only
+  if (!r.coord) { const tx = psLinkText(r.long || r.url); if (tx) { if (!o.idOnly && o.stage) o.stage('find'); const f = o.idOnly ? null : await psFindByText(tx, o.where); // 11.46.0 (P3): o.stage - the wait's next stage // 11.21.6 (P2); place-find (Q1): (a) the name in the address's city, (b) the building, (c) a view only
       if (f && f.coord) { r.coord = f.coord; r.byText = true; r.found = { name: f.name, sub: f.sub, how: f.how }; } else if (f && f.view) r.view = f.view; r.name = tx.name || r.name; } }
   else if (r.name && r.name.indexOf(',') > 0) r.name = r.name.split(',')[0].trim(); // a place's link names it with its address: the name alone
   r.gid = psGid(r.long || r.url); r.rec = gidFromUrl(r.long || r.url); r.url = r.url ? psKeepUrl({ ...r, url: r.long || r.url }) : ''; return r; } // 11.22.0: rec - Google's id ({ id, cid }) for the place's gid
@@ -291,9 +301,9 @@ function psNameTries(name) { const w = String(name || '').split(/\s+/).filter(Bo
 function psTailOk(tail, x, city) { if (!tail) return true; const t = psNorm(tail), where = psNorm([x.district, x.city, x.state, city, x.sub].filter(Boolean).join(' '));
   return t.split(' ').every(w => w.length < 2 || where.split(' ').includes(w)); }
 function psOnStreet(st, x) { return !!st && psStreetMatch(st, { sub: [x.street, x.sub].filter(Boolean).join(' '), name: '', city: '', state: '' }); }
-async function psFindByText(tx) { if (!tx || !MAP_AVAILABLE) return null;
+async function psFindByText(tx, W) { if (!tx || !MAP_AVAILABLE) return null; const cl = whFirst(whOf(W)); // big-dest-search: with no city found, the chain's first clue
   const A = psAddrParts(tx.addr), trip = psCenterOf(undefined), cb = A.city ? await psCityBox(A.city, trip) : null, lang = HEB_CH.test(tx.addr || tx.name) ? 'default' : 'en';
-  const box = cb || (trip ? psBox(trip) : null), near = cb ? cb.c : trip, ask = q => placeSearch(q, near, { explicit: true, prio: 'screen', box: box || undefined, anywhere: !box, lang });
+  const box = cb || (cl ? whBox(cl) : trip ? psBox(trip) : null), near = cb ? cb.c : cl ? cl.c : trip, ask = q => placeSearch(q, near, { explicit: true, prio: 'screen', box: box || undefined, anywhere: !box, lang });
   // (a) the name alone, in the city
   if (tx.name) for (const t of psNameTries(tx.name)) { const l = await ask(t.n); if (!l) continue;
     const fit = l.filter(x => (x.names || []).concat(x.name).some(n => n && psNameMatch(n, t.n)) && psTailOk(t.tail, x, A.city) && !/^highway:|^public_transport:|^railway:(stop|halt|tram_stop)/.test(x.cls || '') && (!box || psInExt(x.coord, box)));
@@ -341,7 +351,7 @@ const PS_FORMS = {
     open: o => { if (o.id != null) { openPlaceEditor({ id: o.id }); return; } const op = psPlaceOpen(o); psPlaceScreen(op); openPlaceEditor(op); }, after: F => { peNeedLayer(F); peDup(F); } },
   dplace: { ok: o => !!(DRAFT && DRAFT.at === o.dat) && (o.key == null ? !!o.add : String(o.key).startsWith('add:') ? (DRAFT.add || []).some(a => a.key === o.key) : draftItems(DRAFT).some(x => x.key === o.key)),
     open: o => { goTab('draft'); openPlaceEditor(o.key != null ? { draftKey: o.key } : { draftAdd: o.add }); }, after: F => { peNeedLayer(F); peDup(F); } },
-  dest: { group: 'management', ok: o => o.id == null || !!DESTS[o.id], open: o => { goTab('trips'); groupFn('management', 'openDestEditor')(o.id || null); }, after: F => groupFn('management', 'deBack')(F) },
+  dest: { group: 'editors', ok: o => o.id == null || !!DESTS[o.id], open: o => { goTab('trips'); groupFn('editors', 'openDestEditor')(o.id || null); }, after: F => groupFn('editors', 'deBack')(F) },
   travel: { ok: o => o.dat != null ? !!(DRAFT && DRAFT.at === o.dat && o.id != null && draftTravelTrip() && travelById(o.id, draftTravelTrip()))
       : hasTrip() && STATE.activeTrip === o.tid && (o.id == null || !!travelById(o.id, activeTripObj())),
     open: o => { if (o.dat != null) { goTab('draft'); openTravelEditor(o.id, { draft: true }); } else openTravelEditor(o.id || null, o.conv ? { conv: o.conv } : undefined); } },

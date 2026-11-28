@@ -68,7 +68,7 @@ function memoryMapSVG(M, w, h) { // 4.36.0: the static version (inside Claude, w
 }
 function planAsItWasHTML(M, o) { o = o || {}; // o.sv (the memory screen, map-side-view): each day's Timeline walk gets its "גובה"; pages for people get none
   const days = dayList(M.t.start, M.t.end); if (!days.length) return '';
-  const nameOf = id => { if (typeof id === 'string') { const f = (M.td.planItems || {})[id]; return f ? { ic: msi('sticky_note_2', { cls: 'msi-in' }), n: f.name } : ''; } const p = M.pmap.get(id); return p ? { ic: typeIcon(p.icon, { cls: 'msi-in' }), n: p.name } : ''; }; // 10.8.0: line icons
+  const nameOf = id => { if (typeof id === 'string') { const f = (M.td.planItems || {})[id]; return f ? { ic: msi('sticky_note_2', { cls: 'msi-in' }), n: f.name } : ''; } const p = M.pmap.get(id); return p ? { ic: typeIcon(p.icon, { cls: 'msi-in' }), n: placeLabel(p, M.t) } : ''; }; // 10.8.0: line icons
   const vis = new Set(M.td.visited || []);
   return days.map(d => { const it = (M.td.itinerary || {})[d.key] || {}, ids = ['morning', 'afternoon', 'evening', 'unassigned'].flatMap(k => it[k] || []);
     const sch = (M.t.schedule || []).filter(x => x.date === d.date).map(x => `<li class="mp-org">${x.start ? x.start + ' ' : ''}${escH(x.title)}</li>`);
@@ -87,7 +87,7 @@ function renderMemoryScreen() { const ctl = ctlNS('memory');
   const hero = `<div class="mem-hero" style="--mh:${th.primary || 'var(--primary)'};--ma:${th.accent || 'var(--favorite)'}">${tripCoverHTML(id)}<div class="mem-hero-in"><span class="mem-kicker">${cancelled ? msi('block', { size: 16 }) + 'בוטל' : t.archived ? msi('auto_stories', { size: 16 }) + 'זיכרון' + SEP + 'לקריאה בלבד' : (live ? '' : msi('auto_stories', { size: 16 })) + tripStateLine(t) /* built HTML, never escaped again: a trip in progress or upcoming brings its own line icon */}</span><h2 class="display"><span${tripNameAttr(t)}>${escH(String(t.name).split(' · ')[0])}</span></h2>
     <div class="mem-sub">${[t.start ? tmFmt('range', [t.start, t.end], { year: true }) : '', flags, t.travelers ? escH(t.travelers) : ''].filter(Boolean).join(SEP)}</div></div></div>`
     + (cancelled ? '' : `<div class="mem-tiles-w"><div class="dr-tiles mem-tiles${memRideTileHTML(Dm, id) ? ' mem-4' : ''}"><div class="dr-tile"><b>${t.start ? dayList(t.start, t.end).length : tripLen(t)}</b><small>ימים</small></div><div class="dr-tile"><b>${M.visited.length}</b><small>מקומות ש${TX.visited}</small></div><div class="dr-tile"><b>${Dm && Dm.walk ? fmtKm(Dm.walk, { num: true }) : '—'}</b><small>ק״מ ברגל</small></div>${memRideTileHTML(Dm, id)}</div></div>`); // ride-km: four tiles - two rows of two when narrow for their numbers (.mem-tiles-w)
-  const acts = `<div class="mem-acts brow fill">${t.archived ? `<button class="btn-nav" id="memView" data-act="memory.memView">${msi('menu_book', { size: 18 })} עיון מלא</button>` : ''}<button class="btn-outline" id="memClone" data-act="memory.memClone">${msi('content_copy', { size: 18 })} טיול על בסיסו</button></div>`;
+  const acts = `<div class="mem-acts brow fill">${t.archived ? `<button class="btn-nav" id="memView" data-act="memory.memView" data-v="${escH(id)}">${msi('menu_book', { size: 18 })} עיון מלא</button>` : ''}<button class="btn-outline" id="memClone" data-act="memory.memClone">${msi('content_copy', { size: 18 })} טיול על בסיסו</button></div>`;
   { const e = screenTop(), tools = e && e.tab === 'memory' && e.el.querySelector('.screen-tools');
     if (tools) tools.innerHTML = `<button type="button" class="top-ic" id="memShare" data-act="memory.memShare" aria-label="שיתוף" title="שיתוף">${msi('share')}</button><button type="button" class="top-ic" id="memMore" data-act="memory.memMore" aria-label="עוד פעולות" title="עוד פעולות">${msi('more_vert')}</button>`; }
   let html = hero + acts + ppMemRowHTML(t, entGo()); // passport-book (Q3): "החותמות של הטיול בדרכון"; 5.15.0 (ד6): no "🖼️ זיכרון" title - the colored card says it
@@ -100,8 +100,7 @@ function renderMemoryScreen() { const ctl = ctlNS('memory');
     if (typeof memorySection === 'function') html += memorySection(M, 'bottom');
   } else html += `<div class="callout">הטיול סומן כבוטל. התוכנית והסימונים שלו נשמרו, ו-${msi('undo', { cls: 'msi-in' })} פתיחה מחדש מחזירה אותו.</div>`;
   main.innerHTML = html;
-  const g = q => document.getElementById(q);
-  if (g('memView')) ctl.memView = () => enterArchiveView(id);
+  ctl.memView = el => enterArchiveView(el.dataset.v); // G139: the button carries its own trip
   ctl.memClone = () => openTripEditor(null, { base: id });
   ctl.memShare = () => openShareChoice(id);
   ctl.memMore = () => openTripActions(id);

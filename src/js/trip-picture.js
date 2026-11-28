@@ -76,7 +76,7 @@ function picCands(id, D, full) {
   const planned = new Set(); Object.values(M.td.itinerary || {}).forEach(d => DAY_SLOTS.forEach(s => ((d || {})[s] || []).forEach(x => { if (typeof x === 'number') planned.add(x); })));
   const hotelIds = new Set(M.stops.map(s => s.p.id)), out = [], seen = new Set();
   const add = (p, src) => { if (!p || seen.has(p.id) || hotelIds.has(p.id)) return; const c = snapCoord(p); if (!c) return; seen.add(p.id);
-    const rt = (rate[p.id] || {}).r || ''; out.push({ key: 'p:' + p.id, type: 'place', p, name: picClean(p.name), foreign: picForeign(p), c, icon: p.icon, rt, hl: hi.has(p.id), star: !!p.key,
+    const rt = (rate[p.id] || {}).r || ''; out.push({ key: 'p:' + p.id, type: 'place', p, name: picClean(placeLabel(p, M.t)), foreign: picForeign(p), c, icon: p.icon, rt, hl: hi.has(p.id), star: !!p.key,
       visited: vis.has(p.id), planned: planned.has(p.id), dest: p.dest, src }); };
   (M.places || []).forEach(p => add(p, 'trip'));
   const pov = picOv(JSON.parse(JSON.stringify(picOf(id)))).pts;
@@ -134,7 +134,7 @@ function picLicAddrs(marks) { const seen = new Set(); marks.forEach(q => { const
   const u = c.lu.replace(/^https?:\/\//, '').replace(/\/(deed\.[\w-]+|legalcode(\.[\w-]+)?)?\/?$/, ''); if (u) seen.add(u); }); return [...seen].join(SEP); }
 function picFilePage(fp) { try { const u = new URL(fp); return u.host + decodeURIComponent(u.pathname); } catch (e) { return ''; } }
 // a credit too long for one line, cut at its "; " and spaces into lines of about `cap` letters
-function picWrap(t, cap) { const out = []; let cur = ''; String(t).split(/(?<=; )|(?<= )/).forEach(w => { if (cur && (cur + w).length > cap) { out.push(cur.trimEnd()); cur = ''; } cur += w; }); if (cur.trim()) out.push(cur.trimEnd()); return out; }
+function picWrap(t, cap) { const out = []; let cur = ''; String(t).split(/(?<=\u00A0· )/).flatMap(c => c.replace(/\u00A0· $/, '').length > cap ? c.split(/(?<=; )|(?<= )/) : [c]).forEach(w => { /* nav-short-page (G136): a credit (between SEPs) stays on one line when it fits one */ if (cur && (cur + w).length > cap) { out.push(cur.trimEnd()); cur = ''; } cur += w; }); if (cur.trim()) out.push(cur.trimEnd()); return out; }
 // ---- the frame: blocks I switch on and off ----
 function picFrameDefaults(D, kind) {
   // ride-km (Q3): "ק״מ בנסיעות" checked by default only in a route picture - in the place of "ערים" (four numbers at most); offered, unchecked, in a city one
@@ -145,7 +145,11 @@ function picFrameDefaults(D, kind) {
 // no pathNew) drew the path in both kinds: it keeps that look (on) until its kind or this switch is changed (both set pathNew - picChange)
 function picFrame(id, D, kind, P) { P = P || picOf(id); const fo = (P.ov || {}).frame || {}, f = { ...picFrameDefaults(D, kind), ...fo };
   if (typeof fo.path !== 'boolean' && picPathOld(P)) f.path = true;
-  f.nums = (f.nums || []).filter(k => PIC_NUMS[k]).slice(0, PIC_NUM_MAX); return f; }
+  // nav-short-page (G137): one rule for the numbers - a chosen number the picture cannot show now (not offered: picNumOffered) is not counted,
+  // not drawn and takes no place of the limit; it stays chosen (numsAll, saved) and comes back with its number
+  f.numsAll = (f.nums || []).filter(k => PIC_NUMS[k]); f.nums = f.numsAll.filter(k => picNumOffered(k, D, kind)).slice(0, PIC_NUM_MAX); return f; }
+// the numbers a picture of this trip and kind can show: "ק״מ ברגל" in a city picture, "מדינות" with more than one, "ק״מ בנסיעות" when there is any (ride-km Q3)
+function picNumOffered(k, D, kind) { return (k !== 'walk' || kind === 'city') && (k !== 'dests' || D.dests.length > 1) && (k !== 'ride' || !!(D.ride && D.ride.km > 0)); }
 function picPathOld(P) { return !!P && !P.pathNew && Object.keys(P).length > 0; }
 function picNumVal(k, D, M2) {
   const flights = travelsOf(D.t).filter(x => x.mode === 'flight').length, love = Object.values(D.rate).filter(r => r.r === 'love').length;

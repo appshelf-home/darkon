@@ -82,8 +82,9 @@ STATE.chipOrder = STATE.chipOrder || {};
 function tripDests(t) { return [...new Set((t.segments || []).map(x => x.dest))].filter(id => DESTS[id]); }
 const LODGING_USER_FIELDS = ['bookingRef', 'price', 'checkInTime', 'checkOutTime', 'includes', 'phone', 'whatsapp', 'website', 'rating', 'ratingAt']; // 4.18.0: kept through a trip update; kit-fixes (A2.4): the price I typed too
 const NO_TRIP = { id: null, name: '', start: '', end: '', segments: [], travels: [], lodging: [], places: [], schedule: [], travelers: '' };
-function activeTripObj() { return STATE.trips[STATE.activeTrip] || NO_TRIP; }
-function hasTrip() { return !!STATE.trips[STATE.activeTrip]; }
+function activeTripObj() { return DEST_VIEW ? DEST_VIEW.trip : STATE.trips[STATE.activeTrip] || NO_TRIP; } // destination-view: the destination's own trip-shaped view (no id)
+function hasTrip() { return !!STATE.trips[STATE.activeTrip] || !!DEST_VIEW; } // destination-view: its screens draw as a trip's
+function inTrip() { return !!STATE.trips[STATE.activeTrip] && !DEST_VIEW; } // a real trip is open: its marks, scope and files
 STATE.trips = STATE.trips || {};
 STATE.tripData = STATE.tripData || {};
 migRun('planItems', () => Object.values(STATE.tripData).forEach(planItemsUp)); // 10.0.0: the stored key renamed once
@@ -143,7 +144,7 @@ function normalizeTrip(t, filePlaces) {
 // the mirror loaded for it (loadPersonal) is a copy, so nothing changed in place in the mirror reaches its data either.
 function tripWritable(id) { const t = id && STATE.trips[id]; return !!id && !(t && t.archived); }
 function stashActive() {
-  if (!tripWritable(STATE.activeTrip)) return;
+  if (DEST_VIEW || !tripWritable(STATE.activeTrip)) return; // destination-view: nothing is written to any trip's mirror while it is on
   STATE.tripData[STATE.activeTrip] = { ...(STATE.tripData[STATE.activeTrip] || {}), favorites: [...STATE.favorites], visited: [...STATE.visited], itinerary: STATE.itinerary, times: STATE.times, planItems: STATE.planItems, flightsSeeded: !!STATE.flightsSeeded, bookings: STATE.bookings || {}, planX: STATE.planX || {} };
 }
 function loadPersonal(id) {

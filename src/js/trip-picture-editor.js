@@ -33,7 +33,7 @@ function closePicEditor(fromPop) {
 function picBgKick(id) { if (picBgReady(id)) return; const r = picEnsureBg(id); if (r && r.then) r.then(x => { if (x) { memBgStatus(null); picRedraw(id); } }); }
 function picEdDraw() {
   const id = PIC_ED.id, m = picModel(id); if (!m) return; const style = mementoStyleOf(id) === 'art' ? 'schem' : mementoStyleOf(id);
-  const pic = document.getElementById('tpPic'); if (pic) { pic.innerHTML = picSVG(m, style, { edit: PIC_ED.sel || true }); if (!hintSeen('hint.picPoint')) { const ctx = explainCtx(); const pt = () => { const p = document.getElementById('tpPic'); return p && p.querySelector('[data-pt]'); }; setTimeout(() => { if (pic.isConnected) hintOnce('hint.picPoint', pt, ctx); }, 600); } } // 9.6.0 (12ו, batch 12.1)
+  const pic = document.getElementById('tpPic'); if (pic) { pic.innerHTML = picSVG(m, style, { edit: PIC_ED.sel || true }); explainSync(); /* draw-no-write (7): a hint shown before the picture is drawn again (its background arrived) follows its point to the new picture (explainSync: the bubble is read only by the explanations, t880) */ if (!hintSeen('hint.picPoint')) { const ctx = explainCtx(); const pt = () => { const p = document.getElementById('tpPic'); return p && p.querySelector('[data-pt]'); }; setTimeout(() => { if (pic.isConnected) hintOnce('hint.picPoint', pt, ctx); }, 600); } } // 9.6.0 (12ו, batch 12.1)
   const n = picChanges(id).length, b = document.getElementById('tpChg'); if (b) { b.hidden = !n; b.innerHTML = `${msi('back_hand', { size: 18 })} ${n} ${n === 1 ? 'שינוי שלך' : 'שינויים שלך'}`; }
   picEdBody(false); picBgKick(id);
 }
@@ -66,7 +66,7 @@ function picPtsTab(m) {
 // 🖼️ the frame: blocks that switch on and off, or no frame at all
 function picFrameTab(m) {
   const f = m.frame, D = m.D, sw = (k, label, on, extra) => `<label class="bk-part">${fmCheck({ act: 'picBody.tpf', data: `data-tpf="${k}"`, checked: on })} ${label}${extra || ''}</label>`;
-  const nums = Object.keys(PIC_NUMS).filter(k => k !== 'walk' || m.kind === 'city').filter(k => k !== 'dests' || D.dests.length > 1).filter(k => k !== 'ride' || D.ride.km > 0); // ride-km (Q3): in both kinds when there is any
+  const nums = Object.keys(PIC_NUMS).filter(k => picNumOffered(k, D, m.kind)); // ride-km (Q3); nav-short-page (G137): f.nums holds only the offered ones
   return `<div class="chips-row tp-chips"><button type="button" class="chip" data-act="picBody.tpnone" data-tpnone="0" data-active="${!f.none}">עם מסגרת</button><button type="button" class="chip" data-act="picBody.tpnone" data-tpnone="1" data-active="${f.none}">בלי מסגרת</button></div>
     ${f.none ? `<p class="sh-hint">המפה מקצה לקצה.</p><div class="chips-row tp-chips"><button type="button" class="chip" data-act="picBody.tpsmall" data-tpsmall="small" data-active="${f.small === 'small'}">כותרת קטנה</button><button type="button" class="chip" data-act="picBody.tpsmall" data-tpsmall="none" data-active="${f.small === 'none'}">בלי כותרת</button></div>
       <label class="sh-field">כותרת${fmInput({ id: 'tpTitle', act: 'picBody.frText', value: f.title, placeholder: String(D.t.name).split(' · ')[0] })}</label>${sw('dates', 'תאריכים', f.dates)}` : `
@@ -109,9 +109,9 @@ function picWireBody(m) { const ctl = ctlOn('tpEd', 'picBody');
   ctl.tpnone = b => fr('none', b.dataset.tpnone === '1', b.dataset.tpnone === '1' ? 'בלי מסגרת' : '🖼️ עם מסגרת');
   ctl.tpsmall = b => fr('small', b.dataset.tpsmall, '🖼️ הכותרת עודכנה');
   ctl.frText = el => fr(el.id === 'tpTitle' ? 'title' : 'sub', el.value.trim(), '🖼️ הכותרת עודכנה'); // saved on leaving the field
-  ctl.tpnum = b => { const k = b.dataset.tpnum, cur = m.frame.nums.slice(), on = cur.includes(k);
+  ctl.tpnum = b => { const k = b.dataset.tpnum, cur = m.frame.nums, on = cur.includes(k), all = m.frame.numsAll.filter(x => x !== k);
     if (!on && cur.length >= PIC_NUM_MAX) { showToast(`עד ${PIC_NUM_MAX} מספרים - מורידים אחד קודם`); return; }
-    fr('nums', on ? cur.filter(x => x !== k) : cur.concat(k), '🔢 המספרים עודכנו'); };
+    fr('nums', on ? all : all.concat(k), '🔢 המספרים עודכנו'); }; // G137: a chosen number not offered now stays in the saved list
   const setP = (label, fn) => picChange(id, label, fn, true);
   ctl.tpkind = b => { if (b.dataset.tpkind === m.kind) return; setP(b.dataset.tpkind === 'city' ? 'עירוני' : 'מסלול', p => { p.kind = b.dataset.tpkind; p.pathNew = 1; }); }; // tl-paths (Q4): a changed kind takes the new path default
   ctl.tppreset = b => { if (b.dataset.tppreset === m.preset) return; setP('🎨 ' + b.textContent.trim(), p => { p.presets = { ...(p.presets || {}), [m.kind]: b.dataset.tppreset }; }); };
@@ -210,7 +210,7 @@ function openPicAdd(id, back) { const ctl = {}; // back (11.21.0, Q3): the form 
   // off - the place search in the destination's box, as before. Turning it over runs the open query again in the new kind.
   const city = () => $('#paCity').checked, tc = (pts => { if (!pts.length) return ctr; const la = pts.map(p => p.lat), ln = pts.map(p => p.lng);
     return { lat: (Math.min(...la) + Math.max(...la)) / 2, lng: (Math.min(...ln) + Math.max(...ln)) / 2 }; })(D.stops.map(x => x.c).filter(c => c && isFinite(c.lat) && isFinite(c.lng)));
-  const ps = psHost({ box: () => $('#paRes'), kind: () => city() ? 'area' : 'place', near: () => city() ? tc : ctr, pick: x => add({ name: x.name, c: x.coord }),
+  const ps = psHost({ box: () => $('#paRes'), kind: () => city() ? 'area' : 'place', near: () => city() ? tc : ctr, where: () => city() ? null : placeWhere({ dest: (STATE.trips[id] && tripDests(STATE.trips[id])[0]), t: STATE.trips[id] }) /* big-dest-search: place mode - the trip's destination, then its country */, pick: x => add({ name: x.name, c: x.coord }),
     ret: () => ({ k: 'pic', id, keep: { q: q.value, city: $('#paCity').checked } }) }); q.dataset.ps = ps; // 11.21.0 (Q3): the point's form kept across Google Maps
   ctl.paCity = () => { const H = PS_HOSTS[ps], st = H && H.st; if (st && st.q && st.hk !== psKindOf(H)) psRun(ps, st.q, st.explicit ? 'explicit' : 'typing'); return 'quiet'; };
   const go = async () => { const t = q.value.trim(); if (!t) return;
@@ -241,8 +241,9 @@ function picWikiCK(x) { return `${x.key}|${x.name}${x.type === 'city' ? '|c2' : 
 function picWikiVal(ck) { const e = picWikiCache()[ck]; if (e === undefined) return undefined; if (e === null || (e && e.none)) return e && e.none && svcFresh('pointImage', e) ? null : undefined; return e; }
 function picWikiGet(id, key) { const m = PIC_ED && PIC_ED.id === id ? (PIC_ED.all || picModel(id).pts) : picModel(id).pts, x = m.find(c => c.key === key); if (!x) return null; return picWikiVal(picWikiCK(x)); }
 function picWikiSet(x, v) { regCacheSet('picwiki', picWikiCK(x), v || { none: 1, at: Date.now() }); } // 6.0.0: the cap (600) by last use, in the daily cleanup
-const picCore = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s*\(.*$/, '').replace(/[^\p{L}\p{N} ]+/gu, ' ').replace(/\s+/g, ' ').trim();
-function picNameMatch(title, names) { const t = picCore(title); return names.filter(Boolean).map(picCore).some(n => n.length >= 3 && (t.includes(n) || n.includes(t) || n.split(' ').filter(w => w.length >= 4).some(w => t.split(' ').includes(w)))); }
+// a Wikipedia page is of this place: the one comparison (placeNameMatch 'loose', both names - dup-both-names), or a word of 4 letters or more of a name in its title
+function picNameMatch(title, names) { if (placeNameMatch(names, title, 'loose')) return true; const t = nameCore(title).split(' ');
+  return placeNames(names).map(nameCore).some(n => n.length >= 3 && n.split(' ').filter(w => w.length >= 4).some(w => t.includes(w))); }
 // the found picture with its facts, or null when its licence is not known to be free
 async function picWikiWithCredit(found) { if (!found) return null; const cr = await wikiFileCredit(found.l, found.f); return cr ? { ...found, cr } : null; }
 // finds Wikipedia's picture of exactly this place (by its link, its name or a page right next to it with the same name)
@@ -256,7 +257,7 @@ async function picWikiFor(id, x) { if (x.p && x.p.quiet) return null; // legal-s
     // 4.47.1: "סנטיאגו" / "Santiago" are disambiguation pages (no picture) - the city's own page is around it: "סנטיאגו דה צ'ילה"
     if (!found && x.type === 'city' && x.c) for (const lang of ['he', 'en']) { if (found) break;
       const pages = await picWikiApi(lang, `generator=geosearch&ggscoord=${x.c.lat.toFixed(5)}%7C${x.c.lng.toFixed(5)}&ggsradius=10000&ggslimit=50`);
-      const pg = pages.filter(p => p.thumbnail && picNameMatch(p.title, [x.name, x.foreign])).sort((a, b) => { const st = t => [x.name, x.foreign].filter(Boolean).some(n => picCore(t).startsWith(picCore(n))) ? 0 : 1; return st(a.title) - st(b.title) || picCore(a.title).length - picCore(b.title).length || (a.index || 0) - (b.index || 0); })[0]; if (pg) found = { t: pg.title, f: pg.pageimage, u: pg.thumbnail.source, l: lang }; }
+      const pg = pages.filter(p => p.thumbnail && picNameMatch(p.title, [x.name, x.foreign])).sort((a, b) => { const st = t => [x.name, x.foreign].filter(Boolean).some(n => nameCore(t).startsWith(nameCore(n))) ? 0 : 1; return st(a.title) - st(b.title) || nameCore(a.title).length - nameCore(b.title).length || (a.index || 0) - (b.index || 0); })[0]; if (pg) found = { t: pg.title, f: pg.pageimage, u: pg.thumbnail.source, l: lang }; }
     if (!found && x.type !== 'city') for (const lang of ['he', 'en']) { if (found) break;
       const pages = await picWikiApi(lang, `generator=geosearch&ggscoord=${x.c.lat.toFixed(5)}%7C${x.c.lng.toFixed(5)}&ggsradius=300&ggslimit=20`);
       const pg = pages.filter(p => p.thumbnail && picNameMatch(p.title, [x.name, x.foreign])).sort((a, b) => (a.index || 0) - (b.index || 0))[0]; if (pg) found = { t: pg.title, f: pg.pageimage, u: pg.thumbnail.source, l: lang }; }

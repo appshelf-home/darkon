@@ -6,7 +6,7 @@ function accHTML(key, title, body, open, val) { // 10.9.0 (design-forms, gap 33)
   return `<div class="accordion-item acc-row" data-open="${o}"><button class="accordion-header t-wrap" data-act="acc.toggle" data-acc="${key}">${accLead(title, val)} <span class="accordion-arrow">${msi('expand_more')}</span></button><div class="accordion-body">${body}</div></div>`;
 }
 // 10.4.0 (design-4, look.md "Menu screens"): a menu screen's row - its icon (the title's leading emoji as a line icon), the title, the expand arrow
-const ACC_MS = { '📱': 'smartphone', '🔠': 'format_size', '🩺': 'monitor_heart', '🏨': 'hotel', '🚪': 'door_front', '🔙': 'door_open', '💾': 'download_for_offline', '🕐': 'schedule', '🎛️': 'tune', '🌦️': 'partly_cloudy_day',
+const ACC_MS = { '📱': 'smartphone', '🔠': 'format_size', '🔤': 'translate', '🩺': 'monitor_heart', '🏨': 'hotel', '🚪': 'door_front', '🔙': 'door_open', '💾': 'download_for_offline', '🕐': 'schedule', '🎛️': 'tune', '🌦️': 'partly_cloudy_day',
   '📄': 'description', '🧩': 'extension', '💡': 'lightbulb', '📋': 'list', [SY.map]: 'layers', '✈️': 'flight', '🧭': 'route', [SY.group]: 'groups', '⏱️': 'more_time' };
 // 10.15.0 (design-review Q15): the destination file's sections - the app draws its own expand_more and ignores the file's "▾"; a section's
 // icon is a line icon named in the file (data-icon, the kit's list); "נציגות ישראל" is a custom Israeli-flag line icon (Material Symbols has

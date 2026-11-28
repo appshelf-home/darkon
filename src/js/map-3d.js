@@ -85,14 +85,17 @@ function m3Pins(m3, pins, id) { return pins.sort((a, b) => a.z - b.z).map(P => {
 act('m3.pin', c => { if (M3.id && c.el._mk) m3Tap(M3.id, c.el._mk, c.el); return 'quiet'; });
 function m3Tap(id, mk, el) { document.querySelectorAll('.m3-pin.pin-sel').forEach(x => x.classList.remove('pin-sel')); el.classList.add('pin-sel'); mk.fire('click'); } // the 2D pin's own tap: the same floating card
 // open and close
-function m3Status(box, t, spin) { const s = box.querySelector('.m3-st'); if (!s) return; s.hidden = !t; s.textContent = t || '';
-  if (t && spin) { const sp = document.createElement('span'); sp.className = 'spin'; sp.setAttribute('aria-hidden', 'true'); s.prepend(sp); } }
+// nav-short-page item 7 (decisions 2026-11-25 · Review of diet-groups, Q1): the 3D view waits on outside services (the engine, the style, the
+// tiles), so its wait is the one "in progress" component (waitOn): the moving bar on the view and the stage line in its status chip; done
+// takes them off, and the chip then says the failure, or hides
+function m3Wait(box) { const s = box.querySelector('.m3-st'); s.hidden = false; box._wait = waitOn(box, { line: s, stage: 'טוען תלת־ממד' }); }
+function m3Status(box, t) { const s = box.querySelector('.m3-st'); if (!s) return; if (box._wait) { box._wait.done(); box._wait = null; } s.hidden = !t; s.textContent = t || ''; }
 async function m3Open(id, cam) {
   const host = document.getElementById(id), r = MAPS[id]; if (!host || !r || M3.id) return; const why = m3Why(); if (why) { showToast(why); return; }
   M3.id = id; M3.l2 = r.map; M3.t0 = performance.now(); M3.last = null; closeFloatCard(id); host.classList.add('m3-on'); document.body.classList.add('m3-open');
-  const box = document.createElement('div'); box.className = 'm3-box'; box.innerHTML = `<div class="m3-gl"></div><div class="m3-st" role="status"></div><div class="m3-cr">${svcCredit('openfreemap')}${SEP}${svcCredit('mapterhorn')}</div>
+  const box = document.createElement('div'); box.className = 'm3-box'; box.innerHTML = `<div class="m3-gl"></div><div class="m3-st" role="status"></div>
     <button type="button" class="m3-north" data-act="m3.north" aria-label="צפון למעלה" title="צפון למעלה">${msi('explore', { size: 20 })}</button>`;
-  host.appendChild(box); m3Status(box, 'טוען תלת־ממד', true);
+  host.appendChild(box); mapCrClose(); mapCrMount(box, () => [['openfreemap'], ['mapterhorn']]); m3Wait(box); // map-credit-line: the 3D view's credits in the same line and panel as every map
   const fail = t => { if (M3.id !== id) return; m3Close(); showToast(SY.warn + ' ' + t); };
   if (!(await m3Load())) return fail('תלת־ממד לא נטען - אולי אין רשת');
   let raw; try { raw = await m3StyleRaw(); } catch (e) { return fail('תלת־ממד לא נטען - המפה לא ענתה'); }
@@ -102,15 +105,15 @@ async function m3Open(id, cam) {
     attributionControl: false, pixelRatio: Math.min(window.devicePixelRatio || 1, 2), fadeDuration: 0 }); } // Q16: at most 2 - a phone's 3x screen would more than double the buffers
   catch (e) { return fail('תלת־ממד לא נפתח בטלפון הזה'); }
   M3.map = m3; M3.trip = T.lines; LIFE.gl.add(m3); m3.__pins = m3Pins(m3, T.pins, id);
-  m3.on('click', () => { closeFloatCard(id); document.querySelectorAll('.m3-pin.pin-sel').forEach(x => x.classList.remove('pin-sel')); });
-  m3.on('error', e => { if (e && (e.tile || e.sourceId)) return; if (M3.map === m3 && !m3.loaded()) m3Status(box, 'תלת־ממד לא נטען', false); }); // a missing tile (the sea) is no error
+  m3.on('click', () => { if (MAPCR.host === box) mapCrClose(); closeFloatCard(id); document.querySelectorAll('.m3-pin.pin-sel').forEach(x => x.classList.remove('pin-sel')); });
+  m3.on('error', e => { if (e && (e.tile || e.sourceId)) return; if (M3.map === m3 && !m3.loaded()) m3Status(box, 'תלת־ממד לא נטען'); }); // a missing tile (the sea) is no error
   m3.on('webglcontextlost', () => fail('הגרפיקה של הטלפון עצרה את התלת־ממד (זיכרון)')); // the engine's own event
-  m3.once('idle', () => { if (M3.map !== m3) return; M3.last = { ms: Math.round(performance.now() - M3.t0), id }; m3Status(box, '', false); });
-  m3.once('load', () => { if (M3.map === m3) m3Status(box, '', false); }); }
+  m3.once('idle', () => { if (M3.map !== m3) return; M3.last = { ms: Math.round(performance.now() - M3.t0), id }; m3Status(box, ''); });
+  m3.once('load', () => { if (M3.map === m3) m3Status(box, ''); }); }
 act('m3.north', () => { if (M3.map) M3.map.easeTo({ bearing: 0, duration: 500 }); return 'quiet'; }); // round6-behaviour (G105): north up, the tilt kept - a view from above has no value here
 function m3Close() { const id = M3.id; if (!id) return; const m3 = M3.map; M3.id = null; M3.map = null; M3.l2 = null; M3.trip = null;
   if (m3) { (m3.__pins || []).forEach(p => { try { p.remove(); } catch (e) {} }); m3.__pins = null; try { m3.remove(); } catch (e) {} LIFE.gl.delete(m3); } // remove() releases the GPU context and its buffers
-  document.body.classList.remove('m3-open'); const host = document.getElementById(id); if (host) { host.classList.remove('m3-on'); const box = host.querySelector(':scope > .m3-box'); if (box) box.remove(); }
+  document.body.classList.remove('m3-open'); const host = document.getElementById(id); if (host) { host.classList.remove('m3-on'); const box = host.querySelector(':scope > .m3-box'); if (box) { if (MAPCR.host === box) mapCrClose(); box.remove(); } }
   closeFloatCard(id); }
 // the screen drawn again under the 3D view (a change saved from the card, say) disposes its 2D map: the 3D view closes with it and opens again on
 // the new map with the same camera, once the screen is drawn (fsAfterRender) - the engine, the style and the tiles are already in

@@ -91,7 +91,7 @@ function dayTimelineHTML(d) { // parts of the day as thin lines; my items and th
   const lod = tripLodging().find(l => l.checkIn <= d.date && d.date < l.checkOut);
   if (legs.to) h += legRowHTML(legs.to);
   _SCH_LINKS = null;
-  if (lod && !LK.nightShown) h += `<button type="button" class="tl-night" data-act="lodging.go" data-v="${lod.id}">${msi('hotel', { size: 18 })}<span>הלילה: ${escH(lod.name)}</span>${msi('chevron_right', { size: 20 })}</button>`;
+  if (lod && !LK.nightShown) h += `<button type="button" class="tl-night" data-act="lodging.go" data-v="${lod.id}">${msi('hotel', { size: 18 })}<span>הלילה: ${escH(lodgingLabel(lod))}</span>${msi('chevron_right', { size: 20 })}</button>`;
   return h;
 }
 // 5.15.0 (ד2): the plan's one summary line - "23 ימים · 24.12–15.1 · 3 יעדים", or "📝 23 ימים, בלי תאריכים"
@@ -137,7 +137,7 @@ let _planInit = false;
 // the 11.21.3 summary, found 2)
 function planFirstOpen() { if (_planInit) return; _planInit = true; const td = TRIP_DAYS.find(d => d.date === todayStr()); if (td) openDays = new Set([td.key]); }
 function renderItineraryTab() {
-  touchReset(); pruneParked();
+  touchReset(); // draw-no-write: a draw writes nothing - the waiting days are tidied by the change (parkedTidy), and only filtered here (parkedOf)
   if (ARRANGE_DAYS) { renderArrangeDays(); return; } // 4.38.0
   let html;
   planFirstOpen(); // 4.21.0: today opens by itself
@@ -209,7 +209,7 @@ act('place.toDay', c => toggleDay(c.v, pid(c.ref.id))); // the plan's side panel
 // 3.1.0: desktop planning panel beside the plan - favorites not yet in any day, with day buttons
 function planSideHTML() {
   const favs = POINTS.filter(p => STATE.favorites.has(p.id) && !TRIP_DAYS.some(d => isInDay(d.key, p.id)));
-  return `<aside class="plan-side"><h3>${msi('star', { size: 18, cls: 'msi-in' })} מועדפים שעוד לא בתוכנית (${favs.length})</h3>` + (favs.length ? favs.map(p => `<div class="ps-row" data-ref="place:${p.id}"><b>${msiTie(itemIcon(p, { size: 18, cls: 'msi-in' }), escH(p.name))}</b>
+  return `<aside class="plan-side"><h3>${msi('star', { size: 18, cls: 'msi-in' })} מועדפים שעוד לא בתוכנית (${favs.length})</h3>` + (favs.length ? favs.map(p => `<div class="ps-row" data-ref="place:${p.id}"><b>${msiTie(itemIcon(p, { size: 18, cls: 'msi-in' }), escH(placeLabel(p)))}</b>
     <div class="add-to-day-row">${TRIP_DAYS.filter(d => dayOk(d.key, p)).map(d => `<button data-act="place.toDay" data-v="${d.key}" data-in="false">${d.label}</button>`).join('')}</div></div>`).join('')
     : '<p class="sh-hint">כל המועדפים כבר בתוכנית. ' + msi('star', { cls: 'msi-in' }) + ' בכרטיס של מקום מוסיף אותו לכאן.</p>') + `</aside>`;
 }

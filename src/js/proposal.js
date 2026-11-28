@@ -70,8 +70,6 @@ function propApply(keys) {
 }
 function propDrop() { if (!propOf()) return; propSet(null); showUndoToast('הצעת הלו״ז מה-' + AI + ' נמחקה'); }
 // ---- a proposal arrives. In a file its days are dates (or day numbers) and its places "@dest:id" / a trip place's number ----
-function propDayKey(t, x) { if (x == null) return null; if (x.date) { const i = tripDayList(t).findIndex(d => d.date === x.date); return i >= 0 ? 'd' + (i + 1) : null; }
-  const n = Number(x.day); return n >= 1 && n <= tripLen(t) ? 'd' + n : null; }
 function propFromFile(fp, t, o) { // -> { days, note, keep, answers } with this device's ids (null: nothing usable). o.gone(ref): a place dropped in the draft
   if (!fp || typeof fp !== 'object' || fp.status !== 'answered' || !Array.isArray(fp.plan)) return null; o = o || {};
   const days = {}, used = new Set(), hotels = new Set((t.lodging || []).map(l => l.placeId));
@@ -178,9 +176,4 @@ act('prop.send', async c => { const F = fmOf(c.el); if (!F) return; const keys =
   const keep = !F.kinds.keep || (fmGet(F, 'keep') || []).includes('keep');
   if (!(await needGroup('management'))) { showToast(GROUP_FAIL); return 'quiet'; } // diet-groups: the trip file is built by the files' group
   if (await shareJson(propRequestFile(keys, keep), `${PACK.fileName}-schedule-request-${fileStamp()}.json`)) { logEvent(`נשלחה ל-${AI} בקשה להצעת לו״ז: ${t.name}`, true); closeSheet(); } });
-// ---- the draft's row: a proposal that came with a new trip (Q9) - information only, with its ⓘ ----
-function draftPropN(D) { const d = D && D.data, fp = d && d.kind === 'trip' && d.proposal; if (!fp || fp.status !== 'answered' || !Array.isArray(fp.plan)) return 0;
-  const seen = new Set(); fp.plan.forEach(x => { const k = propDayKey(d.trip, x); if (k && x && Array.isArray(x.items) && x.items.length) seen.add(k); }); return seen.size; }
-function draftPropHTML(D) { const n = draftPropN(D); return n ? `<div class="dr-prop" id="drProp">${claudeMark({ size: 22 })}<b>הצעת לו״ז${SEP}${propN(n)}</b>${tipI('draft.proposal')}</div>` : ''; }
-function draftPropGone(D) { return r => typeof r === 'string' && r[0] === '@' ? !!D.off[r.slice(1)] : !!D.off['trip:' + r]; } // a place dropped in the draft leaves the proposal
 undoAfter(() => { PROP_OPEN = null; });

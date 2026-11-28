@@ -14,6 +14,7 @@
   --travel-container: #E8E4F6; --on-travel: #5E4BA8;
   --wx-l: 88%; --wx-dl: 14%; --wx-sat: 70%; --on-wx: #1C2B33; --wx-rain: #85B7EB; --wx-temp: #D85A30; /* 10.15.0 (design-review F23): the climate tiles' temperature scale (hue by temperature) and the hourly chart */
   --discover-container: #EDE7F6; --on-discover: #3B2A6B; --discover-ring: #6B5BA8; /* 10.10.0 (design-maps): the discovery cluster's ring */
+  --destview-container: #D9EFEA; --on-destview: #0E4A40; --destview-ring: #2E7D6E; /* destination-view (Q5): the destination view's strip - a green-teal of its own, not the archive view's violet */
   --must-container: #FCDDE3; --on-must: #8C1D3A; /* 11.5.0 (schedule-proposal): the proposal's "לא לפספס" tag - a rose container */
   --claude-container: #FBEDE6; --on-claude: #AA5435; /* final review (family E): Claude's color as small text is 4.5:1 on a card and on its container */
   --map-pin: #B3261E; /* final review 13: the pin that marks a location over a map - a mark on the map's light tiles, not a text color (--error turns pale in dark) */
@@ -34,6 +35,7 @@
   /* map marks and their labels (pins, the memory map, the offline map) - their own scale; design-maps redraws the pins (gap 61) */
   --pin-num-s: 10px; --pin-num: 12px; --pin-ic-s: 13px; --pin-ic: 14px; --pin-ic-m: 17px; --pin-ic-l: 24px;
   --pin-edit: 1.9rem; --pin-pick: 2.3rem; --pin-pick-ic: 44px; --fs-map-label: .6875rem; --fs-map-label-s: .5625rem; /* text-size: the map's labels follow the text size (rem) */
+  --fs-map-cr: 12px; --map-cr-h: 20px; /* map-credit-line (Q5): a live map's credit line stays 12 px and 20 px high whatever the text size (Esri's recommended minimum); its panel follows the text size */
   /* spacing */
   --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-card-gap: 6px; --icon-gap: 6px; --icon-gap-sm: 3px; --sp-side: 12px; --sp-card-pad: 12px;
   /* radius */
@@ -61,6 +63,8 @@
   /* passport-book (Q2, Q5): the book's paper, its lines and text, the dark-blue cover with its gold, and the stamps' four inks (blue, violet, red, dark green) */
   --pp-paper: #F6F1E4; --pp-line: #D9CFB6; --pp-text: #3B3426; --pp-cover: #1D2C4F; --pp-cover-ink: #D9B868;
   --pp-ink0: #1F4E9C; --pp-ink1: #5B3A9E; --pp-ink2: #A8322D; --pp-ink3: #2F6B45;
+  /* passport-look (Q2, Q9): the paper's grain and faint fibres - one small tile drawn once (an SVG noise), and the empty stamp frame's faint neutral ink */
+  --pp-blank: #A79E8A; --pp-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='p' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .28 0 0 0 0 .16 0 0 0 -.9 .3'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23p)'/%3E%3C/svg%3E");
   --motion-fast: 150ms; --motion: 200ms; --motion-slow: 250ms; --ease: cubic-bezier(.2, 0, 0, 1);
 }
 @media (prefers-color-scheme: dark) {
@@ -79,6 +83,7 @@
     --travel-container: #2E2849; --on-travel: #C3B6FF;
     --wx-l: 22%; --wx-dl: -4%; --wx-sat: 45%; --on-wx: #E3E5EA; --wx-rain: #6F9FD3; --wx-temp: #F08A62;
     --discover-container: #2E2849; --on-discover: #D9CCFF; --discover-ring: #B9A8F0;
+    --destview-container: #173A34; --on-destview: #A8E6D8; --destview-ring: #5FBFAD;
     --must-container: #4A1F2B; --on-must: #FFB1C1;
     --claude-container: #3A2418; --on-claude: #F0A98A;
     --map-pin: #E53935;
@@ -94,6 +99,7 @@
     --vmap-road-motorway: #8C5560; --vmap-road-trunk: #8A6352; --vmap-road-primary: #7A6545; --vmap-road-secondary: #5E5E45; --vmap-road-minor: #3B4049; --vmap-road-path: #6E5E48;
     --pp-paper: #26241F; --pp-line: #45413A; --pp-text: #E6DFCF; --pp-cover: #16213B; --pp-cover-ink: #D9B868; /* passport-book: dark paper, lighter inks */
     --pp-ink0: #8FB4F2; --pp-ink1: #BFA6F0; --pp-ink2: #F29A93; --pp-ink3: #8CCF9F;
+    --pp-blank: #7F7767; --pp-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='p' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .96 0 0 0 0 .88 0 0 0 -.9 .2'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23p)'/%3E%3C/svg%3E"); /* passport-look: the grain lighter on the dark paper; page-look (G146): the fibres gone, the fine grain fainter */
     --vmap-label: #D7DAE0; --vmap-halo: rgba(17,19,24,.85); --vmap-water-label: #7FB0CC; --vmap-poi: #C9B8A3; --map-dark-filter: invert(.9) hue-rotate(180deg) saturate(.6) brightness(.95) contrast(.9);
   }
 }
@@ -112,6 +118,7 @@
     --travel-container: #2E2849; --on-travel: #C3B6FF;
     --wx-l: 22%; --wx-dl: -4%; --wx-sat: 45%; --on-wx: #E3E5EA; --wx-rain: #6F9FD3; --wx-temp: #F08A62;
     --discover-container: #2E2849; --on-discover: #D9CCFF; --discover-ring: #B9A8F0;
+    --destview-container: #173A34; --on-destview: #A8E6D8; --destview-ring: #5FBFAD;
     --must-container: #4A1F2B; --on-must: #FFB1C1;
     --claude-container: #3A2418; --on-claude: #F0A98A;
     --map-pin: #E53935;
@@ -127,5 +134,6 @@
     --vmap-road-motorway: #8C5560; --vmap-road-trunk: #8A6352; --vmap-road-primary: #7A6545; --vmap-road-secondary: #5E5E45; --vmap-road-minor: #3B4049; --vmap-road-path: #6E5E48;
     --pp-paper: #26241F; --pp-line: #45413A; --pp-text: #E6DFCF; --pp-cover: #16213B; --pp-cover-ink: #D9B868; /* passport-book: dark paper, lighter inks */
     --pp-ink0: #8FB4F2; --pp-ink1: #BFA6F0; --pp-ink2: #F29A93; --pp-ink3: #8CCF9F;
+    --pp-blank: #7F7767; --pp-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='p' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .96 0 0 0 0 .88 0 0 0 -.9 .2'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23p)'/%3E%3C/svg%3E"); /* passport-look: the grain lighter on the dark paper; page-look (G146): the fibres gone, the fine grain fainter */
     --vmap-label: #D7DAE0; --vmap-halo: rgba(17,19,24,.85); --vmap-water-label: #7FB0CC; --vmap-poi: #C9B8A3; --map-dark-filter: invert(.9) hue-rotate(180deg) saturate(.6) brightness(.95) contrast(.9);
 }

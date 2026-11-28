@@ -87,7 +87,7 @@ act('gid.both', c => { const id = pid(c.v), p = POINTS.find(q => q.id === id), g
 // both sides.
 const GID_SAME_M = 30;
 function gidPlaceNear(lk) { if (!lk || !lk.coord || !hasTrip()) return null; const ns = [lk.name, lk.found && lk.found.name].filter(Boolean);
-  return POINTS.find(q => { if (q.planOnly || !q.name) return false; const c = routeCoordOf(q); return c && distanceKm(c, lk.coord) * 1000 <= GID_SAME_M && ns.some(n => psNameMatch(n, q.name)); }) || null; }
+  return POINTS.find(q => { if (q.planOnly || !q.name) return false; const c = routeCoordOf(q); return c && distanceKm(c, lk.coord) * 1000 <= GID_SAME_M && !!placeNameMatch(ns, q, 'loose'); }) || null; } // dup-both-names: both names of mine
 function gidOpenKnown(r, lk) { let q = hasTrip() && r ? gidPlaceOf(r) : null;
   if (!q && (q = gidPlaceNear(lk))) { const g = gidOf(q); if (r && (r.cid || r.id)) errNote('gid.same', `same place, other id: shared ${r.cid || r.id}${SEP}kept ${g ? (g.cid || g.id) + ' (' + g.src + ')' : 'none'}`); }
   if (!q) return false; const it = planItem(q.id); if (!it) return false;

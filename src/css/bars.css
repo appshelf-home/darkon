@@ -41,6 +41,10 @@ h1.display { font-size: var(--fs-title-large); font-weight: 700; margin: 0; lett
 .bn-new { background: var(--secondary-container); color: var(--on-secondary-container); } .bn-new .bn-btn { background: var(--primary); color: var(--on-primary); }
 .bn-urgent { background: var(--error-container); color: var(--on-error-container); } .bn-urgent .bn-btn { background: var(--error); color: var(--on-error); }
 .bn-draft { background: var(--discover-container); color: var(--on-discover); } .bn-draft .bn-btn { background: var(--on-discover); color: var(--discover-container); }
+/* name-lead item 9 (decisions 2026-11-26 · The new-version bar disappears into the opening screen): the fill alone was 1.02:1 on the opening
+   screen - every banner of the family carries a thin outline in its own accent (3:1 or more against every screen behind it, light and dark);
+   an outline, not a border: no size changes. The read-only bar is in the same family (screens-plan.css) */
+.bn-new, .bn-urgent, .bn-draft, .ro-bar { outline: 1px solid var(--primary); outline-offset: -1px; } .bn-urgent { outline-color: var(--error); } .bn-draft, .ro-bar { outline-color: var(--discover-ring); } .ro-bar.dv-bar { outline-color: var(--destview-ring); }
 .upd-wrap { padding-top: 0; } .upd-wrap .banner { margin: 0; }
 body.screen-on .upd-wrap { position: fixed; top: 0; left: 0; right: 0; z-index: 3000; padding-top: calc(var(--sp-2) + var(--safe-top)); } /* over a menu screen, as before */
 .pe-loc-actions { }
@@ -51,7 +55,7 @@ body.screen-on .upd-wrap { position: fixed; top: 0; left: 0; right: 0; z-index: 
 body.nav-hidden .add-fab { bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
 body.nav-hidden.has-add .scroll-top-btn { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
 .map-container [id$="-leaflet"] { position: relative; z-index: 0; } /* the map's own layers stay under the floating card */
-.map-float { position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 1100; background: var(--surface-container); color: var(--on-surface); border: 1px solid var(--outline-variant);
+.map-float { position: absolute; left: 8px; right: 8px; bottom: calc(var(--map-cr-h) + 8px); z-index: 1100; background: var(--surface-container); color: var(--on-surface); border: 1px solid var(--outline-variant);
   border-radius: var(--r-card); box-shadow: var(--elev-float); padding: 12px 12px 10px; overflow: hidden; }
 .map-float { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; } /* a swipe never turns into text selection or a text drag */
 .mf-grip { position: absolute; top: 4px; left: 50%; transform: translateX(-50%); width: 34px; height: 4px; border-radius: var(--r-pill); background: var(--outline-variant); }
@@ -79,6 +83,8 @@ body.nav-hidden.has-add .scroll-top-btn { bottom: calc(88px + env(safe-area-inse
    under the word - it needs no width, so it never hides */
 .dr-tile.dr-tile-btn { border: 1px solid var(--outline); padding: 7px 3px; color: inherit; font: inherit; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
 .dr-tile-btn > .msi { color: var(--on-surface-variant); }
+/* trip-base-plus (Q17): the draft's row "לבנות ממנו טיול חדש שלי" under the tiles - a menu row in the card's width, in the primary ink */
+.draft-sum .dr-base-l { margin: 0 -12px 6px; } .dr-base { color: var(--primary); font-weight: 500; } .dr-base > .ta-ic { color: var(--primary); }
 .dr-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(54px, 1fr)); gap: 6px; margin-bottom: 8px; }
 .dr-tile { background: var(--surface); border-radius: var(--r-tile); padding: 8px 4px; text-align: center; min-width: 0; } .dr-tile b { display: block; font-size: var(--fs-display-small); } .dr-tile small { display: block; color: var(--on-surface-variant); font-size: var(--fs-label-small); line-height: 1.25; }
 .dr-line { margin: 6px 0; font-size: var(--fs-body-small); display: flex; align-items: center; gap: var(--icon-gap); flex-wrap: wrap; }

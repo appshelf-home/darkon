@@ -19,7 +19,7 @@ function ppStampTrip(id) { if (!ppClosedHere(STATE.trips[id])) return; const min
   ppGo(id, land); }
 // open the book (Q3): at the cover, or at a trip's first page; back returns exactly where it was opened (a full screen of the layers' stack)
 function ppGo(tripId, land) { const M = ppModel(); ppFix(M.stamps, true); const i = tripId ? M.pages.findIndex(p => p.trip === tripId) : -1;
-  PP.page = i >= 0 ? i + 2 : 0; PP.land = land || null; PP.skip = false; PP.dir = 0; goTab('passport'); }
+  PP.page = i >= 0 ? i + 2 : 0; PP.land = land || null; PP.skip = false; PP.turn = null; goTab('passport'); } // opened at a page: no turn (the stamping moment lands as it is)
 // the memory screen's row: the trip's stamps, the book open at its page
 function ppMemRowHTML(t, go) { if (!ppClosedHere(t) || !ppModel().stamps.some(s => s.trip === t.id)) return '';
   return `<button type="button" class="pp-line pp-top t-wrap" data-act="pp.trip" data-v="${escH(t.id)}">${msi('menu_book', { size: 20 })}<span>החותמות של הטיול בדרכון</span>${go}</button>`; }
@@ -28,82 +28,7 @@ act('pp.trip', c => { ppGo(c.v); return 'quiet'; });
 // the hidden way in (Q3): the trips screen's hero stamp answers like a rubber stamp pressed, then the book opens; "reduce motion" - at once
 act('pp.hero', c => { const b = c.el; if (matchMedia('(prefers-reduced-motion: reduce)').matches) { ppGo(); return 'quiet'; }
   b.classList.add('pp-press'); setTimeout(() => { b.classList.remove('pp-press'); ppGo(); }, 220); return 'quiet'; });
-// ---- the stamp (Q2): drawn by the app, offline - a shape, an ink, a tilt and an ink look (an SVG filter: uneven edges, faint and smudged spots) ----
-const ppFitFs = (txt, max, w) => Math.max(7, Math.min(max, w / (Math.max(1, [...String(txt)].length) * 0.56)));
-function ppNameLines(name) { const one = ppFitFs(name, 28, 150); if (one >= 19 || !/\s/.test(name.trim())) return [[name, one]];
-  const w = name.trim().split(/\s+/); let best = null; for (let i = 1; i < w.length; i++) { const a = w.slice(0, i).join(' '), b = w.slice(i).join(' '), m = Math.max(a.length, b.length); if (!best || m < best.m) best = { a, b, m }; }
-  const fs = Math.min(ppFitFs(best.a, 24, 146), ppFitFs(best.b, 24, 146)); return [[best.a, fs], [best.b, fs]]; }
-const PP_SHAPE = [ // the outer line and the inner one, inside a 200 x 200 box
-  ['<circle cx="100" cy="100" r="94" stroke-width="6"/>', '<circle cx="100" cy="100" r="83" stroke-width="1.6"/>'],
-  ['<ellipse cx="100" cy="100" rx="96" ry="80" stroke-width="6"/>', '<ellipse cx="100" cy="100" rx="85" ry="69" stroke-width="1.6"/>'],
-  ['<path d="M28 7H172L193 28V172L172 193H28L7 172V28Z" stroke-width="6"/>', '<path d="M33 18H167L182 33V167L167 182H33L18 167V33Z" stroke-width="1.6"/>'],
-  ['<path d="M53 9H147L195 100L147 191H53L5 100Z" stroke-width="6"/>', '<path d="M59 20H141L182 100L141 180H59L18 100Z" stroke-width="1.6"/>']];
-const ppDates = s => s.from ? tmFmt('range', [s.from, s.to], { year: true }) : '';
-// one drawing function (kinds.DRAWINGS 'ppSVG'): a stamp, and the page shared as an image (ppPageSVG) around stamps
-function ppSVG(o) { return `<svg viewBox="0 0 ${o.w} ${o.h}"${o.wh ? ` width="${escH(o.w)}" height="${escH(o.h)}"` : ''}${o.at || ''} xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${o.body}</svg>`; }
-// the ink look: the lines' edges uneven and their spots faint (fid); the words only spotted, never displaced, so they stay legible (fid + 't')
-function ppStampBody(s, ch, fid) { const e = escH, nl = ppNameLines(s.name), dt = ppDates(s), two = nl.length > 1, y0 = two ? 84 : 100;
-  const t = (y, fs, w, txt) => `<text x="100" y="${y.toFixed(1)}" font-size="${fs.toFixed(1)}" font-weight="${escH(w)}" text-anchor="middle">${e(txt)}</text>`;
-  const spots = (id, seed, k) => `<filter id="${escH(id)}"><feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" seed="${escH(seed)}" result="sp"/><feColorMatrix in="sp" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ${k}" result="m"/><feComposite in="SourceGraphic" in2="m" operator="in"/></filter>`;
-  return `<defs><filter id="${escH(fid)}" x="-6%" y="-6%" width="112%" height="112%"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" seed="${escH(ch.n)}" result="g"/><feDisplacementMap in="SourceGraphic" in2="g" scale="3.2" xChannelSelector="R" yChannelSelector="G" result="d"/>`
-    + `<feTurbulence type="fractalNoise" baseFrequency="0.045" numOctaves="3" seed="${escH(ch.n + 11)}" result="sp"/><feColorMatrix in="sp" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.4 1.95" result="m"/><feComposite in="d" in2="m" operator="in"/></filter>${spots(fid + 't', ch.n + 11, '-1.2 1.55')}</defs>`
-    + `<g filter="url(#${fid})" fill="none" stroke="currentColor">${PP_SHAPE[ch.s % PP_SHAPES].join('')}</g><g filter="url(#${fid}t)" fill="currentColor" font-family="Rubik, Arial, sans-serif">`
-    + (s.flag ? `<text x="100" y="${escH(y0 - 30)}" font-size="26" text-anchor="middle">${e(s.flag)}</text>` : '')
-    + nl.map(([l, fs], i) => t(y0 + 9 + i * (fs + 1), fs, 700, l)).join('')
-    + (dt ? t(two ? 146 : 136, ppFitFs(dt, 17, 136), 500, dt) : '')
-    + t(two ? 166 : 160, ppFitFs(s.tname, 14, 104), 400, s.tname) + '</g>'; }
-function ppStampHTML(s, i, land) { const ch = ppCharOf(s), h = ppHash(s.key), dx = ((h % 9) - 4) * 0.12, dy = (((h >>> 4) % 9) - 4) * 0.12;
-  const lab = [s.name, ppDates(s), s.days ? `${s.days} ימים` : ''].filter(Boolean).join(SEP);
-  return `<button type="button" class="pp-st ${PP_INK_CLS[ch.c % PP_INKS]}${land ? ' pp-land' : ''}" style="--r:${ch.r}deg;--dx:${dx.toFixed(2)}em;--dy:${dy.toFixed(2)}em;--d:${(i * 0.55).toFixed(2)}s" data-act="pp.card" data-v="${escH(s.key)}" aria-label="${escH(lab)}">${ppSVG({ w: 200, h: 200, body: ppStampBody(s, ch, 'ppf' + i) })}</button>`; }
-// ---- the book (Q5): a full screen - the cover, the opening page, then a page per trip; leafed by a swipe as a Hebrew book (the next page from the left), the arrows, the page number ----
-const ppOwner = () => (STATE.settings.deviceName || '').trim();
-function ppPageHTML(M, p) {
-  if (p === 0) return `<div class="pp-page pp-cover"><b class="pp-cv-t">${APP.appTitle}</b>${logoHTML('l')}<small class="pp-cv-s">דרכון</small></div>`;
-  if (p === 1) { const nm = ppOwner();
-    return `<div class="pp-page pp-paper pp-open"><h3>${nm ? `הדרכון של <bdi>${escH(nm)}</bdi>` : 'הדרכון שלי'}</h3>${M.n ? `<p class="pp-cnt">${ppCount(M.n)}${SEP}${M.trips.length === 1 ? 'טיול אחד' : `<bdi>${M.trips.length}</bdi> טיולים`}</p>` : ''}
-      <p class="pp-hint">${M.n ? 'כל טיול שנסגר מחתים את הדרכון - חותמת לכל יעד.' : 'עוד אין חותמות. כל טיול שנסגר מוסיף חותמת לכל יעד שלו.'}</p></div>`; }
-  const pg = M.pages[p - 2], land = new Set(PP.land || []); // skipped: .pp-skipped stops the animation, so a redraw keeps it stopped (merge 11.55.0)
-  return `<div class="pp-page pp-paper"><small class="pp-trip t-wrap">${escH(pg.tname)}${pg.more ? `${SEP}המשך` : ''}</small><div class="pp-grid">${pg.stamps.map((s, i) => ppStampHTML(s, i, land.has(s.key))).join('')}</div></div>`; }
-function renderPassportScreen() { const main = document.getElementById('main'), M = ppModel(), P = 2 + M.pages.length;
-  PP.page = Math.max(0, Math.min(P - 1, PP.page || 0));
-  const pg = PP.page >= 2 ? M.pages[PP.page - 2] : null, land = PP.land && pg ? pg.stamps.filter(s => PP.land.includes(s.key)).length : 0;
-  { const e = screenTop(), tools = e && e.tab === 'passport' && e.el.querySelector('.screen-tools');
-    if (tools) tools.innerHTML = `<button type="button" class="top-ic" data-act="pp.more" aria-label="עוד פעולות" title="עוד פעולות">${msi('more_vert')}</button>`; }
-  main.innerHTML = `<div class="pp-book${land ? ' pp-landing' : ''}${PP.skip ? ' pp-skipped' : ''}" data-act="pp.skip">
-    <div class="pp-sheet g-swipe"${PP.dir ? ` data-dir="${PP.dir > 0 ? 'next' : 'prev'}"` : ''}>${ppPageHTML(M, PP.page)}</div>
-    <button type="button" class="top-ic pp-arr pp-prev" data-act="pp.turn" data-v="-1" aria-label="העמוד הקודם" title="העמוד הקודם"${PP.page ? '' : ' disabled'}>${msi('expand_more')}</button>
-    <button type="button" class="top-ic pp-arr pp-next" data-act="pp.turn" data-v="1" aria-label="העמוד הבא" title="העמוד הבא"${PP.page < P - 1 ? '' : ' disabled'}>${msi('expand_more')}</button>
-    <p class="pp-num"><bdi>${PP.page + 1}</bdi> / <bdi>${P}</bdi></p></div>
-    ${land ? `<div class="pp-landed"><p>${land === 1 ? 'נוספה חותמת אחת לדרכון' : `נוספו <bdi>${land}</bdi> חותמות לדרכון`}</p>${cardActionsHTML({ act: 'pp.toMem', v: pg.trip, label: msi('photo_album', { size: 18 }) + 'למסך הזיכרון' })}</div>` : ''}`;
-  PP.dir = 0; }
-act('pp.turn', c => { const d = Number(c.v) || 0; PP.page += d; PP.dir = d; PP.land = null; return 'redraw'; });
-function ppSkip(el) { if (!PP.land || PP.skip) return false; PP.skip = true; const b = el.closest('.pp-book'); if (b) b.classList.add('pp-skipped'); return true; }
-act('pp.skip', c => { ppSkip(c.el); return 'quiet'; }); // a tap anywhere skips the landing (Q4) - on a stamp too, while it lands
-act('pp.toMem', () => { PP.land = null; layerBack(); return 'quiet'; });
-gestureOn('swipe', '.pp-sheet', { can: (el, dir) => !!el.parentNode.querySelector(`.pp-${dir > 0 ? 'next' : 'prev'}:not([disabled])`), preview: () => {},
-  done: (el, dir) => el.parentNode.querySelector(`.pp-${dir > 0 ? 'next' : 'prev'}`).click() }); // TOUCH 'swipe': the finger to the right brings the next page from the left
-// a stamp's card (Q5): the destination, its dates, and the way to its trip's memory
-function openPpCard(key) { layerNote(openPpCard, arguments); const s = ppModel().stamps.find(x => x.key === key), sheet = document.getElementById('sheet'); if (!s) return;
-  sheet.innerHTML = `${fmHead(withFlag(s.flag, nameB(s.name)))}<p class="pp-cd">${[ppDates(s), s.days ? `<bdi>${s.days}</bdi> ימים` : ''].filter(Boolean).join(SEP) || 'בלי תאריכים'}</p>
-    <p class="sh-hint">${msi('luggage', { size: 18, cls: 'msi-in' })} ${escH(s.tname)}</p>${cardActionsHTML({ act: 'pp.mem', v: s.trip, label: msi('photo_album', { size: 18 }) + 'לזיכרון של הטיול' })}`;
-  showSheetBackdrop('openPpCard'); }
-act('pp.card', c => { if (!ppSkip(c.el)) openPpCard(c.v); return 'quiet'; });
-act('pp.mem', c => { closeSheet(); runTripAction(c.v, 'memory'); return 'quiet'; });
-// ⋮ (Q6): "שיתוף העמוד" - the page as an image through the one way a file leaves (deliverFile); nothing else is shared
-act('pp.more', () => { const sheet = document.getElementById('sheet');
-  sheet.innerHTML = `${fmHead('הדרכון שלי')}${taListHTML({ act: 'pp.ta' }, [['share', msi('share', { size: 20 }) + ' שיתוף העמוד', 'העמוד הזה כתמונה']])}`; showSheetBackdrop('ppMore'); return 'quiet'; });
-act('pp.ta', () => { closeSheet(); ppShare(); return 'quiet'; });
-function ppPageSVG(M, p) { const W = 600, H = 800, css = getComputedStyle(document.documentElement), tk = n => css.getPropertyValue(n).trim() || '#333', e = escH;
-  const head = (y, fs, w, txt) => `<text x="${escH(W / 2)}" y="${escH(y)}" font-size="${escH(fs)}" font-weight="${escH(w)}" text-anchor="middle" fill="${escH(tk('--pp-text'))}" font-family="Rubik, Arial, sans-serif">${e(txt)}</text>`;
-  let body = `<rect width="${escH(W)}" height="${escH(H)}" fill="${escH(tk('--pp-paper'))}"/><rect x="14" y="14" width="${escH(W - 28)}" height="${escH(H - 28)}" fill="none" stroke="${escH(tk('--pp-line'))}" stroke-width="2"/>`;
-  if (p < 2) body += head(330, 40, 700, ppOwner() ? 'הדרכון של ' + ppOwner() : 'הדרכון שלי') + head(390, 26, 400, M.n === 1 ? 'חותמת אחת' : M.n + ' חותמות') + head(H - 40, 18, 400, APP.appTitle);
-  else { const pg = M.pages[p - 2]; body += head(64, 24, 500, pg.tname + (pg.more ? SEP + 'המשך' : '')) + head(H - 40, 18, 400, APP.appTitle);
-    pg.stamps.forEach((s, i) => { const ch = ppCharOf(s), x = 40 + (i % 2) * 270, y = 110 + Math.floor(i / 2) * 320;
-      body += `<g transform="rotate(${ch.r} ${x + 125} ${y + 125})" color="${escH(tk('--pp-ink' + (ch.c % PP_INKS)))}">${ppSVG({ w: 200, h: 200, at: ` x="${escH(x)}" y="${escH(y)}" width="250" height="250"`, body: ppStampBody(s, ch, 'ppx' + i) })}</g>`; }); }
-  return ppSVG({ w: W, h: H, wh: true, body }); }
-async function ppShare() { const M = ppModel(), p = PP.page; try { const c = await svgToCanvas(ppPageSVG(M, p), 1200, 1600), blob = await new Promise(r => c.toBlob(r, 'image/png'));
-    if (blob && await deliverFile(blob, `${PACK.fileName}-passport-${p + 1}.png`, 'image/png')) logEvent('שותף עמוד מהדרכון', true); } catch (err) { showToast('לא הצלחתי להכין את התמונה'); } }
-
+// the stamp, the book, the page turn, its card and sharing: js/passport-book.js (page-look: split at this seam)
 // ---- memory screen, part 3 ----
 function memorySection3(M, where) {
   const id = M.t.id;
@@ -149,12 +74,14 @@ async function sendTripSummary(id, opt) {
   try { await sendTripSummary2(id, opt || { plan: true, words: true, photos: true, bad: true }); } finally { SUMMARY_BUSY = false; }
 }
 var SUMMARY_BUSY = false;
+function summaryBusy(v) { if (v === undefined) return SUMMARY_BUSY; SUMMARY_BUSY = v; } // diet-room: the pages group asks and sets it by name (groupFn)
 // 9.1.1 (12ג-5): a page for people leaves one way - the file, the change-log line and the "made without network" note
 async function sendPage(html, o) {
   const ok = await deliverFile(new Blob([html], { type: 'text/html' }), `${PACK.fileName}-${o.slug}-${o.name.replace(/[^\wא-ת]+/g, '-')}.html`, 'text/html');
   if (ok) { logEvent(o.log, true); if (o.then) o.then(); if (o.pic && !o.pic.online) showToast(`${o.noun} נוצר בלי רשת, והמפה בו סכמטית. עם רשת אפשר ליצור אותו שוב עם מפה מלאה`); }
 }
 async function sendTripSummary2(id, opt) {
+  if (!(await needGroup('pages'))) { showToast(GROUP_FAIL); return; } // diet-room: the page's packed map (fmapPack, fmapCSS) is the pages group
   opt = opt || { plan: true, words: true, photos: true, bad: true };
   const D = mementoData(id), M = D.M, t = M.t, e = escH, name = String(t.name).split(' · ')[0];
   if (!mementoBgReady(id) && svcOnline()) await readyMementoBg(id);
@@ -162,7 +89,7 @@ async function sendTripSummary2(id, opt) {
   await readyArtCredits(id);
   const svg = await photoPageSVG(() => currentMementoSVG(id), { off: !opt.photos }); // 4.36.0: the trip picture as chosen in the memory screen (map / schematic / illustrated); hidden-data (H3): its photos cut to their circles, none with "התמונות" off
   // 4.36.0: 🗺️ where we were - a live map (faded tiles, places in the rating's colour), with a picture of it for offline
-  const I = memItems(M, false), W = x => opt.words ? x : '', fitems = I.places.filter(x => opt.bad || x.r !== 'dislike').map(x => ({ lat: x.c.lat, lng: x.c.lng, color: x.color, n: '', name: x.name, sub: [x.r ? RATE[x.r] + ' ' + RATE_LABEL[x.r] : '', W(x.w) ? '"' + x.w + '"' : ''].filter(Boolean).join(SEP), love: x.r === 'love', label: x.hi || x.key, nav: navUrl(x.c.lat + ',' + x.c.lng), desc: x.p && x.p.description ? String(x.p.description).slice(0, 220) + (wikiTextOf(x.p) ? SEP + wikiTextCreditText(x.p) : '') : '', q: x.name, icon: x.p && x.p.icon }))
+  const I = memItems(M, false), W = x => opt.words ? x : '', fitems = I.places.filter(x => opt.bad || x.r !== 'dislike').map(x => ({ lat: x.c.lat, lng: x.c.lng, color: x.color, n: '', name: x.name, sub: [nameOther(x.p, x.name), x.r ? RATE[x.r] + ' ' + RATE_LABEL[x.r] : '', W(x.w) ? '"' + x.w + '"' : ''].filter(Boolean).join(SEP), love: x.r === 'love', label: x.hi || x.key, nav: navUrl(x.c.lat + ',' + x.c.lng), desc: x.p && x.p.description ? String(x.p.description).slice(0, 220) + (wikiTextOf(x.p) ? SEP + wikiTextCreditText(x.p) : '') : '', q: x.name, icon: x.p && x.p.icon }))
     .concat(I.hotels.map(h => ({ lat: h.c.lat, lng: h.c.lng, color: '#1C2B33', n: '', name: h.name, icon: 'lodging', sub: h.nights + ' לילות', hotel: true })));
   const route = I.hotels.length > 1 ? I.hotels.map(h => [h.c.lat, h.c.lng]) : [];
   const pic = fitems.length ? await fileMapPicture(fitems, memKind(D), { fade: true, tripId: id, th: D.th, route }) : null;
@@ -170,18 +97,19 @@ async function sendTripSummary2(id, opt) {
   const nm = k => (M.pmap.get(Number(k)) || {}).name || '';
   const photos = (opt.photos ? tripPhotoKeys(id) : []).map(k => { const h = (M.td.highlights || []).find(x => x.photo === k); const nmH = h ? ((h.placeId != null && M.pmap.get(h.placeId) ? M.pmap.get(h.placeId).name : '') || h.text || '') : ''; return { k, name: nmH, text: '' }; }); // 4.35.0: the whole collection
   for (const h of photos) h.html = await photoPageImg(h.k, 480); // hidden-data (H3): each cell's square cut, about twice its shown size
-  const html = pageHTML({ title: `${name}${SEP}סיכום הטיול`, label: 'סיכום הטיול', th: D.th,
-    css: `.lg{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.8rem;color:var(--soft)}.lg i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-inline-end:4px;vertical-align:middle}.hero{background:linear-gradient(135deg,var(--p),var(--a));color:#fff;border-radius:18px;padding:22px}.hero h1{font-size:2rem}.svgbox>svg{width:100%;height:auto;border-radius:14px;display:block;margin:14px 0}
-.day b{display:block}.day ul{margin:4px 0;padding-inline-start:20px}.tags span{display:inline-block;background:var(--line);border-radius:999px;padding:2px 10px;margin:3px}.ph{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}.ph .pc{display:block;overflow:hidden;border-radius:12px;aspect-ratio:1}.ph img{width:100%;height:100%;object-fit:cover;display:block}.ph div small{display:block;color:var(--soft)}.mp-org{color:var(--soft)}.mp-vis{font-weight:600}`,
+  // page-look (Q1, Q3): the app's hero (--hero-top, the app's ink and title size) in place of the gradient; the headings' icons are the app's own (kid_star, favorite as the closing's)
+  const html = pageHTML({ title: `${name}${SEP}סיכום הטיול`, label: 'סיכום הטיול',
+    css: `.lg{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.8rem;color:var(--on-surface-variant)}.lg i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-inline-end:4px;vertical-align:middle}.hero{background:var(--hero-top);color:var(--on-surface);border-radius:var(--r-card);padding:18px 16px}.hero>div{color:var(--on-surface-variant)}.svgbox>svg{width:100%;height:auto;border-radius:var(--r-card);display:block;margin:14px 0}
+.day b{display:block}.day ul{margin:4px 0;padding-inline-start:20px}.tags span{display:inline-block;background:var(--surface-container);color:var(--on-surface);border:1px solid var(--outline-variant);border-radius:var(--r-pill);padding:2px 10px;margin:3px}.ph{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}.ph .pc{display:block;overflow:hidden;border-radius:var(--r-tile);aspect-ratio:1}.ph img{width:100%;height:100%;object-fit:cover;display:block}.ph div small{display:block;color:var(--on-surface-variant)}.mp-org{color:var(--on-surface-variant)}.mp-vis{font-weight:600}`,
     head: `<div class="hero"><div>${D.flags.join(' ')} ${t.start ? `${tmFmt('range', [t.start, t.end], { year: true })}` : ''}</div><h1>${e(name)}</h1><div>${e(D.dests.map(d => d.name).join(' ← '))}${t.travelers ? SEP + e(t.travelers) : ''}</div></div>
 <div class="svgbox">${svg}</div>`,
-    map: pic ? { pic, data: fmapData(fitems, pic, { fade: true, route, photos: opt.photos ? await memPagePhotos(M) : [] }), before: `<h2>${SY.map} איפה היינו</h2>`, after: `<div class="lg"><span><i style="background:${RATE_COLOR.love}"></i>❤️ אהבנו</span><span><i style="background:${RATE_COLOR.like}"></i>👍 היה טוב</span>${opt.bad ? `<span><i style="background:${RATE_COLOR.dislike}"></i>👎</span>` : ''}<span><i style="background:${UNRATED_COLOR}"></i>בלי דירוג</span><span>🏨 לינה</span></div>` } : null,
-    body: `${D.hs.length ? `<h2>✨ רגעי השיא</h2>${D.hs.map(h => `<div class="card"><b>${e(h.name || h.text)}</b>${h.name && h.text ? `<div>${e(h.text)}</div>` : ''}</div>`).join('')}` : ''}
+    map: pic ? { pic, data: fmapData(fitems, pic, { fade: true, route, photos: opt.photos ? await memPagePhotos(M) : [] }), before: `<h2>${msi('map')}איפה היינו</h2>`, after: `<div class="lg"><span><i style="background:${RATE_COLOR.love}"></i>❤️ אהבנו</span><span><i style="background:${RATE_COLOR.like}"></i>👍 היה טוב</span>${opt.bad ? `<span><i style="background:${RATE_COLOR.dislike}"></i>👎</span>` : ''}<span><i style="background:${UNRATED_COLOR}"></i>בלי דירוג</span><span>🏨 לינה</span></div>` } : null,
+    body: `${D.hs.length ? `<h2>${msi('kid_star')}רגעי השיא</h2>${D.hs.map(h => `<div class="card"><b>${e(h.name || h.text)}</b>${h.name && h.text ? `<div>${e(h.text)}</div>` : ''}</div>`).join('')}` : ''}
 ${photos.length ? `<div class="ph">${photos.map(h => `<div><span class="pc">${h.html}</span><small>${e(h.name || h.text)}</small></div>`).join('')}</div>` : ''}
-${love.length || like.length ? `<h2>💛 מה אהבנו</h2>${love.length ? `<div class="tags">❤️ ${love.map(([k, v]) => `<span>${e(nm(k))}${W(v.w) ? `${SEP}"${e(v.w)}"` : ''}</span>`).join('')}</div>` : ''}${like.length ? `<div class="tags">👍 ${like.map(([k, v]) => `<span>${e(nm(k))}${W(v.w) ? `${SEP}"${e(v.w)}"` : ''}</span>`).join('')}</div>` : ''}` : ''}
-${D.records.length ? `<h2>📊 במספרים</h2><div class="tags">${[`${D.days} ימים`, `${D.visited.length} מקומות`].concat(D.records.map(r => `${r[0]} ${r[1]}${r[2] ? SEP + r[2] : ''}`)).map(x => `<span>${e(x)}</span>`).join('')}</div>${D.records.some(r => r[0] === '⛰️') ? `<small class="elev-cr">${svcCredit('openmeteo', { as: 'elev' })}</small>` : ''}` : ''}
-${plan ? `<h2>${SY.days} יום אחר יום</h2><div class="card">${(f => { f.querySelectorAll('[class="mp-day"]').forEach(e => { e.className = 'day'; }); const d = document.createElement('div'); d.appendChild(f); return d.innerHTML; })(htmlFrag(plan))}</div>` : ''}
-${M.td.album ? `<p>🔗 <a href="${e(M.td.album)}">האלבום</a></p>` : ''}` });
+${love.length || like.length ? `<h2>${msi('favorite')}מה אהבנו</h2>${love.length ? `<div class="tags">❤️ ${love.map(([k, v]) => `<span>${e(nm(k))}${W(v.w) ? `${SEP}"${e(v.w)}"` : ''}</span>`).join('')}</div>` : ''}${like.length ? `<div class="tags">👍 ${like.map(([k, v]) => `<span>${e(nm(k))}${W(v.w) ? `${SEP}"${e(v.w)}"` : ''}</span>`).join('')}</div>` : ''}` : ''}
+${D.records.length ? `<h2>${msi('bar_chart')}במספרים</h2><div class="tags">${[`${D.days} ימים`, `${D.visited.length} מקומות`].concat(D.records.map(r => `${r[0]} ${r[1]}${r[2] ? SEP + r[2] : ''}`)).map(x => `<span>${e(x)}</span>`).join('')}</div>${D.records.some(r => r[0] === '⛰️') ? `<small class="elev-cr">${svcCredit('openmeteo', { as: 'elev' })}</small>` : ''}` : ''}
+${plan ? `<h2>${msi('calendar_month')}יום אחר יום</h2><div class="card">${(f => { f.querySelectorAll('[class="mp-day"]').forEach(e => { e.className = 'day'; }); const d = document.createElement('div'); d.appendChild(f); return d.innerHTML; })(htmlFrag(plan))}</div>` : ''}
+${M.td.album ? `<p>${msi('link', { cls: 'msi-in' })} <a href="${e(M.td.album)}">האלבום</a></p>` : ''}` });
   await sendPage(html, { slug: 'summary', name, log: '📖 נשלח סיכום הטיול: ' + t.name, noun: 'הסיכום', pic });
 }
 // ---- "מדינות שביקרנו" (task countries-visited; decisions 2026-11-23 · "מדינות שביקרנו", Q1-Q3 and the dynamic map; spec/countries-visited.md) ----

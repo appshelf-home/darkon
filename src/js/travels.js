@@ -46,7 +46,7 @@ function tripPointOf(t, id) { if (id == null || id === '') return null; if (t &&
   for (const s of (t && t.segments) || []) { const d = DESTS[s.dest]; const p = d && d.places.find(x => (d.idBase || 0) + x.id === id); if (p) return { ...p, id }; } return null; }
 function grpTravelOf(s, e, t) { if (!_GRP_TV) _GRP_TV = new WeakMap(); const k = JSON.stringify(e), c = _GRP_TV.get(s); if (c && c.k === k) return c.f;
   const pl = tripPointOf(t, e.placeId);
-  const f = { id: 's:' + s.id, src: s.id, group: true, mode: e.mode || (e.kind === 'flight' ? 'flight' : 'bus'), date: e.date || '', from: e.from || '', to: e.to || (pl ? pl.name : ''),
+  const f = { id: 's:' + s.id, src: s.id, group: true, mode: e.mode || (e.kind === 'flight' ? 'flight' : 'bus'), date: e.date || '', from: e.from || '', to: e.to || (pl ? placeLabel(pl, t) : ''),
     fromLoc: e.fromLoc || null, toLoc: e.toLoc || (pl ? { pid: pl.id } : null), airline: e.airline || '', number: e.number || '', terminal: e.terminal || '',
     depart: e.start || '', arrive: e.end || '', arriveDay: Number(e.arriveDay) || 0, title: e.title || '', note: e.note || '', path: e.path || null, pathK: e.pathK || '', pathNear: e.pathNear || '' };
   if (e.before != null && e.before !== '') f.before = Number(e.before); if (e.after != null && e.after !== '') f.after = Number(e.after);
@@ -105,6 +105,10 @@ function endPropKey(text, d) { return 'tv:' + String(text).trim() + '|' + (d ? d
 // a bus, a pier for a ferry); an end with no destination gets none. Nothing proposed is better than a wrong place ("חסר מיקום"). A cached
 // proposal that fails the check (taken before 11.23.2 - the demo's "בניין נזריאן" for "בלמסדה") is not shown and is asked again.
 const END_PROP_KM = 100, END_PROP_KIND = { flight: /aerodrome|airport|terminal/, train: /station|halt|railway/, bus: /bus_station|bus_stop|station/, ferry: /ferry|pier|harbour|port/ };
+// big-dest-search (Q2): where the travellers are at a travel's end - its destination, and the night of its date (a departure: the night
+// before it, where they slept; an arrival: the night of the landing)
+function endWhere(f, side, t) { t = t || activeTripObj(); const d = endDest(f, side, t); if (!d) return null; const iso = side === 'to' ? travelLandDate(f) : f.date;
+  return placeWhere({ d, t, date: iso && side !== 'to' && whNight(t, isoAdd(iso, -1)) ? isoAdd(iso, -1) : iso }); }
 function endPropSane(v, d) { if (!v || !d || !isFinite(v.lat)) return false; const c = Array.isArray(d.meta.center) ? { lat: d.meta.center[0], lng: d.meta.center[1] } : null;
   return !!(c && distanceKm(c, v) <= END_PROP_KM) || !!(v.cc && d.meta.country && v.cc === d.meta.country); }
 function endPropPick(list, d, mode) { const sane = (list || []).filter(x => endPropSane({ ...x.coord, cc: x.cc }, d)), re = END_PROP_KIND[mode];
@@ -114,7 +118,7 @@ function endProposal(f, side, t) { const e = travelEnd(f, side, t); if (e.loc ||
 const _END_ASKED = new Set();
 async function endProposalAsk(f, side, t) { const e = travelEnd(f, side, t); if (e.loc || e.home || !e.name.trim()) return; const d = endDest(f, side, t), k = endPropKey(e.name, d);
   if (!d || (k in GEOCODE_CACHE && (GEOCODE_CACHE[k] === null || endPropSane(GEOCODE_CACHE[k], d))) || _END_ASKED.has(k) || !MAP_AVAILABLE) return; _END_ASKED.add(k);
-  const r = await placeSearch(e.name.trim(), Array.isArray(d.meta.center) ? d.meta.center : undefined, { limit: 5, anywhere: true, stops: true }); // size-fixes (A): stops kept in place; 11.20.0: an end (an airport) is often outside the destination's box - biased, not boxed; 11.23.2: five, checked and chosen here
+  const cl = whFirst(endWhere(f, side, t)), r = await placeSearch(e.name.trim(), cl ? cl.c : Array.isArray(d.meta.center) ? d.meta.center : undefined, { limit: 5, anywhere: true, stops: true }); // big-dest-search: biased toward the chain's first clue // size-fixes (A): stops kept in place; 11.20.0: an end (an airport) is often outside the destination's box - biased, not boxed; 11.23.2: five, checked and chosen here
   if (!r) return; const c = endPropPick(r, d, f.mode); GEOCODE_CACHE[k] = c ? { lat: c.coord.lat, lng: c.coord.lng, name: c.name, cc: c.cc || '', at: Date.now() } : null; saveGeocodeCache(GEOCODE_CACHE); redrawSoon(); } // not found is kept as the address cache keeps it (asked again after 30 days)
 // the state of a travel's ends for its card (Q13's line, here the chip): 'prop' (a proposal waits), 'none' (no location and none found), ''
 function travelEndsState(f, t) { let st = ''; ['from', 'to'].forEach(side => { const e = travelEnd(f, side, t); if (e.loc || e.home) return;
@@ -139,7 +143,7 @@ function openTravelEditor(id, o) { layerNote(openTravelEditor, arguments); o = o
     : fmEnd(F, side, { label: side === 'from' ? 'מ-' : 'אל', req: !grp, value: { name: v0[side] || '', loc: v0[side + 'Loc'] || null }, travel: () => tvDraft(F), side });
   const nDays = o.draft ? tripLen(t) : TRIP_DAYS.length, dayOpts = () => Array.from({ length: nDays }, (_, i) => vDate(i + 1)).map(v => [v, tmFmt('pick', v)]);
   const mOpts = MARGIN_STEPS.map(m => [String(m), marginText(m)]);
-  const srcLine = grp && !o.draft && schedEdChanged(raw) ? [raw.start ? escH(raw.start + (raw.end ? '–' + raw.end : '')) : 'בלי שעה', schedKindIc(raw.kind, escH(SCHED_KIND_NAME[raw.kind] || '')), raw.title && escH(raw.title)].filter(Boolean).join(SEP) : '';
+  const srcLine = grp && !o.draft && schedEdChanged(raw) ? [raw.start ? escH(tmSpan(raw.start, raw.end)) : 'בלי שעה', schedKindIc(raw.kind, escH(SCHED_KIND_NAME[raw.kind] || '')), raw.title && escH(raw.title)].filter(Boolean).join(SEP) : '';
   sheet.innerHTML = `${fmHead(`<span data-tvttl>${travelKindName(v0)}</span>${grp ? (SEP + 'קבוצתי') : ''}`)}
     ${fmChips(F, 'mode', { label: 'סוג', value: v0.mode || 'flight', options: Object.entries(TRAVEL_MODES).map(([k, v]) => [k, msi(TRAVEL_MS[k], { size: 18 }) + ' ' + v[1]]), on: () => tvKind(F) })}
     ${fmText(F, 'title', { label: 'כותרת', value: v0.title || '' })}
@@ -236,7 +240,7 @@ function openEndChoice(F, side) { const stop = F.kinds[side] === 'stops', f = tv
   const center = (() => { const c = cur.loc && endCoord(cur.loc, t); if (c) return [c.lat, c.lng]; if (stop) { const P = travelPts(f, tvCtx(t)); if (P) return [(P.a.lat + P.b.lat) / 2, (P.a.lng + P.b.lng) / 2]; } const d = endDest(f, stop ? 'from' : side, t); return d && Array.isArray(d.meta.center) ? d.meta.center : undefined; })();
   openFmChoice({ title: `${stop ? 'עצירה בדרך' : side === 'from' ? 'מ-' : 'אל'}${SEP}${escH(fmGet(F, 'title') || travelKindName(f) + (f.to ? ' ל' + f.to : ''))}`, search: true, searchHint: 'חיפוש כתובת או שם', key: 'openEndChoice', options: rows,
     lead: stop ? null : q => [{ v: 'name', group: 'השם', html: `${msi('edit', { size: 20 })} ${nameB(q)}`, text: q, sub: cur.loc ? 'השם בלבד, המיקום נשאר' : 'השם בלבד, בלי מיקום', pick: { name: q, loc: cur.loc || null } }], // a stop needs its point
-    ps: psHost({ box: () => document.getElementById('fmChList'), near: () => center, map: () => { closeSheet(); setTimeout(() => endPickOnMap(fmLive(F), side, center), 0); }, pick: () => {},
+    ps: psHost({ box: () => document.getElementById('fmChList'), near: () => center, where: cur.loc || stop || drf ? null : () => endWhere(f, side, t) /* big-dest-search */, map: () => { closeSheet(); setTimeout(() => endPickOnMap(fmLive(F), side, center), 0); }, pick: () => {},
       ret: () => tvRet(fmLive(F), side) }), // 11.20.0 (place-search-upgrade): the one place search; 11.21.0 (Q3): an unsaved travel too, with its whole form; 11.21.1: a draft's travel and a conversion too
     psRow: (x, i) => ({ v: 'f' + i, group: 'תוצאות חיפוש', html: `${msi(x.ic || 'search', { size: 20 })} ${nameB(x.name)}`, text: x.name, sub: escH([x.sub || x.country, x.km != null ? fmtKm(x.km) : ''].filter(Boolean).join(SEP)), pick: { name: x.name, loc: { lat: x.coord.lat, lng: x.coord.lng } } }) },
   (v, x) => { const pk = x && x.pick; if (!pk) return; const G = fmLive(F); if (pk === 'map') { endPickOnMap(G, side, center); return; } endFieldSet(G, side, { name: pk.name, loc: pk.loc || null }); });
@@ -246,7 +250,7 @@ function openEndChoice(F, side) { const stop = F.kinds[side] === 'stops', f = tv
 function tvRet(G, side) { if (!G) return null; const dr = !!G.opts.draft;
   return psFormRet(G, () => ({ k: 'travel', id: G.opts.cur ? G.opts.cur.id : null, tid: dr ? null : STATE.activeTrip, dat: dr && DRAFT ? DRAFT.at : null, conv: G.opts.conv || null }), side); }
 function endPickOnMap(F, side, center) { const cur = F.kinds[side] === 'stops' ? {} : F.vals[side] || {}, c = cur.loc && endCoord(cur.loc), s = c ? [c.lat, c.lng] : center || curDest().meta.center;
-  openPick({ how: 'btn', has: !!c, start: s, zoom: c ? 16 : 12, ret: () => tvRet(fmLive(F), side), onPick: r => endFieldSet(fmLive(F), side, { name: cur.name || r.name || 'מיקום במפה', loc: { lat: +r.coord.lat, lng: +r.coord.lng } }) }); }
+  openPick({ how: 'btn', has: !!c, start: s, zoom: c ? 16 : 12, where: c || F.opts.draft ? null : () => endWhere(tvDraft(F), side, F.opts.t), ret: () => tvRet(fmLive(F), side), onPick: r => endFieldSet(fmLive(F), side, { name: cur.name || r.name || 'מיקום במפה', loc: { lat: +r.coord.lat, lng: +r.coord.lng } }) }); }
 // an end takes the chosen point; the stops' list (along-drive) adds it as one more stop, in the road's order
 function endFieldSet(G, side, v) { if (!G) return; if (G.kinds[side] === 'stops') fmStopAdd(G, side, v); else fmSet(G, side, v); }
 // the card's chip (Q13 / done-when): the editor, straight on the end that waits

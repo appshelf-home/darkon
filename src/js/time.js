@@ -83,6 +83,9 @@ function _tmDM(iso) { const [, m, d] = iso.split('-').map(Number); return `${d}.
 function _tmDMY(iso) { const [y, m, d] = iso.split('-').map(Number); return `${d}.${m}.${y}`; }
 function _tmWdV(iso, t) { t = t || (typeof activeTripObj === 'function' ? activeTripObj() : null); return t && t.wd != null && t.wd !== '' ? TM_WD[(Number(t.wd) + vDayNum(iso) - 1) % 7] : ''; }
 function tmBidi(s) { return '\u2066' + s + '\u2069'; } // one direction wrapper for ranges and times
+// draw-no-write (item 6; decisions 2026-11-27 · Review of night chain steps 1-4 after 11.67.1, Q8): a range in a Hebrew line, one isolated unit -
+// "3–5" reads left to right in Hebrew too; bare, the bidi algorithm draws an en dash between two numbers as "5–3" (t1254 fails on a bare one)
+function tmSpan(a, b) { return b != null && b !== '' ? tmBidi(a + '–' + b) : String(a == null ? '' : a); }
 function tmFmt(role, x, o) { o = o || {};
   if (x == null || x === '') return '';
   if (role === 'pick') { if (isVirt(x)) { const w = _tmWdV(x, o.trip); return 'יום ' + vDayNum(x) + (w ? SEP + w : ''); } return isIso(x) ? `${TM_WD[tmWeekday(x)]} ${_tmDMY(x)}` : ''; }

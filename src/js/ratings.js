@@ -4,7 +4,7 @@ var CLOSING;       // { id, step }
 var TRIP_HIDDEN;   // places hidden only in the active trip (👎 imported from a past trip)
 var _pastRateCache = null;
 const RATE = { love: '❤️', like: '👍', dislike: '👎' }, RATE_LABEL = { love: 'אהבתי', like: 'היה טוב', dislike: 'לא שווה' };
-function tdOf(id) { if (id === STATE.activeTrip) stashActive(); return STATE.tripData[id] = STATE.tripData[id] || { favorites: [], visited: [], itinerary: {}, times: {}, planItems: {} }; }
+function tdOf(id) { if (!id) return { favorites: [], visited: [], itinerary: {}, times: {}, planItems: {} }; /* destination-view: no trip - a throwaway, never STATE.tripData[null] */ if (id === STATE.activeTrip) stashActive(); return STATE.tripData[id] = STATE.tripData[id] || { favorites: [], visited: [], itinerary: {}, times: {}, planItems: {} }; }
 function tdSave(id, quiet) { if (id === STATE.activeTrip) loadPersonal(id); persist(quiet); } // quiet: saved, nothing redrawn (a draft kept as typed - artReqSet)
 function ratingOf(pid, id) { const td = id ? tdOf(id) : (STATE.tripData[STATE.activeTrip] || {}); return (td.rating || {})[pid] || null; }
 function setRating(id, pid, r, word) {
@@ -44,7 +44,7 @@ function welcomeBackHTML(t) {
   if (thin) return `<button type="button" class="today-card wb-thin" id="wbOpen" data-act="welcome.wbOpen">${msi('cottage', { size: 20 })}<span>${escH(String(t.name).split(' · ')[0])} הסתיים${SEP}סגירת הטיול</span>${msi('chevron_right', { size: 20 })}</button>`;
   const days = dayList(t.start, t.end).length, vis = (td.visited || []).length, nd = tripDests(t).length, back = co.dismissedAt || co.snoozeUntil;
   return `<div class="today-card wb-card tcd-after" id="todayCard"><div class="tc-title">${msi('cottage', { size: 20 })}ברוכים השבים מ${escH(String(t.name).split(' · ')[0])}</div>
-    ${tlLateLineHTML(t)}<p class="wb-sum">${days} ימים${nd > 1 ? `${SEP}${nd} יעדים` : ''}${vis ? `${SEP}${vis} מקומות ש${TX.visited}` : ''}. סגירה קצרה (כ-3-5 דקות, כל שלב רשות) שומרת את הטיול כזיכרון: איפה ${TX.visited}, מה אהבתם ורגעי השיא - ומכינה את המזכרות.</p>
+    ${tlLateLineHTML(t)}<p class="wb-sum">${days} ימים${nd > 1 ? `${SEP}${nd} יעדים` : ''}${vis ? `${SEP}${vis} מקומות ש${TX.visited}` : ''}. סגירה קצרה (כ־${tmSpan(3, 5)} דקות, כל שלב רשות) שומרת את הטיול כזיכרון: איפה ${TX.visited}, מה אהבתם ורגעי השיא - ומכינה את המזכרות.</p>
     ${cardActionsHTML({ id: 'wbClose', act: 'welcome.wbClose', label: `${msi('inventory_2', { size: 18 })} סגירת הטיול` }, back ? [{ id: 'wbSnooze', act: 'welcome.wbSnooze', label: 'דחייה בשבוע' }, { id: 'wbNever', act: 'welcome.wbNever', label: 'לא להזכיר יותר' }] : [{ id: 'wbLater', act: 'welcome.wbLater', label: 'לא עכשיו' }])}</div>`; // card-actions (Q1): the primary at full width, the rest as text under it
 }
 function welcomeBackCtl() { const ctl = ctlNS('welcome');

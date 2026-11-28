@@ -65,14 +65,17 @@ function exitActive() { if (_exitAct) return true; try { const u = navigator.use
 // Elsewhere the history guard stays as it was.
 var _exitCW = null, _exitEsc = 0;
 function exitCWOk() { try { return typeof CloseWatcher === 'function'; } catch (e) { return false; } }
-function exitCWArm() { if (_exitCW || _exitWarn || !exitTwice() || document.querySelector('body > .sure-q')) return;
+// destination-view (decisions 2026-11-26 · A destination's places without opening a trip, Q4): while a view is on (viewOn - the archive view, the
+// destination view) the bare page keeps its guard in every mode, and its close is the view's end (viewBack), never the leave message
+function exitGuarded() { return exitTwice() || viewOn(); }
+function exitCWArm() { if (_exitCW || _exitWarn || !exitGuarded() || document.querySelector('body > .sure-q')) return;
   if (history.state && history.state.exitGuard) { _exitGuard = false; layerAppBack(1); return; } // a guard entry left from before (a reload on it): one step of the app's own, then the watcher
   try { const w = new CloseWatcher(); w.onclose = () => { if (_exitCW !== w) return; _exitCW = null;
-    if (Date.now() - _exitEsc < 500 || WIN_STACK.length || popMenuClose()) { exitGuardSync(); return; } exitWarnShow(); }; _exitCW = w; } catch (e) { _exitCW = null; } }
+    if (Date.now() - _exitEsc < 500 || WIN_STACK.length || popMenuClose()) { exitGuardSync(); return; } if (viewOn()) { viewBack(); exitGuardSync(); return; } exitWarnShow(); }; _exitCW = w; } catch (e) { _exitCW = null; } }
 function exitCWOff() { const w = _exitCW; _exitCW = null; if (w) try { w.destroy(); } catch (e) {} }
-function exitGuardArm() { if (exitCWOk()) { exitCWArm(); return; } if (_exitGuard || _exitWarn || !exitTwice() || !exitActive()) return; _exitGuard = true; layerPushRaw(0); }
+function exitGuardArm() { if (exitCWOk()) { exitCWArm(); return; } if (_exitGuard || _exitWarn || !exitGuarded() || !exitActive()) return; _exitGuard = true; layerPushRaw(0); }
 function exitGuardSync() { if ((WIN_STACK && WIN_STACK.length) || _ignorePops > 0 || _pushLater > 0 || _exitWarn || _sureEntry) return; // only on the bare page, history settled, no dialog's entry on top
-  if (exitTwice()) exitGuardArm(); else { exitCWOff(); if (_exitGuard && history.state && history.state.exitGuard) { _exitGuard = false; layerAppBack(1); } } }
+  if (exitGuarded()) exitGuardArm(); else { exitCWOff(); if (_exitGuard && history.state && history.state.exitGuard) { _exitGuard = false; layerAppBack(1); } } }
 // back-exit-fix (finding 4): a snackbar with an action ("ביטול" after a delete) is held while the message takes its place, and comes back
 // with its action for the time it had left when the message ends (or when a window opened during it ends it)
 var _exitSnap = null;
@@ -156,7 +159,7 @@ function sheetAskCloseAll() { const t = layerTop(); if (!t || t.shape !== 'sheet
 function layerMotion(kind, fromH, el) {
   const sheet = el || document.getElementById('sheet');
   if (!sheet || !sheet.animate || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
-  const cs = getComputedStyle(document.documentElement), ms = v => parseFloat(cs.getPropertyValue(v)) || 200, o = { duration: ms('--motion'), easing: cs.getPropertyValue('--ease').trim() || 'ease-out' };
+  const cs = getComputedStyle(document.documentElement), o = { duration: cssMs('--motion', 200), easing: cs.getPropertyValue('--ease').trim() || 'ease-out' };
   const rtl = getComputedStyle(sheet).direction === 'rtl';
   try {
     if (kind === 'fwd' || kind === 'back') {
@@ -308,7 +311,7 @@ function openScreen(tab, over) { // over: 10 (ה14) - open over the window that 
   el.innerHTML = screenHeadHTML({ tab, x }) + '<main class="screen-main"></main>';
   base.id = 'main-under-' + n; el.querySelector('main').id = 'main';
   document.body.appendChild(el);
-  const e = { key: 'screen:' + tab, shape: 'full', tab, prevTab: activeTab, base, el, gen: _dataGen, y: window.scrollY, over: !!(over && top && top.shape === 'sheet') };
+  const e = { key: 'screen:' + tab, shape: 'full', tab, prevTab: activeTab, base, el, gen: base.dataset.stale ? -1 : _dataGen, y: window.scrollY, over: !!(over && top && top.shape === 'sheet') };
   e.close = fp => { const i = WIN_STACK.indexOf(e); if (i >= 0) WIN_STACK.splice(i, 1); if (!fp) layerAppBack(1); screenRemove(e); };
   { const up = document.createElement('button'); up.type = 'button'; up.className = 'scroll-top-btn'; up.title = 'למעלה'; up.innerHTML = msi('keyboard_arrow_up'); up.dataset.act = 'screen.top'; el.appendChild(up); // 5.8.0: ↑ in a screen follows the screen's own scroll
     sysOn(el, 'scroll', () => { up.classList.toggle('show', el.scrollTop > 400); const hero = el.querySelector('.dr-hero'); el.classList.toggle('scrolled', !!hero && hero.getBoundingClientRect().bottom < 60);
@@ -489,7 +492,7 @@ layerOn(window, 'popstate', () => {
   if (sureClose()) { if (_sureEntry) { _sureEntry = false; exitGuardSync(); return; } /* back-exit-fix (finding 3): back took the dialog's own entry - nothing under it moved */
     if (layerTop()) layerPushHistory(); return; } // 10.13.0: back closes the confirmation dialog first; the window under it stays (a dialog with no entry - opened before a touch after a share start)
   if (popMenuClose()) { if (layerTop()) layerPushHistory(); else exitGuardSync(); return; } // round6-behaviour (G117): a menu first
-  if (under && !layerTop()) { exitWarnShow(); return; } // back-exit: a leave press - the message; a second one within it leaves
+  if (under && !layerTop()) { if (viewOn()) { viewBack(); exitGuardSync(); return; } exitWarnShow(); return; } // back-exit: a leave press - the message; a second one within it leaves; destination-view (Q4): in a view, back ends it
   layerAskClose(true); exitGuardSync();
 });
 layerOn(document, 'keydown', e => { if (e.key !== 'Escape') return; if (sureDismiss() || popMenuClose() || !layerTop()) return; layerAskClose(false); });

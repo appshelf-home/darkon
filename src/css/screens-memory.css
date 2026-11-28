@@ -13,7 +13,7 @@
 .mem-tiles { margin: 10px 0 0; } .mem-tiles .dr-tile { background: var(--surface-container); }
 .mem-acts { display: flex; gap: var(--sp-2); } .mem-acts.brow > * { flex: 1 1 0; min-width: 0; justify-content: center; display: inline-flex; align-items: center; gap: 6px; height: 40px; border-radius: var(--r-pill); white-space: nowrap; }
 .mem-block h3, .mem-fchip { display: flex; align-items: center; gap: var(--icon-gap); } .mem-fchip { flex: 0 0 auto !important; }
-.mem-block > .fbar { margin: 0 0 var(--sp-2); } /* along-time-field item 10 (G123): the filter's row above the map (the places screen's filter bar sits above its map) */
+.mem-fhead { flex-wrap: wrap; row-gap: var(--sp-1); } .mem-fhead .mem-fchip { margin-inline-start: auto; } /* nav-short-page (G138): the memory map's filter at the far end of its block's title row (along-time-field item 10 put it above the map); with large text it wraps under the title, still at the far end */
 .mem-sub { font-size: var(--fs-body-small); opacity: .92; }
 
 
@@ -24,7 +24,7 @@
 .mem-map { width: 100%; height: auto; display: block; }
 .mem-live { height: 300px; border-radius: var(--r-card); overflow: hidden; position: relative; } /* 4.36.0 */
 @media (min-width: 600px) { .mem-live { height: 380px; } }
-.mem-legend { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: var(--fs-label); color: var(--soft); margin: 6px 0 2px; }
+.mem-legend { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: var(--fs-label); color: var(--on-surface-variant); margin: 6px 0 2px; }
 .mem-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-inline-end: 4px; vertical-align: middle; border: 1px solid #fff; }
 
 .mem-tt { font: 700 var(--fs-map-label) Rubik, Arial, sans-serif; background: rgba(255,255,255,.92); color: #1C2B33; border: 0; box-shadow: none; padding: 1px 5px; }
@@ -56,34 +56,43 @@
 .ent-stamp { flex: none; padding: 0; border: none; background: none; color: inherit; cursor: pointer; border-radius: var(--r-card); }
 .ent-stamp.pp-press .logo { animation: pp-press var(--motion) var(--ease); }
 @keyframes pp-press { 0% { transform: none; } 40% { transform: scale(.86) translateY(3px); filter: brightness(.8); } 100% { transform: none; } }
-.pp-book { position: relative; padding: 0 0 var(--sp-2); }
-.pp-sheet { position: relative; margin: 0 32px; }
-.pp-sheet[data-dir="next"] > .pp-page { animation: pp-from-left var(--motion-slow) var(--ease); }
-.pp-sheet[data-dir="prev"] > .pp-page { animation: pp-from-right var(--motion-slow) var(--ease); }
-@keyframes pp-from-left { from { transform: translateX(-24%); opacity: .2; } to { transform: none; opacity: 1; } }
-@keyframes pp-from-right { from { transform: translateX(24%); opacity: .2; } to { transform: none; opacity: 1; } }
-.pp-page { position: relative; min-height: min(70vh, 34em); padding: var(--sp-4) var(--sp-3); border-radius: var(--r-card); box-shadow: var(--elev-2); overflow: hidden; overflow-wrap: anywhere; }
-.pp-paper { background-color: var(--pp-paper); color: var(--pp-text);
-  background-image: repeating-linear-gradient(45deg, transparent 0 10px, color-mix(in srgb, var(--pp-line) 35%, transparent) 10px 11px), repeating-linear-gradient(-45deg, transparent 0 10px, color-mix(in srgb, var(--pp-line) 35%, transparent) 10px 11px);
-  border: 1px solid var(--pp-line); }
-.pp-cover { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-3); background: var(--pp-cover); color: var(--pp-cover-ink); text-align: center; }
-.pp-cover .logo { color: var(--pp-cover-ink); width: min(60%, 14em); filter: drop-shadow(0 1px 0 rgba(255,255,255,.25)) drop-shadow(0 -1px 0 rgba(0,0,0,.45)); } /* the embossed stamp */
-.pp-cv-t { font-size: var(--fs-display); letter-spacing: .04em; } .pp-cv-s { font-size: var(--fs-title-large); letter-spacing: .3em; }
-.pp-open { display: flex; flex-direction: column; justify-content: center; text-align: center; }
-.pp-open h3 { margin: 0 0 var(--sp-2); font-size: var(--fs-display); color: var(--pp-text); } .pp-cnt { font-size: var(--fs-title-large); margin: 0 0 var(--sp-3); } .pp-hint { color: var(--pp-text); margin: 0; }
-.pp-trip { display: block; text-align: center; font-size: var(--fs-label); color: var(--pp-text); margin-bottom: var(--sp-2); }
-.pp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(7.5em, 1fr)); gap: var(--sp-3) var(--sp-2); justify-items: center; }
+.pp-book { position: relative; padding: 0 0 var(--sp-2); overflow: clip; overflow-clip-margin: 6px; } /* passport-look Q5: a page turned past its spine leaves the screen, never widens it */
+.pp-sheet { position: relative; margin: 0 32px; perspective: 1600px; }
+/* the page (passport-look Q4): a plain page with a passport's rounded corners and a thin edge line - not a card (no shadow, spine or gutter) */
+.pp-page { position: relative; min-height: min(70vh, 34em); padding: var(--sp-4) var(--sp-3); border-radius: var(--r-card); border: 1px solid var(--pp-line); overflow: hidden; overflow-wrap: anywhere; }
+/* the paper (Q2): plain warm paper, a faint fine grain (one tile, --pp-grain; page-look, G146: the fibres removed - they showed as small streaks), a soft darkening towards the edges; no pattern or lines */
+.pp-paper { color: var(--pp-text); background: radial-gradient(ellipse 78% 70% at 50% 48%, transparent 62%, color-mix(in srgb, var(--pp-line) 38%, transparent)), var(--pp-grain), var(--pp-paper); }
+.pp-cover { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; background: var(--pp-cover); color: var(--pp-cover-ink); border-color: var(--pp-cover); }
+.pp-cover .logo { color: var(--pp-cover-ink); width: 70%; filter: drop-shadow(0 1px 0 rgba(255,255,255,.25)) drop-shadow(0 -1px 0 rgba(0,0,0,.45)); } /* Q1, Q7, Q7a: only the logo, 70% of the cover's width, the embossed stamp */
+/* the details page (Q6): rows of label and value, the two code lines at the bottom */
+.pp-det { display: flex; flex-direction: column; }
+.pp-det h3 { margin: 0 0 var(--sp-3); font-size: var(--fs-label); font-weight: 500; letter-spacing: .02em; color: var(--pp-text); opacity: .8; }
+.pp-rows { margin: 0; } .pp-rows > div { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-3); padding: var(--sp-2) 0; border-bottom: 1px solid var(--pp-line); }
+.pp-rows dt { font-size: var(--fs-label); opacity: .8; } .pp-rows dd { margin: 0; font-weight: 500; text-align: end; min-width: 0; }
+.pp-det .pp-hint { margin: var(--sp-3) 0 0; color: var(--pp-text); }
+.pp-mrz { margin-top: auto; padding-top: var(--sp-4); container-type: inline-size; direction: ltr; text-align: left; }
+.pp-mrz p { margin: 0; font: 500 min(var(--fs-body), 100cqi / 18.6) / 1.5 ui-monospace, 'Roboto Mono', 'Courier New', monospace; white-space: nowrap; letter-spacing: 0; color: var(--pp-text); } /* PP_MRZ letters of .6em at most: never wider than the page */
+.pp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(7.5em, 1fr)); gap: var(--sp-3) var(--sp-2); justify-items: center; padding-bottom: 1.6em; }
 .pp-st { display: block; width: min(100%, 11em); aspect-ratio: 1; padding: 0; border: none; background: none; cursor: pointer; transform: translate(var(--dx), var(--dy)) rotate(var(--r)); opacity: .9; }
 .pp-st svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .pp-ink0 { color: var(--pp-ink0); } .pp-ink1 { color: var(--pp-ink1); } .pp-ink2 { color: var(--pp-ink2); } .pp-ink3 { color: var(--pp-ink3); }
 .pp-land { animation: pp-land calc(var(--motion-slow) * 2.4) var(--ease) var(--d) both; }
 @keyframes pp-land { 0% { transform: translate(var(--dx), calc(var(--dy) - 1.6em)) rotate(var(--r)) scale(1.35); opacity: 0; } 55% { transform: translate(var(--dx), var(--dy)) rotate(var(--r)) scale(.94); opacity: .5; } 75% { opacity: .95; } 100% { transform: translate(var(--dx), var(--dy)) rotate(var(--r)); opacity: .9; } }
 .pp-skipped .pp-land { animation: none; }
+/* the page number (Q10): small, in the paper's faint ink, at the bottom centre inside a stamps page */
+.pp-pno { position: absolute; inset-inline: 0; bottom: var(--sp-2); text-align: center; font-size: var(--fs-label); color: var(--pp-text); opacity: .6; }
+/* the empty page (Q9): one empty stamp frame in a faint neutral ink - not a button */
+.pp-blank { display: flex; align-items: center; justify-content: center; }
+.pp-frame { width: 72%; color: var(--pp-blank); } .pp-frame svg { display: block; width: 100%; height: auto; overflow: visible; }
+/* the page turn (Q5): a leaf turns around the page's right edge (a Hebrew book); its back the paper's colour */
+.pp-sheet.pp-turning { display: grid; } .pp-turning > * { grid-area: 1 / 1; }
+.pp-leaf { position: relative; transform-origin: right center; transform-style: preserve-3d; z-index: 1; }
+.pp-leaf > * { backface-visibility: hidden; height: 100%; box-sizing: border-box; }
+.pp-leaf > .pp-lb { position: absolute; inset: 0; transform: rotateY(180deg); }
 .pp-arr { position: absolute; top: calc(50% - 24px); } .pp-prev { inset-inline-start: -6px; } .pp-next { inset-inline-end: -6px; } .pp-prev .msi { transform: rotate(-90deg); } .pp-next .msi { transform: rotate(90deg); } /* expand_more turned: the previous page points right, the next left (a Hebrew book) */ .pp-arr[disabled] { visibility: hidden; }
-.pp-num { margin: var(--sp-2) 0 0; text-align: center; font-size: var(--fs-label); color: var(--on-surface-variant); }
 .pp-landed { margin-top: var(--sp-2); text-align: center; } .pp-landed p { margin: 0 0 var(--sp-2); font-weight: 500; }
 .pp-cd { margin: 0 0 var(--sp-2); }
-@media (prefers-reduced-motion: reduce) { .pp-land, .pp-sheet[data-dir] > .pp-page, .ent-stamp.pp-press .logo { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .pp-land, .ent-stamp.pp-press .logo { animation: none; } }
 /* 4.29.0: closing a trip */
 .cl-head { margin: -8px -14px 8px; padding: 14px 18px 14px !important; background: linear-gradient(180deg, var(--today-container), var(--surface)); } /* 10.3.0 (design-3): closing - a warm header and a vertical stepper */
 .cl-head h2 { color: var(--on-today); } .cl-head p { margin: 2px 0 0; } .cl-sub { color: var(--on-surface-variant); font-size: var(--fs-body-small); }
@@ -246,6 +255,9 @@ body.tp-on { overflow: hidden; }
 /* 11.34.0 (P15, G72): the view switcher and "✓ היינו בהכל" on one line, the button at the other end; no room - it wraps under, at the far end, whole */
 .cl-view { margin: 8px 0 2px; } /* card-actions (Q3): the switcher takes the whole line; "היינו בהכל" under its first half (halfActionHTML), the whole line when it does not fit */
 .cl-view > .fm-markview { margin: 0; }
+/* ai-fix-mine: the suggestions' list - the closing's rows (.cl-row with fmMark), its title with the AI's mark */
+.sg-sec { margin: 12px 0; } .sg-h { display: flex; align-items: center; gap: var(--icon-gap); margin: 0 0 4px; font-size: var(--fs-title-small); }
+.sg-row > span:first-child { font-weight: 400; } .sg-row > span:first-child > b { font-weight: 600; }
 .cl-more { display: flex; align-items: center; gap: 4px; margin-top: 10px; } /* Q6: the action row "＋ עוד מקום שהיינו בו" with its ⓘ */
 .cl-more > .link-btn { display: inline-flex; align-items: center; gap: var(--icon-gap); min-height: 40px; text-decoration: none; text-align: start; } /* 11.44.1 (price-level-note item 7): wrapped at 320 wide ("ענק"), its words start at the icon, not centered away from it */
 .gl-nm { display: inline-flex; align-items: center; gap: var(--icon-gap); min-width: 0; }
@@ -262,7 +274,7 @@ body.tp-on { overflow: hidden; }
 .map-fs .rp-btn { top: calc(148px + var(--safe-top)); } .meas-host > .rp-btn { transform: translateY(var(--msb, 0px)); } .rp-on .locate-me-btn { display: none; } .rp-on .rp-btn { background: var(--surface-container); color: var(--on-surface); } .rp-btn .rp-x, .rp-on .rp-btn .rp-go { display: none; } .rp-on .rp-btn .rp-x { display: inline-block; }
 .rp-dim { opacity: .28; } .rp-hide { display: none; } [dir="rtl"] .rp-sk { transform: scaleX(-1); }
 .rp-line { stroke: var(--primary); stroke-linecap: round; stroke-linejoin: round; fill: none; } .rp-now { stroke: var(--favorite); stroke-opacity: .95; } .rp-past { stroke-opacity: .6; } .rp-ride { stroke-dasharray: 7 7; }
-.rp-bar { position: absolute; left: 8px; right: 8px; bottom: 26px; z-index: 1070; display: flex; align-items: center; gap: 2px; padding: 4px; border-radius: var(--r-tile); background: var(--surface-container); color: var(--on-surface); box-shadow: var(--elev-2); }
+.rp-bar { position: absolute; left: 8px; right: 8px; bottom: calc(var(--map-cr-h) + 6px); z-index: 1070; display: flex; align-items: center; gap: 2px; padding: 4px; border-radius: var(--r-tile); background: var(--surface-container); color: var(--on-surface); box-shadow: var(--elev-2); }
 .map-fs .rp-bar { bottom: calc(30px + env(safe-area-inset-bottom, 0px)); }
 .rp-b { flex: 0 0 auto; min-width: 44px; min-height: 48px; border: none; border-radius: var(--r-pill); background: transparent; color: inherit; display: grid; place-items: center; padding: 0 6px; cursor: pointer; font: 700 var(--fs-title-small) Rubik, system-ui, sans-serif; }
 .rp-b[disabled] { opacity: .38; cursor: default; } .rp-b:first-child { background: var(--primary); color: var(--on-primary); }

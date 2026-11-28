@@ -25,7 +25,7 @@ function fmText(F, id, o) { o = o || {}; const v = o.value == null ? '' : String
   const field = o.para ? `<textarea ${attrs} rows="${o.rows || 3}">${escH(v)}</textarea>` : `<input type="${o.type || 'text'}" ${attrs} value="${escH(v)}">`;
   return `<label class="sh-field fm-f${o.trap ? ' fm-trap' : ''}" data-fmw="${id}"${o.trap ? ' aria-hidden="true"' : ''}>${fmLabel(o)}${field}${fmHint(o)}${o.dup ? `<div class="pe-dup" data-fmdup="${id}" hidden></div>` : ''}${fmErrSlot(id)}</label>`; }
 // ---- choice from chips (מ3: chips when they fit in one row, else a button with the current choice that opens them in a window) ----
-function fmChipsInner(id, o, v) { return o.options.map(([k, l]) => `<button type="button" class="chip" data-act="${o.act || 'fm.chip'}" data-v="${escH(k)}" data-active="${String(k) === String(v)}">${claudeH(l)}</button>`).join(''); } // 10.1.0 (design-1): claudeH - SHARE_TO's ✳ לשיפור
+function fmChipsInner(id, o, v) { return o.options.map(([k, l, sh]) => `<button type="button" class="chip" data-act="${o.act || 'fm.chip'}" data-v="${escH(k)}" data-active="${String(k) === String(v)}">${sh ? `<span class="ch-l">${claudeH(l)}</span><span class="ch-s">${claudeH(sh)}</span>` : claudeH(l)}</button>`).join(''); } // 10.1.0 (design-1): claudeH - SHARE_TO's ✳ עדכון עם AI
 function fmChips(F, id, o) { o = o || {}; const v = o.value == null ? '' : String(o.value); fmReg(F, id, 'chips', v, o);
   const cur = o.options.find(([k]) => String(k) === v);
   return `<div class="sh-field fm-f fm-choice" data-fmw="${id}" data-fmfit="1">${fmLabel(o)}<div class="chips-row fm-chips${o.options.length >= 2 && o.options.length <= 4 && !o.noSeg ? ' fm-seg seg" role="group' : ''}" data-fm="${id}">${fmChipsInner(id, o, v)}</div>
@@ -114,9 +114,16 @@ act('fm.selPick', c => { const m = c.el.closest('.fm-menu'), b = m && m._for; if
 // selected yes (Q5). o: { act, acts: [noAct, yesAct], on, no, v, yes, noTx }; the row wraps it under the name when they do not fit
 function fmMark(o) { const a = k => (o.acts ? o.acts[k] : o.act), b = (k, p, tx) => `<button type="button" class="cl-vbtn" data-act="${escH(a(k))}" data-clvis="${escH(k)}" aria-pressed="${escH(!!p)}"${o.v != null ? ` data-v="${escH(o.v)}"` : ''}>${tx}</button>`;
   return `<span class="fm-mark" role="group" aria-label="${escH(o.label || 'סימון')}">${b(1, o.on, '✓ ' + (o.yes || TX.visited))}${b(0, o.no, o.noTx || 'לא הגענו')}</span>`; }
-// (Q3) which of such rows a list shows: "עוד לא סומנו · N" | "הכל · N" (segmented; the counts follow the marks). o: { act, view: 'un' | 'all', nUn, nAll }
+// (Q3) which of such rows a list shows: "עוד לא סומנו · N" | "הכל · N" (segmented; the counts follow the marks). o: { act, view: 'un' | 'all', nUn, nAll, unTx, label }
+// (ai-fix-mine: the suggestions' list says "עוד לא הוחלט" - unTx - and names its rows - label)
 function fmMarkView(o) { const c = (v, tx, n) => `<button type="button" class="chip" data-act="${escH(o.act)}" data-v="${escH(v)}" data-active="${escH(o.view === v)}" aria-pressed="${escH(o.view === v)}">${tx}${SEP}<bdi>${n}</bdi></button>`;
-  return `<div class="chips-row fm-chips fm-seg seg fm-markview" role="group" aria-label="אילו מקומות">${c('un', 'עוד לא סומנו', o.nUn)}${c('all', 'הכל', o.nAll)}</div>`; }
+  return `<div class="chips-row fm-chips fm-seg seg fm-markview" role="group" aria-label="${escH(o.label || 'אילו מקומות')}">${c('un', o.unTx || 'עוד לא סומנו', o.nUn)}${c('all', 'הכל', o.nAll)}</div>`; }
+// 4.33.1 → 9.7.0 (Q9b): a swipe on a marked row (.cl-row.g-swipe) is a shortcut to its mark's halves (TOUCH 'swipe'): right = the yes half,
+// left = the no half; past the threshold that half looks pressed; toward the state already set nothing moves (clearing stays a tap).
+// ai-fix-mine: with the mark here (it was the closing's), every list of such rows has it - the suggestions' list in the receive window too
+const clSwipeBtn = (row, dir) => row.querySelector(`.cl-vbtn[data-clvis="${dir > 0 ? 1 : 0}"]`);
+gestureOn('swipe', '.cl-row.g-swipe', { can: (row, dir) => { const b = clSwipeBtn(row, dir); return !!b && b.getAttribute('aria-pressed') !== 'true'; },
+  preview: (row, dir, on) => clSwipeBtn(row, dir).classList.toggle('g-prev', on), done: (row, dir) => clSwipeBtn(row, dir).click() });
 function fmCheck(o) { return `<input type="checkbox"${o.id ? ` id="${o.id}"` : ''}${o.act ? ` data-act="${o.act}"` : ''}${o.v != null ? ` data-v="${escH(o.v)}"` : ''}${o.checked ? ' checked' : ''}${o.disabled ? ' disabled' : ''}${o.cls ? ` class="${o.cls}"` : ''}${o.data ? ' ' + o.data : ''}>`; }
 function fmInput(o) { return `<input type="${o.type || 'text'}"${o.id ? ` id="${o.id}"` : ''}${o.cls ? ` class="${o.cls}"` : ''}${o.act ? ` data-act="${o.act}"` : ''}${o.enter ? ` data-act-enter="${o.enter}"` : ''}${o.dir ? ` dir="${o.dir}"` : ''}${o.placeholder ? ` placeholder="${escH(o.placeholder)}"` : ''}${o.value != null ? ` value="${escH(o.value)}"` : ''}${o.min != null ? ` min="${o.min}"` : ''}${o.max != null ? ` max="${o.max}"` : ''}${o.step ? ` step="${o.step}"` : ''}${o.max ? ` maxlength="${o.max}"` : ''}${o.data ? ' ' + o.data : ''}${o.style ? ` style="${o.style}"` : ''}>`; }
 function fmArea(o) { return `<textarea${o.id ? ` id="${o.id}"` : ''}${o.cls ? ` class="${o.cls}"` : ''}${o.max ? ` maxlength="${o.max}"` : ''}${o.readonly ? ' readonly' : ''} rows="${o.rows || 3}"${o.placeholder ? ` placeholder="${escH(o.placeholder)}"` : ''}${o.dir ? ` dir="${o.dir}"` : ''}${o.data ? ' ' + o.data : ''}${o.style ? ` style="${o.style}"` : ''}>${escH(o.value || '')}</textarea>`; }
@@ -139,8 +146,14 @@ function ellFitSoon() { if (_ellT) return; _ellT = requestAnimationFrame(() => {
 function caBtn(b, cls) { return `<button type="button" class="${escH(cls + (b.cls ? ' ' + b.cls : ''))}"${b.id ? ` id="${escH(b.id)}"` : ''} data-act="${escH(b.act)}"${b.v != null ? ` data-v="${escH(b.v)}"` : ''}${b.data ? ' ' + b.data : ''}${b.hidden ? ' hidden' : ''}>${b.label}</button>`; }
 function cardActionsHTML(primary, secs, o) { const s = (secs || []).filter(Boolean);
   return `<div class="card-acts${o && o.cls ? ' ' + o.cls : ''}">${primary ? caBtn(primary, 'btn-nav ca-main') : ''}${s.length ? `<div class="ca-sec">${s.map(b => caBtn(b, 'btn-text')).join('')}</div>` : ''}</div>`; }
-// one quiet action in the start half of a line (the closing step's "היינו בהכל" under the switcher's first half)
-function halfActionHTML(b) { return `<div class="ca-sec ca-half">${caBtn(b, 'btn-text')}</div>`; }
+// one quiet action in the start half of a line (the closing step's "היינו בהכל" under the switcher's first half); two - each under its half of
+// the switcher (ai-fix-mine: "✓ לתקן בכל השאר" | "להשאיר שלי בכל השאר")
+function halfActionHTML(b) { return `<div class="ca-sec ca-half">${(Array.isArray(b) ? b : [b]).map(x => caBtn(x, 'btn-text')).join('')}</div>`; }
+// step-bar (decisions 2026-11-26 · The next step always in reach, Q1-Q3 - Darkon's approved exception to "next at the page's end"): a step
+// flow's back and next in one button row pinned to the bottom of its full screen, in the app's column - "‹ הקודם" outlined, "הבא ›" filled;
+// no prev on the first step (next takes the width), the last step's next is the flow's closing action. It hides while the keyboard is open
+// and the page keeps its height at its end (css/touch-keyboard.css, buttons-chips.css). prev / next: caBtn's entries
+function stepBarHTML(prev, next) { return `<div class="brow step-bar">${prev ? caBtn(prev, 'btn-sec sb-prev') : ''}${caBtn(next, 'btn-nav sb-next')}</div>`; }
 // the measure (run by ellFit, after every draw, a window's frame and a resize): a part whose text does not fit stacks them all, one per line
 function cardActsFit(root) { const rows = [...(root || document).querySelectorAll('.ca-sec')];
   rows.filter(r => r.matches('.ca-half')).forEach(r => { const v = r.previousElementSibling, u = v && v.matches('.fm-markview') && v.firstElementChild, one = u && v.getBoundingClientRect().height < 2 * u.getBoundingClientRect().height - 2; // a half under a switcher: as wide as its first segment
@@ -224,8 +237,9 @@ const fmOf = el => { const t = layerTop(); return t && t.form && (!el || !t.form
 // ---- fitting the chips (מ3): measured in one row at the real width; refit on resize ----
 function fmFit(root) { (root || document).querySelectorAll('[data-fmfit]').forEach(w => { const row = w.querySelector('.fm-chips'), b = w.querySelector('.fm-pickbtn'); if (!row || !b) return;
   row.hidden = false; b.hidden = true; if (!row.offsetParent && !row.getClientRects().length) return; // not on screen: keep the chips
-  row.classList.add('fm-measure'); const over = row.scrollWidth > row.clientWidth + 1; row.classList.remove('fm-measure');
-  row.hidden = over; b.hidden = !over; }); }
+  const over = () => { row.classList.add('fm-measure'); const o = row.scrollWidth > row.clientWidth + 1; row.classList.remove('fm-measure'); return o; };
+  row.classList.remove('fm-short'); let o = over(); if (o && row.querySelector('.ch-s')) { row.classList.add('fm-short'); o = over(); } // ai-names (Q2): a chip's short name ([k, label, short]) before the row folds
+  row.hidden = o; b.hidden = !o; }); }
 sysOn(window, 'resize', () => { clearTimeout(window._fmFitT); window._fmFitT = setTimeout(() => fmFit(document.getElementById('sheet')), 120); });
 // ---- the field's own typing and value changes (the named exception of the action wiring) ----
 function fmFieldEvents() { // the named exception of the action wiring: typing and value changes in the fields themselves

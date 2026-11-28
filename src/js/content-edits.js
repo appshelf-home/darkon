@@ -1,7 +1,7 @@
 // ================= CONTENT EDITS (2.0.0) =================
 // Places = pack places + this device's edits (changed fields, added places, statuses). Edits are
 // stored apart from the pack, so a newer pack in a new version merges with them instead of overwriting.
-const EDIT_FIELDS = ['name','foreign','layer','address','description','transit','reservation','price','manualCoord','mapsUrl','icon','region','key','gid']; // 4.15.0: key = ★ key point of the route; 11.22.0: gid = the Google id record (place-gid.js); kit-fixes (item 4): foreign = the place's local name (an edit like the name's)
+const EDIT_FIELDS = ['name','foreign','leadMine','layer','address','description','transit','reservation','price','manualCoord','mapsUrl','icon','region','key','gid']; // 4.15.0: key = ★ key point of the route; 11.22.0: gid = the Google id record (place-gid.js); kit-fixes (item 4): foreign = the place's local name (an edit like the name's)
 function decoratePlace(q) { const L = layerDef(q.layer); q.layer_name = L.name; q.color = L.color; if (!q.icon) q.icon = L.icon; return q; }
 function rebuildPoints() {
   const out = [];
@@ -32,7 +32,7 @@ function rebuildPoints() {
 // my name, layer and point stay
 function completeFromTwin(q, b, layers) {
   const o = { ...q, completed: true }, empty = v => v == null || v === '';
-  ['foreign', 'transit', 'reservation', 'price', 'source', 'checkedAt', 'access', 'accessNote', 'mapsUrl', 'region', 'gid'].forEach(k => { if (empty(o[k]) && !empty(b[k])) o[k] = b[k]; });
+  ['foreign', 'nameLead', 'transit', 'reservation', 'price', 'source', 'checkedAt', 'access', 'accessNote', 'mapsUrl', 'region', 'gid'].forEach(k => { if (empty(o[k]) && !empty(b[k])) o[k] = b[k]; });
   if (!empty(b.description) && (empty(q.description) || (q.src && q.src.dh && textHash(q.description) === q.src.dh))) o.description = b.description;
   if ((empty(q.address) || /^-?\d+(\.\d+)?,\s*-?\d/.test(q.address)) && !empty(b.address)) o.address = b.address;
   const L = (layers || LAYER_DEFS).find(l => l.id === q.layer); if (!empty(b.icon) && (empty(q.icon) || (L && q.icon === L.icon))) o.icon = b.icon;
@@ -46,15 +46,19 @@ function completeFromTwin(q, b, layers) {
 // (reference/improve.md "Places the user added"). One test of "the same place" (addSame) serves the join of an incoming file
 // (addJoin), its exact fallbacks, the one-time merge of the places already doubled (addMergeStored) and the twin on screen
 // (rebuildPoints): the key first; with no key only an exact identity - the same Google id (gid.id or gid.cid) or the same
-// discovery (src: type + key or url) - never a name or a near point. The user's record survives with its key and takes the
+// discovery (src: type + key or url) - and, since dup-both-names (decisions 2026-11-27 · Duplicates by either of a place's names, Q2), an
+// equal name: any name of one side equal to any name of the other, unless the two carry different Google ids or discoveries, and since
+// chain-followups (decisions 2026-11-28 · Review of day chain steps 3-5, Q1) only within SAME_NEAR_KM or when either has no point
+// (placeNameJoin); never a name that only contains the other, never a near point alone. The user's record survives with its key and takes the
 // completion by completeFromTwin's rule (what the user filled stays theirs; the AI fills only empty fields).
 const addKeyOf = v => (typeof v === 'number' || typeof v === 'string') && /^\d{11,16}$/.test(String(v)) ? String(v) : '';
-function addSame(a, p) { // a: the add's place with its key (k); p: a place written by the AI -> 'key' | 'gid' | 'src' | ''
+function addSame(a, p) { // a: the add's place with its key (k); p: a place written by the AI -> 'key' | 'gid' | 'src' | 'name' | ''
   if (!a || !p || p === a) return ''; const pk = addKeyOf(p.addKey); if (pk) return pk === String(a.k) ? 'key' : '';
   const ga = a.gid || {}, gp = p.gid || {};
   if ((ga.id && ga.id === gp.id) || (ga.cid && gp.cid && String(ga.cid) === String(gp.cid))) return 'gid';
   const sa = a.src, sp = p.src; if (sa && sp && (!sa.type || !sp.type || sa.type === sp.type) && ((sa.key && sa.key === sp.key) || (sa.url && sa.url === sp.url))) return 'src';
-  return ''; }
+  const other = (ga.id && gp.id) || (ga.cid && gp.cid) || (sa && sp && ((sa.key && sp.key) || (sa.url && sp.url))); // two identities that differ: two places
+  return !other && placeNameJoin(a, p) ? 'name' : ''; }
 // the pairs among places: the keyed first (a key that names no add, or an add already taken, is dropped - the place stays new and
 // never falls back), then the unkeyed by an exact identity; each add takes at most one place
 function addPairs(adds, places, fb) { const used = new Set(), out = []; // fb: which adds may take an unkeyed place (default: every add)
@@ -128,8 +132,27 @@ function tripPlaceLayer(tp, d) {
   const byType = ls.find(l => l.type === (tp.type || 'lodging')); return byType ? byType.id : (ls[0] ? ls[0].id : want);
 }
 function placeDiff(base, data) { const d = {}; EDIT_FIELDS.forEach(k => { if (data[k] === undefined) return; if (JSON.stringify(data[k]) !== JSON.stringify(base[k])) d[k] = data[k]; }); return d; }
+// name-lead (Q6-Q7): my swap of a place's lead name ('foreign' | 'name'; null removes it) - my edit, on the place's own record: a trip's
+// place itself (an update keeps it - leadKeep), a destination's place in my edits record (an update of the destination never touches it)
+function leadMineSet(id, v) { const t = activeTripObj(), tp = (t.places || []).find(x => x.id === id), e = STATE.edits.places[id];
+  if (tp) { if (v) tp.leadMine = v; else delete tp.leadMine; }
+  else if (e && e.data) { if (v) e.data.leadMine = v; else { delete e.data.leadMine; if (e.op === 'edit' && !Object.keys(e.data).length) delete STATE.edits.places[id]; } }
+  else if (v) STATE.edits.places[id] = { op: 'edit', data: { leadMine: v }, at: Date.now(), who: STATE.settings.deviceName || '' }; }
+const leadKeep = (nx, old) => (nx || []).forEach(q => { const o = (old || []).find(x => x.id === q.id); if (o && o.leadMine) q.leadMine = o.leadMine; });
+act('place.lead', c => { const id = Number(c.v), p = POINTS.find(x => x.id === id); if (!p || !placeForeign(p)) return;
+  const nx = placeLead(p) === 'foreign' ? 'name' : 'foreign'; leadMineSet(id, nx === leadAuto(p) ? null : nx); rebuildPoints(); persist(); showUndoToast('השם המוביל הוחלף'); });
+// name-lead (Q4, Q7): "שם המקומות" - the default of every place I did not swap; under it, the count of my swaps and their one reset
+const NAME_LEAD = [['auto', 'אוטומטי – לפי כל מקום', 'מלון, ומקום ששמו בעברית רק תעתיק - בשם המקומי'], ['he', 'תמיד עברית'], ['local', 'תמיד השם המקומי']];
+function leadSwaps(cut) { let n = 0; Object.values(STATE.trips || {}).forEach(t => (t.places || []).forEach(q => { if (q.leadMine) { n++; if (cut) delete q.leadMine; } }));
+  Object.entries(STATE.edits.places).forEach(([id, e]) => { if (!e.data || !e.data.leadMine) return; n++; if (!cut) return; delete e.data.leadMine; if (e.op === 'edit' && !Object.keys(e.data).length) delete STATE.edits.places[id]; }); return n; }
+function nameLeadHTML() { const n = leadSwaps();
+  return choiceHTML({ list: true, label: 'השם שמוביל בכרטיסים, בתכנון ובמפה. השם השני - בחלון הפרטים', act: 'set.nameLead', cur: nameLeadSet(), attrs: v => ` data-v="${escH(v)}"`, opts: NAME_LEAD })
+    + (n ? `<p class="sh-hint nl-reset">${n === 1 ? 'מקום אחד הוחלף' : n + ' מקומות הוחלפו'} ידנית${SEP}<button type="button" class="link-btn" data-act="set.nameLeadReset">איפוס</button></p>` : ''); }
+act('set.nameLead', c => { const v = c.el.dataset.v; if (v === nameLeadSet()) return 'quiet'; const s = { ...STATE.settings }; if (v === 'auto') delete s.nameLead; else s.nameLead = v;
+  STATE.settings = s; rebuildPoints(); persist(); showUndoToast('שם המקומות: ' + NAME_LEAD.find(x => x[0] === v)[1]); });
+act('set.nameLeadReset', () => { if (!leadSwaps(true)) return 'quiet'; rebuildPoints(); persist(); showUndoToast('השמות שהוחלפו ידנית חזרו להגדרה'); });
 // 4.0.0: scope 'trip' = a place of this trip only (not saved to the destination, not sent with it)
-function placeFields(q) { const o = {}; ['name','foreign','address','description','transit','reservation','price','manualCoord','mapsUrl','icon','region','access','accessNote','coordSource','verified','source','checkedAt','key','gid','quiet'].forEach(k => { if (q[k] !== undefined && q[k] !== '') o[k] = JSON.parse(JSON.stringify(q[k])); }); return o; } // 11.46.0 (phone-round-4c-fixes P4; decisions 2026-11-21 · Review of the `legal-server-fixes` summary, Q3): quiet travels with the place to a destination ("שמירה ביעד") and back
+function placeFields(q) { const o = {}; ['name','foreign','nameLead','leadMine','address','description','transit','reservation','price','manualCoord','mapsUrl','icon','region','access','accessNote','coordSource','verified','source','checkedAt','recs','key','gid','quiet'].forEach(k => { if (q[k] !== undefined && q[k] !== '') o[k] = JSON.parse(JSON.stringify(q[k])); }); return o; } // 11.46.0 (phone-round-4c-fixes P4; decisions 2026-11-21 · Review of the `legal-server-fixes` summary, Q3): quiet travels with the place to a destination ("שמירה ביעד") and back
 function moveToTrip(id, data, status) {
   const t = activeTripObj(), q = POINTS.find(x => x.id === id); if (!q || q.tripOnly) return;
   const d = DESTS[q.dest] || curDest();
@@ -176,10 +199,42 @@ function saveEditedPlace(id, data, status, scope) {
     if (status.s === baseSt && !status.note) delete STATE.edits.status[id]; else STATE.edits.status[id] = { ...status, at: Date.now(), who };
   }
   if (data.manualCoord && data.address) GEOCODE_CACHE[data.address] = data.manualCoord;
+  if (curP && curP.aiFix) sgHandDrop(id, Object.keys(curP.aiFix).filter(f => f === 'status' ? status !== undefined && (status.s || 'active') !== (curP.status || 'active') : f in data && !sgSame(data[f], curP[f]))); // ai-fix-mine (Q6): a field I changed by hand drops its suggestion
   rebuildPoints(); persist(); 
   showUndoToast(msg);
   return id;
 }
+// destination-view (decisions 2026-11-26 · A destination's places without opening a trip, Q3): a destination's place across the trips that use it.
+// One reading of every trip not closed, from its stored data (the open trip's mirror stashed first, so it counts too): in the plan (its days, a
+// copy of the place included), ⭐ (the decision's ❤️ - the app's favourites) and "היינו". A closed trip is never read or touched: its snapshot
+// keeps the place as it was (data.md).
+function placeRefs(td, id) { return new Set([id, ...Object.entries(td.planItems || {}).filter(([, f]) => f && f.ref === id).map(([k]) => k)]); }
+function placeTripsUse(id) { stashActive(); const out = [];
+  Object.values(STATE.trips).forEach(t => { if (!t || t.archived) return; const td = STATE.tripData[t.id] || {}, refs = placeRefs(td, id), days = [];
+    Object.entries(td.itinerary || {}).forEach(([dk, day]) => { if (day && Object.values(day).some(a => Array.isArray(a) && a.some(x => refs.has(x)))) days.push(dk); });
+    const fav = (td.favorites || []).includes(id), vis = (td.visited || []).includes(id);
+    if (days.length || fav || vis) out.push({ t, days, fav, vis }); });
+  return out; }
+// "בשימוש בטיולים: חיפה 2026 (בתוכנית, יום 2) · חיפה עם ההורים (מועדפים)" - '' when no trip uses it
+function placeUseLine(id) { const u = placeTripsUse(id); if (!u.length) return '';
+  return 'בשימוש בטיולים: ' + u.map(x => { const n = x.days.map(k => /^d\d+$/.test(k) ? +k.slice(1) : 0).filter(Boolean).sort((a, b) => a - b);
+    const w = [x.days.length ? 'בתוכנית' + (n.length ? (n.length > 1 ? ', ימים ' : ', יום ') + n.join(', ') : '') : '', x.fav ? TX.fav : '', x.vis ? TX.visited : ''].filter(Boolean).join(', ');
+    return `${String(x.t.name).split(' · ')[0]} (${w})`; }).join(SEP); }
+// a destination's place deleted: out of the plan, ⭐ and "היינו" of every trip not closed; what each trip had marked is returned for the trash
+function placeOutOfTrips(id) { stashActive(); const marks = {};
+  Object.values(STATE.trips).forEach(t => { if (!t || t.archived) return; const td = STATE.tripData[t.id]; if (!td) return; const refs = placeRefs(td, id);
+    const fav = (td.favorites || []).includes(id), vis = (td.visited || []).includes(id);
+    if (fav) td.favorites = td.favorites.filter(x => x !== id); if (vis) td.visited = td.visited.filter(x => x !== id);
+    Object.values(td.itinerary || {}).forEach(day => { if (day) Object.keys(day).forEach(k => { if (Array.isArray(day[k]) && day[k].some(x => refs.has(x))) day[k] = day[k].filter(x => !refs.has(x)); }); });
+    Object.keys(td.times || {}).forEach(k => { const i = k.indexOf('|'); if (i > 0 && refs.has(pid(k.slice(i + 1)))) delete td.times[k]; });
+    if (fav || vis) marks[t.id] = { fav, vis }; });
+  loadPersonal(STATE.activeTrip); return marks; }
+// the trash's restore: each trip's marks back (a trip closed or gone since keeps what it has)
+function placeMarksBack(t) { if (!t.marks) { if (t.fav) STATE.favorites.add(t.id); if (t.vis) STATE.visited.add(t.id); return; } stashActive();
+  Object.entries(t.marks).forEach(([tid, m]) => { const tr = STATE.trips[tid], td = STATE.tripData[tid]; if (!tr || tr.archived || !td) return;
+    if (m.fav && !(td.favorites || []).includes(t.id)) td.favorites = (td.favorites || []).concat(t.id);
+    if (m.vis && !(td.visited || []).includes(t.id)) td.visited = (td.visited || []).concat(t.id); });
+  loadPersonal(STATE.activeTrip); }
 function deleteAddedPlace(id) {
   const tq = POINTS.find(x => x.id === id && x.tripOnly);
   if (tq) { // 4.0.0: a trip place goes to the trash too (it remembers its trip)
@@ -195,8 +250,8 @@ function deleteAddedPlace(id) {
   if (b) { // 11.18.0 (place-hide-delete Q2): a place of the destination's file - to the trash, and the delete remembered as a destination
     // edit (op 'del'), so an update of the destination does not bring it back, also after the trash; "תיקונים ליעד" sends it as "נמחק".
     // The trash keeps what the place had (its edit, its reason, ❤️ and היינו) for a restore, which drops the mark
-    const p = POINTS.find(x => x.id === id) || b, name = p.name || b.name, fav = STATE.favorites.has(id), vis = STATE.visited.has(id);
-    STATE.trash.push({ kind: 'destPlace', id, entry: { data: { name } }, prev: STATE.edits.places[id] || null, st: STATE.edits.status[id] || null, at: Date.now(), fav, vis });
+    const p = POINTS.find(x => x.id === id) || b, name = p.name || b.name, marks = placeOutOfTrips(id); // destination-view (Q3): every trip not closed
+    STATE.trash.push({ kind: 'destPlace', id, entry: { data: { name } }, prev: STATE.edits.places[id] || null, st: STATE.edits.status[id] || null, at: Date.now(), marks });
     STATE.edits.places[id] = { op: 'del', data: { name: b.name }, at: Date.now(), who: STATE.settings.deviceName || '' }; delete STATE.edits.status[id];
     STATE.favorites.delete(id); STATE.visited.delete(id);
     TRIP_DAYS.forEach(d => { const day = STATE.itinerary[d.key]; if (day) Object.keys(day).forEach(k => { day[k] = day[k].filter(x => x !== id); }); delete STATE.times[d.key + '|' + id]; });
@@ -205,8 +260,8 @@ function deleteAddedPlace(id) {
     return;
   }
   const e = STATE.edits.places[id]; if (!e || e.op !== 'add') return;
-  const fav = STATE.favorites.has(id), vis = STATE.visited.has(id);
-  STATE.trash.push({ id, entry: e, at: Date.now(), fav, vis });
+  const marks = placeOutOfTrips(id); // destination-view (Q3): a place I added to the destination - out of every trip not closed too
+  STATE.trash.push({ id, entry: e, at: Date.now(), marks });
   delete STATE.edits.places[id]; delete STATE.edits.status[id];
   STATE.favorites.delete(id); STATE.visited.delete(id);
   TRIP_DAYS.forEach(d => { const day = STATE.itinerary[d.key]; if (day) Object.keys(day).forEach(k => { day[k] = day[k].filter(x => x !== id); }); delete STATE.times[d.key + '|' + id]; });
@@ -266,11 +321,11 @@ const TRASH_KINDS = {
   destPlace: { row: 'edits', into: deleteAddedPlace, back(t, i) { const cur = STATE.edits.places[t.id]; // 11.18.0: the mark leaves, what the place had comes back
     if (!cur || cur.op === 'del') { if (t.prev) STATE.edits.places[t.id] = t.prev; else delete STATE.edits.places[t.id]; }
     if (t.st && !STATE.edits.status[t.id]) STATE.edits.status[t.id] = t.st; STATE.trash.splice(i, 1);
-    if (t.fav) STATE.favorites.add(t.id); if (t.vis) STATE.visited.add(t.id);
+    placeMarksBack(t);
     rebuildPoints(); persist();
     showUndoToast('שוחזר מהסל: ' + t.entry.data.name); } },
   place: { row: 'edits', into: deleteAddedPlace, back(t, i) { STATE.edits.places[t.id] = t.entry; STATE.trash.splice(i, 1);
-    if (t.fav) STATE.favorites.add(t.id); if (t.vis) STATE.visited.add(t.id);
+    placeMarksBack(t);
     rebuildPoints(); persist(); 
     showUndoToast('שוחזר מהסל: ' + t.entry.data.name); } },
 };

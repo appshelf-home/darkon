@@ -1,9 +1,10 @@
 {
- "generated/closed-lists.js": "c4fc991b2b10b314522c3e8b655141ce70ec7caf3f937f02507b4d0be11bb8ef",
- "generated/kit-facts.js": "efc46badd925b7171f9684e3fb326bf7f7351c71b21485a95d7062a030c36bd7",
- "generated/kit.js": "33ef0038f553a5e26352bd820e6f1e55ed38ebc0866a03ff93115fb1d6531f8b",
- "generated/ms-font-page.js": "fad282e7fd64eb92b3a66a0effa6bb180b358802e2c3812a413d509f8db24837",
- "generated/ms-font.css": "0d8531c09c2c0b2f0126f7a241caf9d707fda1e589cbbdf60b8111be4444fa42",
- "generated/ms-map.js": "c0a37c330628231fdfe1eb0411e350a85fb1c3750a8ef1eb4ce1544cb6437b96",
+ "generated/closed-lists.js": "ceb86eda2a2f54aeb05bbdcf724e9c6f5ee01a6ae148dbb107459f7f153b8a65",
+ "generated/closed-zones.js": "ec509c3ddc5a6bc795c7efef83cbe756f9091d7b79ebc71a42863a1965edb3de",
+ "generated/kit-facts.js": "91c13781625ad3d3cbf184530f209cc058b231bfae07c9528e070556b4e78394",
+ "generated/kit.js": "cb002d7916c21ec1cffb5e6f4fe170f3af0252b9fd6f817dd571f58a1ede45da",
+ "generated/ms-font-page.js": "45b5ecddcf95bf86efea7e79ab7308f67dac50e0492a6fc584e9c4e78f8a6ce6",
+ "generated/ms-font.css": "9177b241bbfd8bc3ca6209d8f9793d0e83ab1bca3358e653430c17038fe4b95f",
+ "generated/ms-map.js": "1c63bb51476df894ef1acba7ea639256d60ad70a1e1046fa4fcb09d613829933",
  "generated/text-fonts.css": "edc26d3d3c0eb710ad926a1a15fa0375a6d90d0231491795671a67381e3d58c8"
 }

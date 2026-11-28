@@ -62,7 +62,7 @@ function showChipBubble(el, text, hold) {
 // area the reveal mechanism uses (kbArea: under the layer's head, above its pinned bar, the bottom navigation and the keyboard), so
 // a target taller than the screen is pointed at where it shows, and the bubble never sits on the pinned bar under it (the draft's
 // "אישור הכל"). A name (a long press, a chip) stays over its button.
-function explainArea(el) { const H = window.innerHeight; if (el.closest('header.top, #bottomNav, .dr-dock, .sheet-head, .sheet-save-bar, .screen-head')) return { top: 0, bot: H }; // a target that is part of a bar is all in view
+function explainArea(el) { const H = window.innerHeight; if (el.closest('header.top, #bottomNav, .dr-dock, .step-bar, .sheet-head, .sheet-save-bar, .screen-head')) return { top: 0, bot: H }; // a target that is part of a bar is all in view
   const a = kbArea(el); return { top: Math.max(0, a.top), bot: Math.min(H, a.bot) }; }
 function bubblePlace(b, el) {
   const r = el.getBoundingClientRect(), w = b.offsetWidth, h = b.offsetHeight, tip = b.classList.contains('tip');
@@ -191,17 +191,6 @@ function openSrcPicker(rowSel, title, single) { const btns = () => { const r = d
     options: () => btns().map((b, i) => ({ v: i, html: (b.querySelector('.sf-full') || b).innerHTML, on: b.dataset.active === 'true' })) }, v => { const b = btns()[+v]; if (b) b.click(); });
   layerTop().rowSel = rowSel;
 }
-// 5.12.0: the country of a destination - a long list with search (full screen over the editor); the currency's country first
-// 7.2.0: the country and the clock of a destination are lists of the one choice window (openFmChoice), not windows of their own
-function openCountryPicker(cur, sug, onPick) { const all = countryList(), row = (c, g) => ({ v: c.cc, group: g, text: c.n + ' ' + c.cc, html: withFlag(flagOfCountry(c.cc), escH(c.n)) });
-  const top = [cur && all.find(c => c.cc === cur), sug && sug !== cur && all.find(c => c.cc === sug)].filter(Boolean);
-  openFmChoice({ title: 'מדינה', hint: 'הדגל של היעד בא מהמדינה. בלי מדינה - מהמטבע (חוץ מיורו).', search: true, searchHint: 'חיפוש מדינה', value: cur,
-    options: [...top.map(c => row(c, c.cc === cur ? 'נבחרה' : 'לפי המטבע')), ...(cur ? [{ v: '', group: 'בלי מדינה', text: 'בלי מדינה', html: 'בלי מדינה (הדגל לפי המטבע)' }] : []), ...all.map(c => row(c, 'כל המדינות'))] }, onPick); }
-// 7.0.0 (ז11): a destination's clock, by hand: the zones of its country with the time now in each, and all zones (search)
-function openZonePicker(country, cur, onPick) { const mine = tmZonesOf(country).map(x => x.z), all = [...new Set(TM_ZONES.map(x => x.z))].filter(tmZoneOk);
-  const row = (z, g) => ({ v: z, group: g, text: z + ' ' + tmZoneName(z) + ' ' + tmCity(z), html: `<span class="fm-ch-t">${escH(tmZoneName(z))}<small dir="ltr">${escH(tmCity(z))}</small></span><span class="fm-ch-end"><bdi>${tmWall(z).hm}</bdi></span>` }); // 10.9.0 (design-forms, gap 39): the city as a supporting line, the time at the end
-  openFmChoice({ title: '🕐 השעון של היעד', hint: 'השעות בטיול נקראות בשעון של היעד. בדרך כלל הוא נקבע לבד מהמדינה וממרכז המפה.', search: true, searchHint: 'חיפוש אזור או עיר', value: cur,
-    options: [...mine.map(z => row(z, 'במדינה')), ...all.filter(z => !mine.includes(z)).map(z => row(z, 'כל האזורים'))] }, onPick); }
 // opts: { ids, getSel, setSel(newSet), labelOf(id), rerender() }
 // 6.1.0: the chip sets (which selection a row of layer chips changes); a tap is the action chip.layer, a long press (a gesture)
 // only shows the name

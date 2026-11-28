@@ -5,7 +5,7 @@ html { touch-action: pan-x pan-y; overscroll-behavior-y: none; } /* the page scr
 .g-swipe { touch-action: pan-y; }                      /* a sideways swipe keeps vertical scrolling */
 .g-grip { touch-action: none; cursor: grab; -webkit-user-select: none; user-select: none; } /* ⠿ - a drag owns the finger at once */
 .g-pic, .g-float, .g-scrub { touch-action: none; }               /* a picture moves and zooms inside itself only; the floating card follows the finger */
-.sheet, .screen-layer, .tp-body, .cb-t { overscroll-behavior: contain; } /* a window's (and a tall bubble's) scroll is never handed to the page under it */
+.sheet, .screen-layer, .tp-body, .cb-t, .map-crp { overscroll-behavior: contain; } /* a window's (and a tall bubble's, and the map's credit panel's) scroll is never handed to the page under it */
 .sheet { transition: transform var(--motion-fast) var(--ease); }        /* a pulled window snaps back */
 .g-moving { transition: none !important; z-index: 2; }
 .itin-card.g-arm { transform: scale(.97); box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 35%, transparent); }
@@ -41,5 +41,6 @@ html.kb .sheet:not(.full) { max-height: calc(var(--vvh) - 8px); }   /* a bottom,
 @media (min-width: 1024px) { html.kb .sheet.full { height: calc(var(--vvh) - 16px); } } /* a centered full dialog on a tablet */
 html.kb .toast { bottom: calc(var(--kbh, 0px) + 8px); }               /* the undo snackbar sits above the keyboard */
 html.kb .scroll-top-btn { display: none; }
+html.kb .step-bar { display: none; }                                   /* step-bar (Q2): a step flow's back and next hide while the keyboard is open, and return when it closes */
 @media (max-width: 1023px) { html.kb body.typing .bottom-nav, html.kb body.typing .add-fab { display: none; } }
 @media (max-width: 1023px) and (pointer: coarse) { body.typing .bottom-nav, body.typing .add-fab, body.typing .scroll-top-btn { display: none; } } /* a field on the page: the floating buttons step aside */

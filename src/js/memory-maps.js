@@ -46,9 +46,9 @@ function memKind(D) { return D && D.auto === 'city' ? 'city' : 'route'; }
 // what a memory map shows: visited places in their rating's colour, highlights larger and named, hotels as anchors
 function memItems(M, withUnvisited) {
   const rate = M.td.rating || {}, hi = new Set((M.td.highlights || []).map(h => h.placeId).filter(x => x != null)), vis = new Set(M.visited.map(p => p.id));
-  const name = p => String(p.name || '').replace(/\s*\(.*$/, '');
+  const name = p => (typeof p === 'string' ? p : placeLabel(p, M.t)).replace(/\s*\(.*$/, ''); // name-lead: the lead name
   const out = M.visited.filter(snapCoord).map(p => { const r = (rate[p.id] || {}).r || ''; return { p, c: snapCoord(p), r, color: rateColor(r), hi: hi.has(p.id), key: !!p.key, name: name(p), w: (rate[p.id] || {}).w || '', kind: 'place' }; });
-  const hotels = M.stops.map(s => ({ p: s.p, c: snapCoord(s.p), name: name(s.l.name || s.p.name), kind: 'hotel', nights: nightsBetween(s.l.checkIn, s.l.checkOut) || 1 }));
+  const hotels = M.stops.map(s => ({ p: s.p, c: snapCoord(s.p), name: name(lodgingLabel(s.l, s.p, M.t)), kind: 'hotel', nights: nightsBetween(s.l.checkIn, s.l.checkOut) || 1 }));
   const seen = new Set(hotels.map(h => h.p.id));
   const places = out.filter(x => !seen.has(x.p.id));
   const extra = withUnvisited ? (M.places || []).filter(p => !vis.has(p.id) && !seen.has(p.id) && snapCoord(p)).map(p => ({ p, c: snapCoord(p), r: '', color: UNRATED_COLOR, name: name(p), kind: 'missed' })) : [];
@@ -118,7 +118,7 @@ async function renderTileImage(fit, x0, y0, w, h, scale, typeId, onProg, opts) {
   if (vec) { const v = await vtRenderInto(ctx, fit, x0, y0, w, h, scale, svc, onProg, opts); if (!v) return null; credit = svcCreditText('openfreemap', { print: true }); z = v.z; nTiles = v.tiles; }
   // relief-phone: the relief drawn by the same core as the screen (reliefInto), light, over the map; its credit from Mapterhorn's row
   if (relief) { const zr = Math.max(1, Math.min(vec ? 15 : 13, Math.ceil(Math.log2(fit.A * scale / 256) - 0.2))), G = tileGrid(fit, x0, y0, w, h, zr, 1, opts.limit || TILE_LIMIT);
-    const okR = await reliefInto(ctx, G, scale, fit.A / G.N * scale, vec ? null : onProg); if (!okR && !vec) return null;
+    const okR = (await needGroup('special-maps')) && await groupFn('special-maps', 'reliefInto')(ctx, G, scale, fit.A / G.N * scale, vec ? null : onProg); // diet-room: the relief's drawing is in the special-maps group if (!okR && !vec) return null;
     if (okR) { credit = [credit, svcCreditText('mapterhorn', { print: true })].filter(Boolean).join(SEP); nTiles += G.cells.length; if (!vec) z = G.z; } }
   const layers = vec || relief ? [] : tileLayersFor(typeId);
   if (layers.length) {
